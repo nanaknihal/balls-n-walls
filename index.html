@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+</html>
+<head>
+  <title>M y  E x p e r i m e n t</title>
+  <script src="jspsych-6.0.3/jspsych.js"></script>
+  <script src="jspsych-6.0.3/plugins/jspsych-html-keyboard-response.js"></script>
+  <script src="jspsych-6.0.3/plugins/jspsych-image-keyboard-response.js"></script>
+  <link href="jspsych-6.0.3/css/jspsych.css" rel="stylesheet" type="text/css"></link>
+</head>
+
+<body>
+</body>
+<script>
+var timeline = []
+
+var welcome = {
+  type:"html-keyboard-response",
+  stimulus:"Welcome to the experiment. Press any key to begin"
+};
+timeline.push(welcome);
+
+var mainCanvas = {
+  type:"html-keyboard-response",
+  stimulus:"<canvas id='mainCanvas' height='650' width = '650'></canvas>"
+
+};
+timeline.push(mainCanvas);
+
+/* CODE FROM THE JSPSYCH TUTORIAL:
+var blue_trial = {
+  type:"image-keyboard-response",
+  stimulus: "img/blue.png",
+  choices: ["f","j"]
+}
+
+var orange_trial = {
+  type: "image-keyboard-response",
+  stimulus: "img/orange.png",
+  choices: ["f", "j"]
+}
+
+var test_stimuli = [
+  {stimulus: "img/blue.png", data: {test_part: "test", correct_response: "f"}},
+  {stimulus: "img/orange.png", data: {test_part: "test", correct_response:"j"}}]
+timeline.push(blue_trial,orange_trial);
+
+var fixation = {
+  type: "html-keyboard-response",
+  stimulus: "<div style='font-size:60px;'>+</div>",
+  choices: jsPsych.NO_KEYS,
+  trial_duration: jsPsych.randomization.sampleWithoutReplacement(
+    [250, 500, 750, 1000, 1250, 1500, 1750, 2000], 1)[0],
+  data: {test_part: "fixation"}
+}
+
+var test = {
+  type:"image-keyboard-response",
+  stimulus:jsPsych.timelineVariable("stimulus"),
+  choices:["f","j"],
+  data:jsPsych.timelineVariable("data"),
+  on_finish: function(data){
+    data.correct = data.key_press == jsPsych.pluginAPI.convertKeyCharacterToKeyCode(data.correct_response);
+  }
+}
+
+var test_procedure = {
+  timeline:[fixation, test],
+  timeline_variables: test_stimuli,
+  randomize_order: true,
+  repetitions: 5
+}
+timeline.push(test_procedure);
+*/
+
+jsPsych.init({
+  timeline: timeline,
+  on_finish: function(){
+    jsPsych.data.displayData();
+  }
+})
+
+
+
+/*--Game stuff:--*/
+var model = {
+  balls: [new ball(100,20), new ball(200,210,"e")],
+  getBalls: function(){return this.balls},
+  update: function(){
+    for(var i = 0, numBalls = this.balls.length; i < numBalls; i++){
+      this.balls[i].update()
+    }
+  }
+}
+
+
+function ball(x, y, isExplosive) {
+  this.diameter = 20
+  this.x = x//Math.random()*view.gameWidth
+  this.x_prev = null, //previous position is important to calculate angle of movement
+  this.y = y//Math.random()* view.gameHeight
+  this.y_prev = null
+  this.velocity = [1,1] //x and y components of velocity, respectively
+  this.color = "#AAABC8"
+  this.explosive = (isExplosive == "e")
+  this.update = function() {
+    /*update x-axis position using differential equation dx/dt = v*/
+    var dx = this.velocity[0] // * dt, but let's just say dt is 1
+    this.x = this.x + dx
+
+    var dy = this.velocity[1]
+    this.y = this.y + dy
+  }
+}
+/*function makeBall(isExplosive){
+  b = new ball();
+  b.explosive = (isExplosive == "e");
+  return b;
+}*/
+
+
+var view = {
+  gameWidth : 650,
+  gameHeight : 650, //TODO: figure out how to set these once, when the canvas is initialized
+  update: function(model){
+    //get the canvas/context:
+    var can = document.getElementById('mainCanvas');
+    var ctx = can.getContext("2d");
+
+    //clear the context:
+    //ctx.clearRect(0,0,this.gameWidth, this.gameHeight);
+    var balls = model.getBalls();
+
+    //Iterate through the balls and display their current attributes:
+    for(var j = 0, numBalls = balls.length; j < numBalls; j++){
+      ball = balls[j];
+      color = ball.color
+      ctx.fillStyle = color
+      ctx.fillRect(ball.x, ball.y, ball.diameter, ball.diameter);
+    }
+
+  }
+
+}
+setInterval(function(){update()}, 10);
+
+function update(){
+    model.update();
+    view.update(model);
+}
+</script>
+</html>
