@@ -19,12 +19,15 @@ var welcome = {
 };
 timeline.push(welcome);
 
-var mainCanvas = {
+var game = {
   type:"html-keyboard-response",
-  stimulus:"<canvas id='mainCanvas' height='650' width = '650'></canvas>"
+  h: 650,
+  w: 650,
+  stimulus: "<!--main canvas where game happens:-->" +
+  "<canvas id='mainCanvas' height='" + this.h + "' width = '" + this.w + "'></canvas>"
 
 };
-timeline.push(mainCanvas);
+timeline.push(game);
 
 /* CODE FROM THE JSPSYCH TUTORIAL:
 var blue_trial = {
@@ -82,9 +85,11 @@ jsPsych.init({
 
 
 /*--Game stuff:--*/
+
 var model = {
   //"e" is for explosive
   balls: [new ball(100,20), new ball(200,210,"e")],
+  walls: [new wall(0,0,0,game.w), new wall(0,0,0,game.h), new wall(0,game.h,game.w,0), new wall(game.w,0,0,game.h)], //default border walls of 0px
   getBalls: function(){return this.balls},
   update: function(){
 
@@ -259,22 +264,21 @@ function wall(x,y/*top left x and y*/, l, w/*length and width*/){
   this.l = l;
   this.w = w;
 
-  this.getX() = function(){return x}
-  this.getY() = function(){return y}
-  this.getL() = function(){return l}
-  this.getW() = function(){return w}
+  this.getX = function(){return x}
+  this.getY = function(){return y}
+  this.getL = function(){return l}
+  this.getW = function(){return w}
 }
 
 var view = {
-  gameWidth : 650,
-  gameHeight : 650, //TODO: figure out how to set these once, when the canvas is initialized
+
   update: function(model){
     //get the canvas/context:
     var can = document.getElementById('mainCanvas');
     var ctx = can.getContext("2d");
 
     //clear the context:
-    ctx.clearRect(0,0, 650, 650);
+    ctx.clearRect(0,0, game.width, game.height);
     var balls = model.getBalls();
 
     //Iterate through the balls and display their current attributes:
