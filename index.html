@@ -83,40 +83,152 @@ jsPsych.init({
 
 /*--Game stuff:--*/
 var model = {
+  //"e" is for explosive
   balls: [new ball(100,20), new ball(200,210,"e")],
   getBalls: function(){return this.balls},
   update: function(){
+
+    /*update the balls*/
+    var ballPositions = []; //store all the ball and wall positions to check collisions
+    var wallPositions = [];
     for(var i = 0, numBalls = this.balls.length; i < numBalls; i++){
-      this.balls[i].update()
+
+      var ball = this.balls[i];
+      cur_x = ball.getX();
+      cur_y = ball.getY();
+
+
+      //check for collision with any previously updated balls:
+      var ballCollided = false;
+      for(var k = 0, updBalls = ballPositions.length; k < updBalls && !isCollided/*it will stop on collisions*/; k++){
+        x_diff = cur_x - updBalls[k].getPos()[0];
+        y_diff = cur_y - updBalls[k].getPos()[1];
+        distance = Math.pow(x_diff, 2) + Math.pow(y_diff, 2);
+        if((distance < ball.radius) || (distance < updBalls[k].radius)){
+          ballCollided == true;
+          controller.ballCollided(ball, "ball");
+        }
+      }
+
+      //check for collision with any previously updated walls:
+      var wallCollided = false;
+      for(var k = 0, numWalls = wallPositions.length; k < updBalls && !isCollided/*it will stop on collisions*/; k++){
+        wall_x = wall.getX()
+        wall_y = wall.getY()
+        wall_l = wall.getL()
+        wall_w = wall.getW()
+
+        rad = ball.getRadius()
+
+        highestPointInBall = cur_y - rad //remember, lower points have higher y values; it's the opposite of standard cartesian
+        lowestPointInBall = cur_y + rad  //also, note these aren't really points. the x value doesn't matter for these in later calculations so
+        leftestPointInBall = cur_x - rad //only the y values is taken
+        rightestPointInBall = cur_x + rad
+
+        highestPointInWall = wall_y
+        lowestPointInWall = wall_y + wall_l
+        leftestPointInWall = wall_x
+        rightestPointInWall = wall_x+w
+
+
+        ballIsWithinWallY = ((lowestPointInBall >= highestPointInWall) && (lowestPointInBall <= lowestPointInWall)   //lowest point in ball is within vertical bounds of wall?
+                                                                       ||
+                            (highestPointInBall >= highestPointInWall) && (highestPointInBall <= lowestPointInWall)) //highest point in ball is within vertical bounds of wall?
+
+
+
+        ballIsWithinWallX = ((rightestPointInBall >= leftestPointInWall) && (rightestPointInBall <= rightestPointInWall)
+                                                                         ||                                          //same but with the x-axis
+                              (leftestPointInBall >= leftestPointInWall) && (leftestPointInBall <= rightestPointInWall))
+
+
+        if(ballIsWithinWallX && ballIsWithinWallY){
+          wallCollided == true;
+          controller.ballCollided(ball, "wall");
+        }
+      }
+
+      /*update x-axis position using differential equation dx/dt = v*/
+      var dx = this.velocity[0] // * dt, but let's just say dt is 1
+      this.x = this.x + dx
+
+      var dy = this.velocity[1]
+      this.y = this.y + dy;
+      this.balls[i].setX(new_x);
+      this.balls[i].setY(new_y);
+
+      console.assert((ball.getX() == new_x) && (ball.getY() == new_y))
+      ballPositions.push([new_x, new_y]);
+
     }
   }
 }
 
-
+//constructor for balls: (x and y are initial position)
 function ball(x, y, isExplosive) {
+  this.color = "#AAABC8"
+  this.getColor = function() {return this.color}
+
+  this.explosive = (isExplosive == "e")
+
+  this.collided = false
+  this.getCollided = function(){return this.collided}
+  this.setCollided = function(val, collision_type){
+    this.collided = val
+    if(val == true){this.onCollide()}
+  }
+  this.onCollide = function(collision_type){
+    this.color = "#FF0000"
+    if(collision_type == "wall") {
+      //maybe implement three strikes before dying?
+      this.wallCollider.collide(this.x, this.y);
+    } else if (collision_type = "ball") {
+        controller.ballCollided();
+    }
+  }
+  this.wallCollider = (this.explosive) ? new wallExplodeAnimation() : new standardWallCollideAnimation();
   this.radius = 10
+  this.getRadius = function(){return this.radius}
+  this.velocity = [0.9,0.9] //x and y components of velocity, respectively
   this.x = x//Math.random()*view.gameWidth
   this.x_prev = null, //previous position is important to calculate angle of movement
   this.y = y//Math.random()* view.gameHeight
   this.y_prev = null
-  this.velocity = [0.9,0.9] //x and y components of velocity, respectively
-  this.color = "#AAABC8"
-  this.explosive = (isExplosive == "e")
-  this.update = function() {
-    /*update x-axis position using differential equation dx/dt = v*/
-    var dx = this.velocity[0] // * dt, but let's just say dt is 1
-    this.x = this.x + dx
-
-    var dy = this.velocity[1]
-    this.y = this.y + dy
+  this.getX = function(){return this.x, this.y]};
+  this.getPrevPos = function(){return [this.x_prev, this.y_prev]};
+  this.setX = function(new_x){
+    this.x_prev = this.x
+    this.x = new_x
   }
-}
-/*function makeBall(isExplosive){
-  b = new ball();
-  b.explosive = (isExplosive == "e");
-  return b;
-}*/
+  this.setY = function(new_y){
+    y_prev = this.y
+    this.y = new_y
+  }
 
+
+  this.getVelocity = function(){return velocity};
+}
+
+function standardWallCollideAnimation(){
+    this.collide = function(x,y){ };
+}
+
+function wallExplodeAnimation(){
+    this.collide = function(x,y) {alert("exploding at " + x + ", " + y)}
+}
+
+function wall(x,y/*top left x and y*/, l, w/*length and width*/){
+
+  this.x = x;
+  this.y = y;
+  this.l = l;
+  this.w = w;
+
+  this.getX() = function(){return x}
+  this.getY() = function(){return y}
+  this.getL() = function(){return l}
+  this.getW() = function(){return w}
+}
 
 var view = {
   gameWidth : 650,
@@ -133,7 +245,7 @@ var view = {
     //Iterate through the balls and display their current attributes:
     for(var j = 0, numBalls = balls.length; j < numBalls; j++){
       ball = balls[j];
-      color = ball.color
+      color = ball.getColor
 
       ctx.beginPath();
       ctx.fillStyle = color
@@ -145,6 +257,13 @@ var view = {
   }
 
 }
+
+var controller = {
+  ballCollided: function(ball, ballorwall){
+    ball.setCollided(true, ballorwall)
+  }
+}
+
 setInterval(function(){update()}, 10);
 
 function update(){
