@@ -19,12 +19,12 @@ var welcome = {
 };
 timeline.push(welcome);
 
+/*width and height: */
+w=650; h=650
 var game = {
   type:"html-keyboard-response",
-  h: 650,
-  w: 650,
   stimulus: "<!--main canvas where game happens:-->" +
-  "<canvas id='mainCanvas' height='" + this.h + "' width = '" + this.w + "'></canvas>"
+  "<canvas id='mainCanvas' height='" + h + "' width = '" + w + "'></canvas>"
 
 };
 timeline.push(game);
@@ -89,7 +89,7 @@ jsPsych.init({
 var model = {
   //"e" is for explosive
   balls: [new ball(100,20), new ball(200,210,"e")],
-  walls: [new wall(0,0,0,game.w), new wall(0,0,0,game.h), new wall(0,game.h,game.w,0), new wall(game.w,0,0,game.h)], //default border walls of 0px
+  walls: [new wall(0,0,0,game.w), new wall(0,0,0,h), new wall(0,h,w,0), new wall(w,0,0,h)], //default border walls of 0px
   getBalls: function(){return this.balls},
   update: function(){
 
@@ -278,7 +278,7 @@ var view = {
     var ctx = can.getContext("2d");
 
     //clear the context:
-    ctx.clearRect(0,0, game.width, game.height);
+    ctx.clearRect(0,0, w, h);
     var balls = model.getBalls();
 
     //Iterate through the balls and display their current attributes:
