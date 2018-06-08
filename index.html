@@ -94,12 +94,12 @@ var model = {
 
 
 function ball(x, y, isExplosive) {
-  this.diameter = 20
+  this.radius = 10
   this.x = x//Math.random()*view.gameWidth
   this.x_prev = null, //previous position is important to calculate angle of movement
   this.y = y//Math.random()* view.gameHeight
   this.y_prev = null
-  this.velocity = [1,1] //x and y components of velocity, respectively
+  this.velocity = [0.9,0.9] //x and y components of velocity, respectively
   this.color = "#AAABC8"
   this.explosive = (isExplosive == "e")
   this.update = function() {
@@ -127,15 +127,19 @@ var view = {
     var ctx = can.getContext("2d");
 
     //clear the context:
-    //ctx.clearRect(0,0,this.gameWidth, this.gameHeight);
+    ctx.clearRect(0,0, 650, 650);
     var balls = model.getBalls();
 
     //Iterate through the balls and display their current attributes:
     for(var j = 0, numBalls = balls.length; j < numBalls; j++){
       ball = balls[j];
       color = ball.color
+
+      ctx.beginPath();
       ctx.fillStyle = color
-      ctx.fillRect(ball.x, ball.y, ball.diameter, ball.diameter);
+      ctx.arc(ball.x, ball.y, ball.radius, 0, 2*Math.PI);
+      ctx.fill();
+      ctx.closePath();
     }
 
   }
