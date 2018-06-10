@@ -24,7 +24,7 @@ w=650; h=650
 var game = {
   type:"html-keyboard-response",
   stimulus: "<!--main canvas where game happens:-->" +
-  "<canvas id='mainCanvas' height='" + h + "' width = '" + w + "'></canvas>"
+  "<canvas id='mainCanvas' height='" + h + "' width = '" + w + "'></canvas>" + "<button onclick='beginGame()'>S T A R T</button>"
 
 };
 timeline.push(game);
@@ -88,14 +88,19 @@ jsPsych.init({
 
 var model = {
   //"e" is for explosive
-  balls: [new ball(100,20), new ball(200,210,"e")],
-  walls: [new wall(0,0,0,game.w), new wall(0,0,0,h), new wall(0,h,w,0), new wall(w,0,0,h)], //default border walls of 0px
+  balls: [new ball(100,20), new ball(200,210,"e"), new ball(200,20), new ball(20,210,"e"), new ball(10,21), new ball(50,50, new ball(400,20), new ball(300,210,"e"))],
+  //MAKE SURE TO NOT MAKE THE WIDTHS NEGATIVE - THE wall.highestPoint, leftestPoint, etc. methods will not work if they
+  //are negative. It may be a good idea to make those methods work with negative values, but it seems that would be less
+  //efficient because more steps would be involved in those methods, which are called a lot. It also may be good to have
+  //the highestPoint, lowestPoint, etc. methods of the four walls at the edges of the canvas only be called once instead
+  //of for every ball in every update.
+  walls: [new wall(0,0,w,1), new wall(0,0,1,h), new wall(0,h-2,w,1), new wall(w-2,0,1,h)], //default border walls of 0px
   getBalls: function(){return this.balls},
   update: function(){
 
     /*update the balls*/
     var ballPositions = []; //store all the ball and wall positions to check collisions
-    var wallPositions = [];
+
     for(var i = 0, numBalls = this.balls.length; i < numBalls; i++){
 
       var ball = this.balls[i];
@@ -113,13 +118,15 @@ var model = {
         //assuming all balls have the same radius! that seems fine for the purpose of this experiment (and is much better for efficiency):
         if(distance < ball.getRadius()){
           ballCollided == true;
-          controller.ballCollided(ball, "ball");
+          ball.setCollided(true, "ball");
         }
       }
 
       //check for collision with any previously updated walls:
       var wallCollided = false;
-      for(var k = 0, numWalls = wallPositions.length; k < numWalls; k++){
+
+      for(var k = 0, numWalls = this.walls.length; k < numWalls; k++){
+        wall = this.walls[k]
         wall_x = wall.getX()
         wall_y = wall.getY()
         wall_l = wall.getL()
@@ -127,42 +134,43 @@ var model = {
 
         rad = ball.getRadius()
 
-        highestPointInBall = cur_y - rad //remember, lower points have higher y values; it's the opposite of standard cartesian
-        lowestPointInBall = cur_y + rad  //also, note these aren't really points. the x value doesn't matter for these in later calculations so
-        leftestPointInBall = cur_x - rad //only the y values is taken
-        rightestPointInBall = cur_x + rad
+        var bh = ball.highestPoint()
+        var bl = ball.lowestPoint()
+        var be = ball.leftestPoint()
+        var br = ball.rightestPoint()
 
-        highestPointInWall = wall_y
-        lowestPointInWall = wall_y + wall_l
-        leftestPointInWall = wall_x
-        rightestPointInWall = wall_x+w
+        var wh = wall.highestPoint()
+        var wl = wall.lowestPoint()
+        var we = wall.leftestPoint()
+        var wr = wall.rightestPoint()
 
-
-        ballIsWithinWallY = ((lowestPointInBall >= highestPointInWall) && (lowestPointInBall <= lowestPointInWall)   //lowest point in ball is within vertical bounds of wall?
-                                                                       ||
-                            (highestPointInBall >= highestPointInWall) && (highestPointInBall <= lowestPointInWall)) //highest point in ball is within vertical bounds of wall?
-
+        ballIsWithinWallY = ((bl >= wh) && (bl <= wl)   //lowest point in ball is within vertical bounds of wall?
+                                        ||
+                             (bh >= wh) && (bh <= wl))  //highest point in ball is within vertical bounds of wall?
 
 
-        ballIsWithinWallX = ((rightestPointInBall >= leftestPointInWall) && (rightestPointInBall <= rightestPointInWall)
-                                                                         ||                                          //same but with the x-axis
-                              (leftestPointInBall >= leftestPointInWall) && (leftestPointInBall <= rightestPointInWall))
+        ballIsWithinWallX = ((br >= we) && (br <= wr)
+                                        ||             //same but with the x-axis
+                             (be >= we) && (be <= wr))
 
 
-        if(ballIsWithinWallX && ballIsWithinWallY){
+
+        if(ballIsWithinWallX && ballIsWithinWallY){ //there was a collision!
           wallCollided == true;
-          controller.ballCollided(ball, "wall");
+          ball.setCollided(true, "wall");
 
           //multiply the velocity by -1 on appropriate axis. but how do we find the appropriate axis?:
             //by looking for the side of the wall it's closest to
-            var highWallDistance = Math.abs(cur_y - highestPointInWall)
-            var lowWallDistance = Math.abs(cur_y - lowestPointInWall)
-            var leftestWallDistance = Math.abs(cur_x - leftestPointInWall)
-            var rightestWallDistance = Math.abs(cur_x - rightestPointInWall)
-            var wallDistances = [highWallDistance, lowWallDistance, leftestWallDistance, rightestWallDistance]
+            var highWallDistance = Math.abs(cur_y - wh)
+            var lowWallDistance = Math.abs(cur_y - wl)
+            var leftWallDistance = Math.abs(cur_x - we)
+            var rightWallDistance = Math.abs(cur_x - wr)
+            var wallDistances = [highWallDistance, lowWallDistance, leftWallDistance, rightWallDistance]
 
             closestWallDistance = wallDistances[0] //initialize it with the first value of the wallDistances array.
                                                    //^this makes sense because of how the loop will iterate:
+            //closestWall = "aVerticalWall"
+
             for(var l = 1; l < 4; l++){
               if(wallDistances[l]/*l starts at 1*/  < closestWallDistance){
                 closestWallDistance = wallDistances[l];
@@ -172,10 +180,10 @@ var model = {
         //now multiply the appropriate component of velocity
         vel = ball.getVelocity();
         if((closestWallDistance == highWallDistance) || (closestWallDistance == lowWallDistance)){
-          ball.setVelocity(vel[0], -vel[1])
+          ball.setVelocity([vel[0], -vel[1]])
         } else if ((closestWallDistance == leftWallDistance) || (closestWallDistance == rightWallDistance)) {
           //because it's else if, the upper and lower edges will be prioritized if two of the distances are equal
-          ball.setVelocity(-vel[0], vel[1])
+          ball.setVelocity([-vel[0], vel[1]])
         }
 
         }
@@ -218,14 +226,14 @@ function ball(x, y, isExplosive) {
     if(collision_type == "wall") {
       //maybe implement three strikes before dying?
       this.wallCollider.collide(this.x, this.y);
-    } else if (collision_type = "ball") {
-        controller.ballCollided();
+    } else if (collision_type == "ball") {
+        controller.ballHitBall();
     }
   }
   this.wallCollider = (this.explosive) ? new wallExplodeAnimation() : new standardWallCollideAnimation();
   this.radius = 10
   this.getRadius = function(){return this.radius}
-  this.velocity = [0.9,0.9] //x and y components of velocity, respectively
+  this.velocity = [1-Math.random()*2,1-Math.random()*2] //x and y components of velocity, respectively
   this.x = x//Math.random()*view.gameWidth
   this.x_prev = null, //previous position is important to calculate angle of movement
   this.y = y//Math.random()* view.gameHeight
@@ -246,9 +254,15 @@ function ball(x, y, isExplosive) {
 
 
   this.getVelocity = function(){return this.velocity};
-}
+
   this.setVelocity = function(v){this.velocity = v};
 
+  this.highestPoint = function(){return this.y - this.radius}
+  this.lowestPoint = function(){return this.y + this.radius}
+  this.leftestPoint = function() {return this.x - this.radius}
+  this.rightestPoint = function() {return this.x + this.radius}
+
+  }
 function standardWallCollideAnimation(){
     this.collide = function(x,y){ };
 }
@@ -257,17 +271,22 @@ function wallExplodeAnimation(){
     this.collide = function(x,y) {alert("exploding at " + x + ", " + y)}
 }
 
-function wall(x,y/*top left x and y*/, l, w/*length and width*/){
+function wall(x,y/*top left x and y*/, w, l/*length and width*/){
 
   this.x = x;
   this.y = y;
-  this.l = l;
   this.w = w;
+  this.l = l;
 
   this.getX = function(){return x}
   this.getY = function(){return y}
   this.getL = function(){return l}
   this.getW = function(){return w}
+
+  this.highestPoint = function(){return y}
+  this.lowestPoint = function(){return y+l}
+  this.leftestPoint = function(){return x}
+  this.rightestPoint = function(){return x+w}
 }
 
 var view = {
@@ -292,19 +311,31 @@ var view = {
       ctx.closePath();
     }
 
+    for(var j = 0, numWalls = model.walls.length; j < numWalls; j++){
+      wall = model.walls[j];
+      color = "green"
+      ctx.beginPath();
+      ctx.fillStyle = color
+      //alert(wall.getX() + " " + wall.getY() + ", " + wall.getW() + " " + wall.getL())
+      ctx.rect(wall.getX(), wall.getY(), wall.getW(), wall.getL())
+      ctx.fill();
+      ctx.closePath();
+    }
+
   }
 
 }
 
 var controller = {
-  ballCollided: function(ball, ballorwall){
-    ball.setCollided(true, ballorwall)
-  }
+  ballHitBall : function(){alert("gameOver")}
 }
 
-setInterval(function(){update()}, 10);
+beginGame = function(){
+  setInterval(function(){
+    updateGame()}, 10);
+}
 
-function update(){
+function updateGame(){
     model.update();
     view.update(model);
 }
