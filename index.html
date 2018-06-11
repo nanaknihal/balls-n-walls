@@ -88,12 +88,12 @@ jsPsych.init({
 
 var model = {
   //"e" is for explosive
-  balls: [new ball(100,20), new ball(200,210,"e"), new ball(200,20), new ball(20,210,"e"), new ball(10,21), new ball(50,50, new ball(400,20), new ball(300,210,"e"))],
+  balls: [new ball(100,220), new ball(200,210,"e"), new ball(200,100), new ball(87,210,"e"), new ball(100,100), new ball(50,50, new ball(400,30), new ball(300,210,"e"))],
   //MAKE SURE TO NOT MAKE THE WIDTHS NEGATIVE - THE wall.highestPoint, leftestPoint, etc. methods will not work if they
   //are negative. It may be a good idea to make those methods work with negative values, but it seems that would be less
   //efficient because more steps would be involved in those methods, which are called a lot. It also may be good to have
   //the highestPoint, lowestPoint, etc. methods of the four walls at the edges of the canvas only be called once instead
-  //of for every ball in every update.
+  //of for every ball in every update. Also make sure the balls are not already touching the walls upon initialization
   walls: [new wall(0,0,w,1), new wall(0,0,1,h), new wall(0,h-2,w,1), new wall(w-2,0,1,h)], //default border walls of 0px
   getBalls: function(){return this.balls},
   update: function(){
@@ -127,18 +127,22 @@ var model = {
       var wallCollided = false;
 
       for(var k = 0, numWalls = this.walls.length; k < numWalls; k++){
+
         wall = this.walls[k]
+
+
         wall_x = wall.getX()
         wall_y = wall.getY()
         wall_l = wall.getL()
         wall_w = wall.getW()
 
+
         rad = ball.getRadius()
 
-        var bh = ball.highestPoint()
-        var bl = ball.lowestPoint()
-        var be = ball.leftestPoint()
-        var br = ball.rightestPoint()
+        //var bh = ball.highestPoint()
+        //var bl = ball.lowestPoint()
+        //var be = ball.leftestPoint()
+        //var br = ball.rightestPoint()
 
         var wh = wall.highestPoint()
         var wl = wall.lowestPoint()
@@ -172,8 +176,6 @@ var model = {
 
 
 
-            ballIsWithinWallX = false
-            ballIsWithinWallY = false
 
 
         if(collidingWVert || collidingWHori){
