@@ -24,10 +24,10 @@ w=650; h=650
 var game = {
   type:"html-keyboard-response",
   stimulus: "<!--main canvas where game happens:-->" +
-  "<canvas id='mainCanvas' style='position:relative' height='" + h + "' width = '" + w + "'></canvas>" + "<button onclick='beginGame()'>S T A R T</button>"
+  "<canvas id='mainCanvas' height='" + h + "' width = '" + w + "'></canvas>" + "<button onclick='beginGame()'>S T A R T</button>"
   +
   "<!--overlay canvas that doesn't need to be refreshed constantly:-->" +
-  "<canvas id='overlay' style='position:absolute' height='" + h + "' width = '" + w + "'></canvas>"
+  "<canvas id='overlay' style='position:absolute; left: 0; top: 0; z-index:1' height='" + h + "' width = '" + w + "'></canvas>"
 
 };
 timeline.push(game);
@@ -123,11 +123,6 @@ var model = {
         rad = ball.getRadius();
         if(distance < rad){
           ballCollided == true;
-
-          //modify ball's velocity accordingly after collision:
-          //use conservation of momentum:
-          mv_x = mass*velocity[0]
-          mv_y = mass*velocity[1]
           ball.collide("ball");
 
         }
@@ -386,6 +381,7 @@ var controller = {
 
 beginGame = function(){
   view.init();
+  alert(document.getElementById('mainCanvas').style.zIndex)
   setInterval(function(){
     updateGame()}, 10);
 }
