@@ -15,7 +15,7 @@ var timeline = []
 
 var welcome = {
   type:"html-keyboard-response",
-  stimulus:"Welcome to the experiment. Press any key to begin"
+  stimulus:"Welcome to the game. Press any key to begin"
 };
 timeline.push(welcome);
 
@@ -116,9 +116,10 @@ var model = {
         distance = Math.pow(x_diff, 2) + Math.pow(y_diff, 2);
 
         //assuming all balls have the same radius! that seems fine for the purpose of this experiment (and is much better for efficiency):
-        if(distance < ball.getRadius()){
+        rad = ball.getRadius();
+        if(distance < rad){
           ballCollided == true;
-          ball.setCollided(true, "ball");
+          ball.collide("ball");
         }
       }
 
@@ -144,23 +145,42 @@ var model = {
         var we = wall.leftestPoint()
         var wr = wall.rightestPoint()
 
-        ballIsWithinWallY = ((bl >= wh) && (bl <= wl)   //lowest point in ball is within vertical bounds of wall?
-                                        ||
-                             (bh >= wh) && (bh <= wl))  //highest point in ball is within vertical bounds of wall?
+        /*WHEN A BALL INTERSECTS WITH A WALL:
+          one of the rectangle's four edges is within the circle's area (closer to the center than the circle).
+          When this happens, the circle's center will be closer to a vertical wall's x coordinate than it's radius is
+          AND the circle's highest or lowest point will be within the wall's highest and lowest points
+
+          OR
+
+          vice versa with horizontal walls and y coordinates vs. x coordinates
+        */
+
+        //NOTE: the following only works with walls that are thinner than the ball. This is a simplifying assumption. There should never be walls
+        //thicker than the balls
+        collidingWVert = (Math.abs(cur_x - wall_x) < rad) || (Math.abs(cur_x - (wall_x+wall_w)) < rad) //either of the walls' sides
+                                                                                                       //x coordinate is closer to the center
+                                                                                                       //than the radius is
+
+        collidingWHori = (Math.abs(cur_y - wall_y) < rad) || (Math.abs(cur_y - (wall_y+wall_l)) < rad) //same but with y
+
+        //NOTE: the following only works with walls without negative coordinates, lengths, and widths. making walls like that is unecessary
+        //and would necesitate a slower algorithm here, whereas converting negative coordinates to positive coordinates once, upon construction,
+        //is more efficient. This is called for every ball and every wall at every update!:
+//TRY THIS:  //centerIsWithinWallY = (cur_y >= wh) && (cur_x <= wl)
+            //centerIsWithinWallX = (cur_x >= we) && (cur_x <= wr)
 
 
-        ballIsWithinWallX = ((br >= we) && (br <= wr)
-                                        ||             //same but with the x-axis
-                             (be >= we) && (be <= wr))
 
 
+            ballIsWithinWallX = false
+            ballIsWithinWallY = false
 
-        if(ballIsWithinWallX && ballIsWithinWallY){ //there was a collision!
+
+        if(collidingWVert || collidingWHori){
           wallCollided == true;
-          ball.setCollided(true, "wall");
-
+          ball.collide("wall");
           //multiply the velocity by -1 on appropriate axis. but how do we find the appropriate axis?:
-            //by looking for the side of the wall it's closest to
+            //by looking for the side of the wall the ball is closest to
             var highWallDistance = Math.abs(cur_y - wh)
             var lowWallDistance = Math.abs(cur_y - wl)
             var leftWallDistance = Math.abs(cur_x - we)
@@ -215,11 +235,8 @@ function ball(x, y, isExplosive) {
 
   this.explosive = (isExplosive == "e")
 
-  this.collided = false
-  this.getCollided = function(){return this.collided}
-  this.setCollided = function(val, collision_type){
-    this.collided = val
-    if(val == true){this.onCollide()}
+  this.collide = function(collision_type){
+    this.onCollide(collision_type)
   }
   this.onCollide = function(collision_type){
     this.color = "#FF0000"
@@ -231,7 +248,7 @@ function ball(x, y, isExplosive) {
     }
   }
   this.wallCollider = (this.explosive) ? new wallExplodeAnimation() : new standardWallCollideAnimation();
-  this.radius = 10
+  this.radius = 20
   this.getRadius = function(){return this.radius}
   this.velocity = [1-Math.random()*2,1-Math.random()*2] //x and y components of velocity, respectively
   this.x = x//Math.random()*view.gameWidth
@@ -268,7 +285,9 @@ function standardWallCollideAnimation(){
 }
 
 function wallExplodeAnimation(){
-    this.collide = function(x,y) {alert("exploding at " + x + ", " + y)}
+    var img = "explosion.png"
+    duration = 20
+    this.collide = function(x,y) {view.showImgAtFor(img, x, y, duration)}
 }
 
 function wall(x,y/*top left x and y*/, w, l/*length and width*/){
@@ -291,11 +310,19 @@ function wall(x,y/*top left x and y*/, w, l/*length and width*/){
 
 var view = {
 
-  update: function(model){
-    //get the canvas/context:
-    var can = document.getElementById('mainCanvas');
-    var ctx = can.getContext("2d");
+  //get canvas, context
+  can: null,
+  ctx: null,
 
+  init: function(){
+    this.can = document.getElementById('mainCanvas')
+    this.ctx = this.can.getContext("2d")
+  },
+
+  update: function(model){
+
+    var can = this.can;
+    var ctx = this.ctx;
     //clear the context:
     ctx.clearRect(0,0, w, h);
     var balls = model.getBalls();
@@ -322,6 +349,16 @@ var view = {
       ctx.closePath();
     }
 
+  },
+
+  //img is a link to the image file
+  showImgAtFor: function(img, x, y, duration){
+    var imgElement = new Image();
+    imgElement.src = img;
+    imgElement.style.position = "absolute"
+    imgElement.style.left = "300"
+
+    document.body.appendChild(imgElement);
   }
 
 }
@@ -331,6 +368,7 @@ var controller = {
 }
 
 beginGame = function(){
+  view.init();
   setInterval(function(){
     updateGame()}, 10);
 }
