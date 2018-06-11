@@ -24,7 +24,10 @@ w=650; h=650
 var game = {
   type:"html-keyboard-response",
   stimulus: "<!--main canvas where game happens:-->" +
-  "<canvas id='mainCanvas' height='" + h + "' width = '" + w + "'></canvas>" + "<button onclick='beginGame()'>S T A R T</button>"
+  "<canvas id='mainCanvas' style='position:relative' height='" + h + "' width = '" + w + "'></canvas>" + "<button onclick='beginGame()'>S T A R T</button>"
+  +
+  "<!--overlay canvas that doesn't need to be refreshed constantly:-->" +
+  "<canvas id='overlay' style='position:absolute' height='" + h + "' width = '" + w + "'></canvas>"
 
 };
 timeline.push(game);
@@ -99,7 +102,8 @@ var model = {
   update: function(){
 
     /*update the balls*/
-    var ballPositions = []; //store all the ball and wall positions to check collisions
+    var updatedBalls = []; //to check for collisions, balls' positions will need to be compared to updated balls - not
+                           //non-updated balls.
 
     for(var i = 0, numBalls = this.balls.length; i < numBalls; i++){
 
@@ -110,16 +114,22 @@ var model = {
 
       //check for collision with any previously updated balls:
       var ballCollided = false;
-      for(var k = 0, updBalls = ballPositions.length; k < updBalls && !ballCollided/*it will stop on collisions*/; k++){
-        x_diff = cur_x - ballPositions[k][0];
-        y_diff = cur_y - ballPositions[k][0];
+      for(var k = 0, numUpdBalls = updatedBalls.length; k < numUpdBalls && !ballCollided/*it will stop on collisions*/; k++){
+        x_diff = cur_x - updatedBalls[k].getX();
+        y_diff = cur_y - updatedBalls[k].getY();
         distance = Math.pow(x_diff, 2) + Math.pow(y_diff, 2);
 
         //assuming all balls have the same radius! that seems fine for the purpose of this experiment (and is much better for efficiency):
         rad = ball.getRadius();
         if(distance < rad){
           ballCollided == true;
+
+          //modify ball's velocity accordingly after collision:
+          //use conservation of momentum:
+          mv_x = mass*velocity[0]
+          mv_y = mass*velocity[1]
           ball.collide("ball");
+
         }
       }
 
@@ -224,7 +234,7 @@ var model = {
       ball.setY(new_y);
 
       console.assert((ball.getX() == new_x) && (ball.getY() == new_y))
-      ballPositions.push([new_x, new_y]);
+      updatedBalls.push(ball);
 
     }
   }
@@ -355,12 +365,17 @@ var view = {
 
   //img is a link to the image file
   showImgAtFor: function(img, x, y, duration){
+    this.overlayCan = document.getElementById("overlay")
+    octx = this.overlayCan.getContext('2d')
+
     var imgElement = new Image();
     imgElement.src = img;
-    imgElement.style.position = "absolute"
-    imgElement.style.left = "300"
+    octx.drawImage(imgElement, x, y)
+    //setTimeout(octx.clearRect(x,y,imgElement.width, imgElement.height), duration)
+    //imgElement.style.position = "absolute"
+    //imgElement.style.top = "300"
+    //document.body.appendChild(imgElement);
 
-    document.body.appendChild(imgElement);
   }
 
 }
