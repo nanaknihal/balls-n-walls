@@ -126,7 +126,7 @@ var model = {
             this.pixelLimitExceeded = true;
           }
 
-          pixel
+
         }
       },
       getPixels : function(){return this.pixels},
@@ -342,7 +342,7 @@ function standardWallCollideAnimation(){
 
 function wallExplodeAnimation(){
     var img = "explosion.png"
-    duration = 20
+    duration = 2000
     this.collide = function(x,y) {view.showImgAtFor(img, x, y, duration)}
 }
 
@@ -431,7 +431,8 @@ var view = {
     var imgElement = new Image();
     imgElement.src = img;
     octx.drawImage(imgElement, x, y)
-    //setTimeout(octx.clearRect(x,y,imgElement.width, imgElement.height), duration)
+    //clear it after the duration's up:
+    setTimeout(function(){octx.clearRect(x,y,imgElement.width, imgElement.height)}, duration)
     //imgElement.style.position = "absolute"
     //imgElement.style.top = "300"
     //document.body.appendChild(imgElement);
