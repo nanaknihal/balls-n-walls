@@ -24,9 +24,10 @@ w=650; h=650
 var game = {
   type:"html-keyboard-response",
   stimulus: "<!--main canvas where game happens:-->" +
-  "<canvas id='mainCanvas' height='" + h + "' width = '" + w + "'></canvas>" + "<button onclick='beginGame()'>S T A R T</button>"
+  "<canvas id='mainCanvas' height='" + h + "' width = '" + w + "'></canvas>" + "<button onclick='controller.beginGame()'>S T A R T</button>"
   +
   "<!--overlay canvas that doesn't need to be refreshed constantly:-->" +
+  //it may be good to not hard-code the top and left value but rather use variables...this will be decided later when we do more styling
   "<canvas id='overlay' style='position:absolute; left: 0; top: 0; z-index:1' height='" + h + "' width = '" + w + "'></canvas>"
 
 };
@@ -92,12 +93,54 @@ jsPsych.init({
 var model = {
   //"e" is for explosive
   balls: [new ball(100,220), new ball(200,210,"e"), new ball(200,100), new ball(87,210,"e"), new ball(100,100), new ball(50,50, new ball(400,30), new ball(300,210,"e"))],
-  //MAKE SURE TO NOT MAKE THE WIDTHS NEGATIVE - THE wall.highestPoint, leftestPoint, etc. methods will not work if they
-  //are negative. It may be a good idea to make those methods work with negative values, but it seems that would be less
-  //efficient because more steps would be involved in those methods, which are called a lot. It also may be good to have
-  //the highestPoint, lowestPoint, etc. methods of the four walls at the edges of the canvas only be called once instead
-  //of for every ball in every update. Also make sure the balls are not already touching the walls upon initialization
-  walls: [new wall(0,0,w,1), new wall(0,0,1,h), new wall(0,h-2,w,1), new wall(w-2,0,1,h)], //default border walls of 0px
+
+
+  /*MAKE SURE TO NOT MAKE THE WIDTHS NEGATIVE - THE wall.highestPoint, leftestPoint, etc. methods will not work if they
+   *are negative. It may be a good idea to make those methods work with negative values, but it seems that would be less
+   *efficient because more steps would be involved in those methods, which are called a lot. It also may be good to have
+   *the highestPoint, lowestPoint, etc. methods of the four walls at the edges of the canvas only be called once instead
+   *of for every ball in every update. Also make sure the balls are not already touching the walls upon initialization*/
+   walls: [new wall(0,0,w,1), new wall(0,0,1,h), new wall(0,h-2,w,1), new wall(w-2,0,1,h)], //default border walls of 0px
+
+  /*USER OBSTACLE: a set of pixels that the user selected to be included in the "obstacle." The user probably sees this as
+   *"obstacle" as multiple obstacles, but the program treats them all as one. It doesn't care how the pixels are grouped,
+   *just where they are.
+   *
+   *The obstacle has a radius. If a ball is closer than ball.radius + obstacle.radius, a collision will be registered */
+
+    userObstacle : {
+      pixels : new Array(),
+      radius : 4,
+      maxPixels: 400,
+      pixelLimitExceeded: false,
+
+      addPixels : function(event){
+        //add them if they're not already in the pixels array AND the maximum number of pixels isn't exceeded
+        if(!this.pixels.includes([event.pageX, event.pageY]) && this.pixels.length <= this.maxPixels){
+          this.pixels.push([event.pageX, event.pageY])
+        } else if (this.pixels.length >= this.maxPixels) {
+          //if this is the first time exceeding the pixel limit:
+          if(!this.pixelLimitExceeded){
+            view.message("You can't use too much wall... that would make it easy")
+            //set it to true so this message only displays once:
+            this.pixelLimitExceeded = true;
+          }
+
+          pixel
+        }
+      },
+      getPixels : function(){return this.pixels},
+      getRadius : function(){return this.radius}
+    },
+
+
+  //not necessary to have this function but it's good encapsulation and helps with Law of Demeter (even though it technically violates it)
+  //if efficiency is a concern, we can get rid of it:
+  addPixelsToUserObstacle : function(event){
+    model.userObstacle.addPixels(event)
+  },
+
+
   getBalls: function(){return this.balls},
   update: function(){
 
@@ -112,21 +155,27 @@ var model = {
       cur_y = ball.getY();
 
 
+
       //check for collision with any previously updated balls:
+      //commenting this out because we don't need collisions (maybe will implement later)
+      /*
       var ballCollided = false;
-      for(var k = 0, numUpdBalls = updatedBalls.length; k < numUpdBalls && !ballCollided/*it will stop on collisions*/; k++){
+      //assuming all balls have same, constant radius! that seems fine for the purpose of this experiment (and is much better for efficiency):
+      rad = ball.getRadius();
+      rad2 = rad*rad;
+      for(var k = 0, numUpdBalls = updatedBalls.length; k < numUpdBalls && !ballCollided/*it will stop on collisions; k++){
         x_diff = cur_x - updatedBalls[k].getX();
         y_diff = cur_y - updatedBalls[k].getY();
         distance = Math.pow(x_diff, 2) + Math.pow(y_diff, 2);
 
-        //assuming all balls have the same radius! that seems fine for the purpose of this experiment (and is much better for efficiency):
-        rad = ball.getRadius();
-        if(distance < rad){
+
+
+        if(distance < rad2){
           ballCollided == true;
           ball.collide("ball");
 
         }
-      }
+      }*/
 
       //check for collision with any previously updated walls:
       var wallCollided = false;
@@ -356,6 +405,22 @@ var view = {
       ctx.closePath();
     }
 
+    for(var j = 0, ob = model.userObstacle, pix = ob.getPixels(), numPix = pix.length, rad = ob.getRadius(); j<numPix; j++){
+      //get x and y values of the pixel
+      x = pix[j][0]
+      y = pix[j][1]
+
+      color = "maroon"
+      //draw circles of radius rad around each pixel
+      ctx.beginPath()
+      ctx.fillStyle = color
+      ctx.arc(x, y, rad, 0, 2*Math.PI)
+      ctx.fill()
+      ctx.closePath()
+
+    }
+
+
   },
 
   //img is a link to the image file
@@ -371,24 +436,56 @@ var view = {
     //imgElement.style.top = "300"
     //document.body.appendChild(imgElement);
 
-  }
+  },
+
+  //display a message to the player
+  message: function(msg){alert(msg)}
 
 }
 
 var controller = {
-  ballHitBall : function(){alert("gameOver")}
+
+  can : null,
+  ctx : null,
+
+  beginGame : function(){
+    view.init();
+    setInterval(function(){
+      updateGame()}, 10);
+
+    controller.loadCanvas();
+    this.getWallsFromUser();
+    },
+
+  ballHitBall : function(){console.log("Game Over")},
+
+  loadCanvas : function(){this.can = document.getElementById("mainCanvas"); this.ctx = this.can.getContext("2d")},
+
+  getWallsFromUser : function(){
+    //first, add the event listener for mouseclicks
+    document.addEventListener("mousedown", this.findWallDrawingPath);
+  },
+
+  findWallDrawingPath : function(event){
+    //first, collect the first pixel:
+    model.addPixelsToUserObstacle(event)
+    //this.collectWallData()
+    console.log(event.pageX)
+    document.addEventListener("mousemove", model.addPixelsToUserObstacle);
+    //get rid of the mousemove listener when the mouse is released:
+    document.addEventListener("mouseup", function(){document.removeEventListener("mousemove", model.addPixelsToUserObstacle)})
+
+  },
+
+
+
 }
 
-beginGame = function(){
-  view.init();
-  alert(document.getElementById('mainCanvas').style.zIndex)
-  setInterval(function(){
-    updateGame()}, 10);
-}
 
 function updateGame(){
     model.update();
     view.update(model);
+
 }
 </script>
 </html>
