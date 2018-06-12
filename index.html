@@ -91,6 +91,7 @@ jsPsych.init({
 /*--Game stuff:--*/
 
 var model = {
+  gameOver: false,
   //"e" is for explosive
   balls: [new ball(100,220), new ball(200,210,"e"), new ball(200,100), new ball(87,210,"e"), new ball(100,100), new ball(50,50, new ball(400,30), new ball(300,210,"e"))],
 
@@ -281,6 +282,9 @@ var model = {
       updatedBalls.push(ball);
 
     }
+
+    this.checkForObstacleCollisions = function(){console.log("test")}
+    this.checkForObstacleCollisions()
   }
 }
 
@@ -451,11 +455,9 @@ var controller = {
 
   beginGame : function(){
     view.init();
-    setInterval(function(){
-      updateGame()}, 10);
-
     controller.loadCanvas();
-    this.getWallsFromUser();
+    updateGame();
+    this.getWallsFromUser(); //this adds an Event Listener
     },
 
   ballHitBall : function(){console.log("Game Over")},
@@ -484,9 +486,13 @@ var controller = {
 
 
 function updateGame(){
-    model.update();
-    view.update(model);
-
+  window.requestAnimationFrame(function(){
+    if(!model.gameOver){
+      model.update();
+      view.update(model);
+      window.requestAnimationFrame(updateGame)
+    }
+  })
 }
 </script>
 </html>
