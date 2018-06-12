@@ -145,6 +145,7 @@ var model = {
   getBalls: function(){return this.balls},
   update: function(){
 
+    this.checkForWallCollisions = function(){
     /*update the balls*/
     var updatedBalls = []; //to check for collisions, balls' positions will need to be compared to updated balls - not
                            //non-updated balls.
@@ -265,26 +266,56 @@ var model = {
 
         }
       }
-
-
-
-      /*update x-axis position using differential equation dx/dt = v_x*/
-
-      var dx = ball.getVelocity()[0] // * dt, but let's just say dt is 1
-      new_x = cur_x + dx; //Combining this line and the next would increase performanc and readability,
-      ball.setX(new_x) //but they're separate for the upcoming assert test so it can use new_x
-
-      var dy = ball.getVelocity()[1]
-      new_y = cur_y + dy
-      ball.setY(new_y);
-
-      console.assert((ball.getX() == new_x) && (ball.getY() == new_y))
+      //move the ball one increment after setting its velocity (or leaving it):
+      ball.move()
       updatedBalls.push(ball);
-
+    }
     }
 
-    this.checkForObstacleCollisions = function(){console.log("test")}
+    this.checkForObstacleCollisions = function(){
+      //iterate through all the balls and pixels
+      for(var i = 0, numBalls = this.balls.length; i < numBalls; i++){
+        ball = this.balls[i]
+        for(var j = 0, ob = model.userObstacle, pix = ob.getPixels(), numPix = pix.length; j<numPix; j++){
+          //if the pixel is within the ball's radius:
+            a = Math.abs(pix[j][0] - ball.getX())
+            b = Math.abs(pix[j][1] - ball.getY())
+            c = ball.getRadius() + ob.getRadius()
+            if(a*a + b*b <= c*c){
+              //collision has happened! change ball's velocity accordingly:
+              //find the neighboring two pixels to calculate the angle of collision at a "miniwall" of 3 pixels:
+              p0 = (j == 0 ? pix[j] : pix[j-1]) //if j's 0, there is no pix[j-1] so it should use pix[j] as the starting point
+              p1 = (j < numPix-1 ? pix[j+1] : pix[j])
+
+              miniWallXComponent = p1[0]-p0[0] //make sure these work with negative x or y components
+              miniWallYComponent = p1[1]-p1[1]
+              //arctan of y comp / x comp:
+              miniWallAngleFromXAxis = Math.atan2(miniWallYComponent, miniWallYComponent)
+              miniWallAngleFromYAxis = Math.PI/2-miniWallAngleFromXAxis
+
+              vi = ball.getVelocity()
+              viAngleFromYAxis = Math.atan2(vi[0], vi[1])
+
+              angleBetweenViAndObstaclePoint = miniWallAngleFromYAxis - viAngleFromYAxis //this equals angle_between_vf_and_obstacle_point
+                                                                                              //(which isn't an actual variable here)
+
+              angleBetweenVfAndXAxis = Math.PI/2 + miniWallAngleFromXAxis - angleBetweenViAndObstaclePoint //this is easier to see visually
+
+              vMagnitude = Math.sqrt(vi[0]*vi[0] + vi[1]*vi[1]) //Pythagorean theorem
+
+              vfX = vMagnitude * Math.cos(angleBetweenVfAndXAxis)
+              vfY = vMagnitude * Math.sin(angleBetweenVfAndXAxis)
+              ball.setVelocity(vfX, vfY)
+              ball.move()
+            }
+        }
+      }
+
+    }
+    this.checkForWallCollisions()
     this.checkForObstacleCollisions()
+
+
   }
 }
 
@@ -312,20 +343,20 @@ function ball(x, y, isExplosive) {
   this.getRadius = function(){return this.radius}
   this.velocity = [1-Math.random()*2,1-Math.random()*2] //x and y components of velocity, respectively
   this.x = x//Math.random()*view.gameWidth
-  this.x_prev = null, //previous position is important to calculate angle of movement
+  //this.x_prev = null, //previous position is important to calculate angle of movement
   this.y = y//Math.random()* view.gameHeight
-  this.y_prev = null
+  //this.y_prev = null
   this.getX = function(){return this.x};
   this.getY = function(){return this.y};
-  this.getPrevX = function(){return this.x_prev};
-  this.getPrevY = function(){return this.y_prev};
+  //this.getPrevX = function(){return this.x_prev};
+  //this.getPrevY = function(){return this.y_prev};
 
   this.setX = function(new_x){
-    this.x_prev = this.x
+    //this.x_prev = this.x
     this.x = new_x
   }
   this.setY = function(new_y){
-    y_prev = this.y
+    //y_prev = this.y
     this.y = new_y
   }
 
@@ -339,7 +370,19 @@ function ball(x, y, isExplosive) {
   this.leftestPoint = function() {return this.x - this.radius}
   this.rightestPoint = function() {return this.x + this.radius}
 
+  //move the ball one increment accorsing to its current velocity and position:
+  this.move = function(){
+    /*update x-axis position using differential equation dx/dt = v_x*/
+    var dx = this.getVelocity()[0] // * dt, but let's just say dt is 1
+    var new_x = this.getX() + dx; //Combining this line and the next would slightly increase performanc and readability,
+    this.setX(new_x) //but they're separate for the upcoming assert test so it can use new_x
+    var dy = this.getVelocity()[1]
+    var new_y = cur_y + dy
+    this.setY(new_y);
+    //remember, take some of these lines out if you wanna really maximize efficiency
+    console.assert((this.getX() == new_x) && (this.getY() == new_y))
   }
+}
 function standardWallCollideAnimation(){
     this.collide = function(x,y){ };
 }
@@ -472,8 +515,7 @@ var controller = {
   findWallDrawingPath : function(event){
     //first, collect the first pixel:
     model.addPixelsToUserObstacle(event)
-    //this.collectWallData()
-    console.log(event.pageX)
+
     document.addEventListener("mousemove", model.addPixelsToUserObstacle);
     //get rid of the mousemove listener when the mouse is released:
     document.addEventListener("mouseup", function(){document.removeEventListener("mousemove", model.addPixelsToUserObstacle)})
