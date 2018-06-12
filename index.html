@@ -305,7 +305,10 @@ var model = {
 
               vfX = vMagnitude * Math.cos(angleBetweenVfAndXAxis)
               vfY = vMagnitude * Math.sin(angleBetweenVfAndXAxis)
-              ball.setVelocity(vfX, vfY)
+              ball.setVelocity([vfX, vfY])
+              //alert(vi)
+              //alert(vfX)
+              //alert(vfY)
               ball.move()
             }
         }
