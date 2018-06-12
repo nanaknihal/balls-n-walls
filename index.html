@@ -112,12 +112,51 @@ var model = {
     userObstacle : {
       pixels : new Array(),
       radius : 4,
-      maxPixels: 400,
+      maxPixels: 5,
+      minDistanceBetweenPixelsSquared: 2000,
+      minDistanceToCallItSamePixelSquared: 300,
       pixelLimitExceeded: false,
 
       addPixels : function(event){
-        //add them if they're not already in the pixels array AND the maximum number of pixels isn't exceeded
-        if(!this.pixels.includes([event.pageX, event.pageY]) && this.pixels.length <= this.maxPixels){
+        //if there are no existing pixels/points, just add it without the for loop
+        numPix = this.pixels.length;
+        if(numPix == 0){
+          this.pixels.push([event.pageX, event.pageY])
+          return; //break it so the function doesn't try to add the value again
+        }
+        var validPosition = true
+        //add them if they're far enough from the previous pixels. If they're close the first pixel, just add the first pixel as the last:
+        for(var l=0; l<numPix; l++){
+          xDistance = event.pageX - this.pixels[l][0]
+          yDistance = event.pageY - this.pixels[l][1]
+          //console.log(xDistance,yDistance)
+          //if it is very close to already existing pixel (the l-th one) and there are 2 or more pixels of separation between the new pixel and l,
+          //let them add l'th pixel again so they can make a polygon
+          if ((xDistance*xDistance + yDistance*yDistance < this.minDistanceToCallItSamePixelSquared)
+                &&(Math.abs(l - numPix) > 1)) {
+               this.pixels.push(this.pixels[l])
+
+          } else if(xDistance*xDistance + yDistance*yDistance < this.minDistanceBetweenPixelsSquared){ //Pythagorean - are they within range
+             validPosition = false;
+             break;
+          }
+        }
+
+        if(validPosition){
+            this.pixels.push([event.pageX, event.pageY])
+          }
+
+        while(this.pixels.length > this.maxPixels){
+
+          //console.log(this.pixels)
+          this.pixels.shift() //get rid of the first element
+          //console.log(this.pixels)
+        }
+        //console.log(this.pixels)
+      },
+
+/*
+        if(([event.pageX, event.pageY]){} //if(this.pixels.length == this.maxPixels){
           this.pixels.push([event.pageX, event.pageY])
         } else if (this.pixels.length >= this.maxPixels) {
           //if this is the first time exceeding the pixel limit:
@@ -129,7 +168,7 @@ var model = {
 
 
         }
-      },
+      },*/
       getPixels : function(){return this.pixels},
       getRadius : function(){return this.radius}
     },
@@ -273,6 +312,7 @@ var model = {
     }
 
     this.checkForObstacleCollisions = function(){
+      /***********
       //iterate through all the balls and pixels
       for(var i = 0, numBalls = this.balls.length; i < numBalls; i++){
         ball = this.balls[i]
@@ -288,9 +328,11 @@ var model = {
               p1 = (j < numPix-1 ? pix[j+1] : pix[j])
 
               miniWallXComponent = p1[0]-p0[0] //make sure these work with negative x or y components
-              miniWallYComponent = p1[1]-p1[1]
+              miniWallYComponent = p0[1]-p1[1] //remember, y-axis is flipped on displays
+
               //arctan of y comp / x comp:
               miniWallAngleFromXAxis = Math.atan2(miniWallYComponent, miniWallYComponent)
+              console.log(miniWallAngleFromXAxis*180/Math.PI)
               miniWallAngleFromYAxis = Math.PI/2-miniWallAngleFromXAxis
 
               vi = ball.getVelocity()
@@ -306,15 +348,40 @@ var model = {
               vfX = vMagnitude * Math.cos(angleBetweenVfAndXAxis)
               vfY = vMagnitude * Math.sin(angleBetweenVfAndXAxis)
               ball.setVelocity([vfX, vfY])
-              //alert(vi)
-              //alert(vfX)
-              //alert(vfY)
+              console.log(vi)
+              console.log(vfX,vfY)
+              //console.log(ball.getVelocity())
               ball.move()
             }
         }
-      }
+      }*///////////
 
-    }
+
+      //iterate through all the balls and pixels (except last pixel because there will be no line drawn from it):
+      for(var i = 0, numBalls = this.balls.length; i < numBalls; i++){
+        ball = this.balls[i]
+        rad = ball.getRadius()
+        for(var j = 0, ob = model.userObstacle, pix = ob.getPixels(), numPix = pix.length; j<numPix-1; j++){
+          //compute distance between ball center and line http://mathworld.wolfram.com/Point-LineDistance2-Dimensional.html
+          ballX = ball.getX()
+          ballY = ball.getY()
+          p1X = pix[j][0]
+          p1Y = pix[j][1]
+          p2X = pix[j+1][0]
+          p2Y = pix[j+1][1]
+          //console.log(pix[j], pix[j+1])
+          lineXComponent = p2X-p1X
+          lineYComponent = p2Y-p1Y
+          distance = Math.abs( lineXComponent*(p1Y-ballY) - (p1X-ballX)*lineYComponent ) / Math.sqrt(lineXComponent*lineXComponent + lineYComponent*lineYComponent)
+          //console.log(distance)
+          if(distance <= rad){alert("collision")}
+
+
+
+
+
+
+    }}}
     this.checkForWallCollisions()
     this.checkForObstacleCollisions()
 
@@ -344,7 +411,7 @@ function ball(x, y, isExplosive) {
   this.wallCollider = (this.explosive) ? new wallExplodeAnimation() : new standardWallCollideAnimation();
   this.radius = 20
   this.getRadius = function(){return this.radius}
-  this.velocity = [1-Math.random()*2,1-Math.random()*2] //x and y components of velocity, respectively
+  this.velocity = [5-Math.random()*10,5-Math.random()*10] //x and y components of velocity, respectively
   this.x = x//Math.random()*view.gameWidth
   //this.x_prev = null, //previous position is important to calculate angle of movement
   this.y = y//Math.random()* view.gameHeight
@@ -384,6 +451,7 @@ function ball(x, y, isExplosive) {
     this.setY(new_y);
     //remember, take some of these lines out if you wanna really maximize efficiency
     console.assert((this.getX() == new_x) && (this.getY() == new_y))
+    //if(Math.abs(this.getVelocity()[0]) > 2 || Math.abs(this.getVelocity()[1]) > 2){console.log("slow down")}
   }
 }
 function standardWallCollideAnimation(){
@@ -466,6 +534,15 @@ var view = {
       ctx.fillStyle = color
       ctx.arc(x, y, rad, 0, 2*Math.PI)
       ctx.fill()
+
+      //then draw a line from the pixel to the next pixel (if the next pixel exists)
+      if(j < numPix-1){
+        ctx.fillStyle = color
+        ctx.moveTo(pix[j][0], pix[j][1])
+        ctx.lineTo(pix[j+1][0], pix[j+1][1])
+        ctx.stroke();
+      }
+
       ctx.closePath()
 
     }
@@ -539,5 +616,8 @@ function updateGame(){
     }
   })
 }
+
+
+
 </script>
 </html>
