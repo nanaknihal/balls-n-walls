@@ -379,52 +379,50 @@ var model = {
 
           //compute distance between ball center:
             //first find intersection of ball velocity vector and wall:
-              //step 1. compute equations of lines (in standard form) by defined by two points: (inspired by https://www.topcoder.com/community/data-science/data-science-tutorials/geometry-concepts-line-intersection-and-its-applications/)
-                vel = ball.getVelocity()
-                velStartPoint = [ball.getX(), ball.getY()]
-                //velEndPoint = [velStartPoint[0] + vel[0], velStartPoint[1] + vel[1]] //MAKE SURE Y-AXIS ISN'T REVERSED!
-                wallStartPoint = [pix[j][0], pix[j][1]]
-                wallEndPoint = [pix[j+1][0], pix[j+1][1]]
-
-                //to convert to Ax+By=C:
-                velA = /*velEndPoint[1]-velStartPoint[1]: equivalent to*/vel[1]
-                velB = /*velStartPoint[0]-velEndPoint[0]: equivalent to */vel[0]
-                //velB = -velB
-
-                velC = velA*velStartPoint[0] + velB*velStartPoint[1]/***/
-
-                //line is now of form velA*x + velB*y = C
-
-
-                wallA = wallEndPoint[1]-wallStartPoint[1]
-                wallB = wallEndPoint[0]-wallStartPoint[0]
-                //wallB = -wallB
-                wallC = wallA*wallStartPoint[0] + wallB*wallStartPoint[1]
-                //line is now of form wallA*x + wallB*y = C
-                //console.log(wallA, wallB, wallC)
-                //console.log(velA, velB, velC)
-                console.log(wallA, wallB, wallC)
-                //where do the two intersect?:
-                var intersection = [null, null]
-                var det = velA*wallB - wallA*velB
-                if(!(det == 0)){//they're parallel if det is 0
-                  intersection[0] = (wallB*velC - velB*wallC)/det
-                  intersection[1] = (velA*wallC - wallA*velC)/det
-                  console.log(intersection)
-                  //console.log(intersection) //IT'S A LITTLE STRANGE THAT THIS INTERSECTION IS ALWAYS CHANGING- I THINK IT MIGHT BE DUE TO THE BALL NOT PERFECTLY FOLLOWING THE VELOCITY VECTOR BECAUSE V'S FLOATS ARE ROUNDED TO MAKE IT MOVE AN INT NUMBER OF PIX EACH TIMESTEP. THEREFORE, THE intersection may be constantly changing
+              //step 1. compute equations of lines (in slope-intercept form)
+                var equation = function(m,b){
+                  this.m = m;
+                  this.b = b;
                 }
 
-                //check whether the point of intersection is within the wall segment: //NOTE WE REALLY WANT TO CHECK WHETHER THE POINT OF *COLLISION* NOT INTERSECTION IS WITHIN BOUNDS. BUT THIS IS MORE COMPUTATIONALLY EFFICIENT. We'll see whether doing it this way is an issue.
-                var intersectionIsWithinWall = (intersection[0] >= Math.min(wallStartPoint[0], wallEndPoint[0])) &&
-                                               (intersection[0] <= Math.max(wallStartPoint[0], wallEndPoint[0])) &&
-                                               (intersection[1] >= Math.min(wallStartPoint[1], wallEndPoint[1])) &&
-                                               (intersection[1] <= Math.max(wallStartPoint[1], wallEndPoint[1]))
+                //arguments: point in form [x,y] and vec in form [xComponent, yComponent]
+                function equationFromPointAnd2dVec(point, vec){
+                  var slope = vec[1]/vec[0]
+                  var intercept = point[1] - slope*point[0]
+                  return new equation(slope, intercept)
+                }
 
-                if(intersectionIsWithinWall){console.log(intersection)}
+                function intersectionOf2Equations(e1, e2){
+                    x = (e2.b-e1.b)/(e1.m-e2.m)
+                    y = e1.m*x+e1.b
+                    console.assert(Math.round(y) == Math.round(e2.m*x+e2.b))//remove this for production if we reeally need an insignificant efficiency boost -
+                                                                            //just checking whether both equations give the same y value for the x value
+                    return [x,y]
+                }
+
+                ballPoint = [ball.getX(), ball.getY()]
+                ballVec = ball.getVelocity()
+                ballTrajectoryEquation = equationFromPointAnd2dVec(ballPoint, ballVec)
+
+                wallPoint = pix[j]
+                nextWallPoint = pix[j+1]
+                wallVec = [nextWallPoint[0]-wallPoint[0], nextWallPoint[1]-wallPoint[1]]
+                wallExtensionEquation = equationFromPointAnd2dVec(wallPoint, wallVec)
+
+                intersection = intersectionOf2Equations(ballTrajectoryEquation,wallExtensionEquation)
+
+
+                //check whether the point of intersection is within the wall segment: //NOTE WE REALLY WANT TO CHECK WHETHER THE POINT OF *COLLISION* NOT INTERSECTION IS WITHIN BOUNDS. BUT THIS IS MORE COMPUTATIONALLY EFFICIENT. We'll see whether doing it this way is an issue.
+                var intersectionIsWithinWall = (intersection[0] >= Math.min(wallPoint[0], nextWallPoint[0])) &&
+                                               (intersection[0] <= Math.max(wallPoint[0], nextWallPoint[0])) &&
+                                               (intersection[1] >= Math.min(wallPoint[1], nextWallPoint[1])) &&
+                                               (intersection[1] <= Math.max(wallPoint[1], nextWallPoint[1]))
+
+                if(intersectionIsWithinWall){console.log("intersection")}
                 /*Now that the intersection has been found, find the angle between the velocity and the wall*/
                 //remember the velocity's starting point is the center of the circle
-                angleBetweenVelocityAndXAxis = Math.atan2((intersection[1]-velStartPoint[1]), (intersection[0]-velStartPoint))
-                angleBetweenWallandYAxis = Math.atan2(intersection[0], intersection[1])
+                //angleBetweenVelocityAndXAxis = Math.atan2((intersection[1]-velStartPoint[1]), (intersection[0]-velStartPoint))
+                //angleBetweenWallandYAxis = Math.atan2(intersection[0], intersection[1])
                 angleBetweenVelocityAndWall = "as"
 
 
