@@ -93,7 +93,7 @@ jsPsych.init({
 var model = {
   gameOver: false,
   //"e" is for explosive
-  balls: [new ball(100,220), new ball(200,210,"e"), new ball(200,100), new ball(87,210,"e"), new ball(100,100), new ball(50,50, new ball(400,30), new ball(300,210,"e"))],
+  balls: [new ball(100,220)],//, new ball(200,210,"e"), new ball(200,100), new ball(87,210,"e"), new ball(100,100), new ball(50,50, new ball(400,30), new ball(300,210,"e"))],
 
 
   /*MAKE SURE TO NOT MAKE THE WIDTHS NEGATIVE - THE wall.highestPoint, leftestPoint, etc. methods will not work if they
@@ -362,7 +362,7 @@ var model = {
         ball = this.balls[i]
         rad = ball.getRadius()
         for(var j = 0, ob = model.userObstacle, pix = ob.getPixels(), numPix = pix.length; j<numPix-1; j++){
-          //compute distance between ball center and line http://mathworld.wolfram.com/Point-LineDistance2-Dimensional.html
+          /*//compute distance between ball center and line http://mathworld.wolfram.com/Point-LineDistance2-Dimensional.html
           ballX = ball.getX()
           ballY = ball.getY()
           p1X = pix[j][0]
@@ -374,8 +374,43 @@ var model = {
           lineYComponent = p2Y-p1Y
           distance = Math.abs( lineXComponent*(p1Y-ballY) - (p1X-ballX)*lineYComponent ) / Math.sqrt(lineXComponent*lineXComponent + lineYComponent*lineYComponent)
           //console.log(distance)
-          if(distance <= rad){alert("collision")}
+          if(distance <= rad){ball.color = "blue"}
+          */
 
+          //compute distance between ball center:
+            //first find interserction of ball velocity vector and wall:
+              //step 1. compute equations of lines (in standard form) by their endpoints: (inspired by https://www.topcoder.com/community/data-science/data-science-tutorials/geometry-concepts-line-intersection-and-its-applications/)
+                vel = ball.getVelocity()
+                velStartPoint = [ball.getX(), ball.getY()]
+                //velEndPoint = [velStartPoint[0] + vel[0], velStartPoint[1] + vel[1]] //MAKE SURE Y-AXIS ISN'T REVERSED!
+                wallStartPoint = [pix[j][0], pix[j][1]]
+                wallEndPoint = [pix[j+1][0], pix[j+1][1]]
+
+                //to convert to Ax+By=C:
+                velA = /*velEndPoint[1]-velStartPoint[1]: equivalent to*/vel[1]
+                velB = /*velStartPoint[0]-velEndPoint[0]: equivalent to */vel[0]
+                //velB = -velB
+
+                velC = velA*velStartPoint[0] + velB*velStartPoint[1]
+
+                //line is now of form velA*x + velB*y = C
+
+
+                wallA = wallEndPoint[1]-wallStartPoint[1]
+                wallB = wallEndPoint[0]-wallStartPoint[0]
+                //wallB = -wallB
+                wallC = wallA*wallStartPoint[0] + wallB*wallStartPoint[1]
+                //line is now of form wallA*x + wallB*y = C
+                console.log(wallA, wallB, wallC)
+
+                //where do the two intersect?:
+                var intersection = [null, null]
+                var det = velA*wallB - wallA*velB
+                if(!(det == 0)){//they're parallel if det is 0
+                  intersection[0] = (wallB*velC - velB*wallC)/det
+                  intersection[1] = (velA*wallC - wallA*velC)/det
+                  //console.log(intersection)
+                }
 
 
 
