@@ -401,7 +401,6 @@ var model = {
                 //wallB = -wallB
                 wallC = wallA*wallStartPoint[0] + wallB*wallStartPoint[1]
                 //line is now of form wallA*x + wallB*y = C
-                console.log(wallA, wallB, wallC)
 
                 //where do the two intersect?:
                 var intersection = [null, null]
@@ -409,8 +408,12 @@ var model = {
                 if(!(det == 0)){//they're parallel if det is 0
                   intersection[0] = (wallB*velC - velB*wallC)/det
                   intersection[1] = (velA*wallC - wallA*velC)/det
-                  //console.log(intersection)
+                  //console.log(intersection) //IT'S A LITTLE STRANGE THAT THIS INTERSECTION IS ALWAYS CHANGING- I THINK IT MIGHT BE DUE TO THE BALL NOT PERFECTLY FOLLOWING THE VELOCITY VECTOR BECAUSE V'S FLOATS ARE ROUNDED TO MAKE IT MOVE AN INT NUMBER OF PIX EACH TIMESTEP. THEREFORE, THE intersection may be constantly changing
                 }
+
+
+                /*Now that the intersection has been found, find the angle between the velocity and the wall*/
+                velocityWallAngle
 
 
 
