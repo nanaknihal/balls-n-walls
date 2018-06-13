@@ -378,8 +378,8 @@ var model = {
           */
 
           //compute distance between ball center:
-            //first find interserction of ball velocity vector and wall:
-              //step 1. compute equations of lines (in standard form) by their endpoints: (inspired by https://www.topcoder.com/community/data-science/data-science-tutorials/geometry-concepts-line-intersection-and-its-applications/)
+            //first find intersection of ball velocity vector and wall:
+              //step 1. compute equations of lines (in standard form) by defined by two points: (inspired by https://www.topcoder.com/community/data-science/data-science-tutorials/geometry-concepts-line-intersection-and-its-applications/)
                 vel = ball.getVelocity()
                 velStartPoint = [ball.getX(), ball.getY()]
                 //velEndPoint = [velStartPoint[0] + vel[0], velStartPoint[1] + vel[1]] //MAKE SURE Y-AXIS ISN'T REVERSED!
@@ -391,7 +391,7 @@ var model = {
                 velB = /*velStartPoint[0]-velEndPoint[0]: equivalent to */vel[0]
                 //velB = -velB
 
-                velC = velA*velStartPoint[0] + velB*velStartPoint[1]
+                velC = velA*velStartPoint[0] + velB*velStartPoint[1]/***/
 
                 //line is now of form velA*x + velB*y = C
 
@@ -401,19 +401,31 @@ var model = {
                 //wallB = -wallB
                 wallC = wallA*wallStartPoint[0] + wallB*wallStartPoint[1]
                 //line is now of form wallA*x + wallB*y = C
-
+                //console.log(wallA, wallB, wallC)
+                //console.log(velA, velB, velC)
+                console.log(wallA, wallB, wallC)
                 //where do the two intersect?:
                 var intersection = [null, null]
                 var det = velA*wallB - wallA*velB
                 if(!(det == 0)){//they're parallel if det is 0
                   intersection[0] = (wallB*velC - velB*wallC)/det
                   intersection[1] = (velA*wallC - wallA*velC)/det
+                  console.log(intersection)
                   //console.log(intersection) //IT'S A LITTLE STRANGE THAT THIS INTERSECTION IS ALWAYS CHANGING- I THINK IT MIGHT BE DUE TO THE BALL NOT PERFECTLY FOLLOWING THE VELOCITY VECTOR BECAUSE V'S FLOATS ARE ROUNDED TO MAKE IT MOVE AN INT NUMBER OF PIX EACH TIMESTEP. THEREFORE, THE intersection may be constantly changing
                 }
 
+                //check whether the point of intersection is within the wall segment: //NOTE WE REALLY WANT TO CHECK WHETHER THE POINT OF *COLLISION* NOT INTERSECTION IS WITHIN BOUNDS. BUT THIS IS MORE COMPUTATIONALLY EFFICIENT. We'll see whether doing it this way is an issue.
+                var intersectionIsWithinWall = (intersection[0] >= Math.min(wallStartPoint[0], wallEndPoint[0])) &&
+                                               (intersection[0] <= Math.max(wallStartPoint[0], wallEndPoint[0])) &&
+                                               (intersection[1] >= Math.min(wallStartPoint[1], wallEndPoint[1])) &&
+                                               (intersection[1] <= Math.max(wallStartPoint[1], wallEndPoint[1]))
 
+                if(intersectionIsWithinWall){console.log(intersection)}
                 /*Now that the intersection has been found, find the angle between the velocity and the wall*/
-                velocityWallAngle
+                //remember the velocity's starting point is the center of the circle
+                angleBetweenVelocityAndXAxis = Math.atan2((intersection[1]-velStartPoint[1]), (intersection[0]-velStartPoint))
+                angleBetweenWallandYAxis = Math.atan2(intersection[0], intersection[1])
+                angleBetweenVelocityAndWall = "as"
 
 
 
@@ -449,7 +461,7 @@ function ball(x, y, isExplosive) {
   this.wallCollider = (this.explosive) ? new wallExplodeAnimation() : new standardWallCollideAnimation();
   this.radius = 20
   this.getRadius = function(){return this.radius}
-  this.velocity = [5-Math.random()*10,5-Math.random()*10] //x and y components of velocity, respectively
+  this.velocity = [2,3]//[5-Math.random()*10,5-Math.random()*10] //x and y components of velocity, respectively
   this.x = x//Math.random()*view.gameWidth
   //this.x_prev = null, //previous position is important to calculate angle of movement
   this.y = y//Math.random()* view.gameHeight
