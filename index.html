@@ -368,6 +368,7 @@ var model = {
                 var equation = function(m,b){
                   this.m = m;
                   this.b = b;
+                  //getters and setters are probably unecessary
                 }
 
                 //arguments: point in form [x,y] and vec in form [xComponent, yComponent]
@@ -401,13 +402,9 @@ var model = {
                 /*Now that the intersection has been found, find the angle between the velocity and the wall*/
                 /*Make sure the SIGNS OF ALL THESE ANGLES ARE CORRECT:*/
                 angleBetweenVelocityAndXAxis = Math.atan2((intersection[1]-ballPoint[1]), (intersection[0]-ballPoint[0]))
-
                 angleBetweenWallAndYAxis = Math.atan2(intersection[0], intersection[1])
-                console.log(angleBetweenVelocityAndXAxis)
                 angleBetweenVelocityAndWall = Math.PI/2 + angleBetweenVelocityAndXAxis - angleBetweenWallAndYAxis
-
                 angleBetweenWallAndXAxis = Math.PI/2 - angleBetweenWallAndYAxis
-
                 ballToIntersectionDistance = Math.sqrt(Math.pow(intersection[0]-ballPoint[0], 2) + Math.pow(intersection[1]-ballPoint[1], 2)) //Pythagorean
 
 
@@ -419,28 +416,61 @@ var model = {
                 ballWithinLineRange = false
                 if(Math.abs(ballToWallClosestDistance) < rad){
                   ballWithinLineRange = true
-                  console.log("withinLineRange")
+                  console.log("inRange")
                 }
 
+                /*Now, find the exact point where the closest line from ball-to-wall intersects with the wall. This is the point of collision,
+                 *and is different than the point of intersection, where the velocity vector intersects with the wall. Unfortunately,
+                 *this cannot easily be done with the previous methods (equationFromPointAnd2dVec, etc.) because only the vector's magnitudes are known
+                 *as a result, a different method is used: first, finding the distance between the collision point and the velocity-wall intersection point.
+                 *This is ballToWallClosestDistance/tan(angleBetweenVelocityAndWall).
+                 *We already know the slope of the wall (wallExtensionEquation.m), so we need to figure out what point is x distance away, where x is the
+                 *distance we just calculated between the collision and interserction.
 
-                //TODO: make this so it uses the closest point, not the intersection point. THIS SHOULD MAKE COLLISIONS HAPPEN EVEN AT THE EDGES OF LINE SEGMENTS
-                var pointIsWithinSegment = (intersection[0] >= Math.min(wallPoint[0], nextWallPoint[0])) &&
-                                                  (intersection[0] <= Math.max(wallPoint[0], nextWallPoint[0])) &&
-                                                  (intersection[1] >= Math.min(wallPoint[1], nextWallPoint[1])) &&
-                                                  (intersection[1] <= Math.max(wallPoint[1], nextWallPoint[1]))
+                 *The "run" and "rise" (x-distance and y-distance between the collision and intersection points) have a certain relationship:
+                 *rise/run = wallExtensionEquation.m. Also, rise^2 + run^2 = ballToWallClosestDistance. These two equations can be solved for.
+                 *Solving for rise, the resulting equation is rise = Math.sqrt(
+                 (-Math.pow(distanceFromVIntersectionToCollision,2) + Math.sqrt(Math.pow(distanceFromVIntersectionToCollision, 4) - 4*Math.pow(wallExtensionEquation.m, 2)))/2
+               )
+                  *run is just rise/wallExtensionEquation.m
+                 */
 
-                if(pointIsWithinSegment && ballWithinLineRange){
+                 var distanceFromVIntersectionToCollision  = ballToWallClosestDistance/Math.tan(angleBetweenVelocityAndWall)
+                 //parameters for quadratic formula used to calculate rise. These parameters were figured out by hand. They appear in the above
+                 //comment althouh just as their values, not as a, b, or c. In the actual code, the equation is made simpler by substituting a, b,
+                 //and c for their respective values, so that the code is easier to read (and possibly slightly more efficient because b is not recalculated)
+                 //var a = 1
+                 var b = Math.pow(distanceFromVIntersectionToCollision,2)
+                 var c = Math.pow(wallExtensionEquation.m, 2)
+                 var rise = Math.sqrt(
+                  (-b + Math.sqrt(b*b - 4*c))/2 //This is the quadratic equation
+                 ) //then the solution to the equation is square-rooted. The result value of rise as determined by solving the system of equations mentioned.
+
+                 var run = rise/wallExtensionEquation.m
+
+                 //Now, find the actual point of collision:
+                 collisionPoint = [intersection[0]-run, intersection[1]-rise]
+
+
+                //Check whether the collision point is actually within the wall and not just in its extenstion
+                var collisionIsWithinSegment = (collisionPoint[0] >= Math.min(wallPoint[0], nextWallPoint[0])) &&
+                                                  (collisionPoint[0] <= Math.max(wallPoint[0], nextWallPoint[0])) &&
+                                                  (collisionPoint[1] >= Math.min(wallPoint[1], nextWallPoint[1])) &&
+                                                  (collisionPoint[1] <= Math.max(wallPoint[1], nextWallPoint[1]))
+
+                if(collisionIsWithinSegment && ballWithinLineRange){
                   //there's a collision
-
+                  console.log("s")
                   //resulting velocity (Vf)
                   angleBetweenResultingVelocityAndXAxis = angleBetweenWallAndXAxis + angleBetweenVelocityAndWall
                   //now, we know the angle of the velocity. we just need the magnitute:
                   velMagnitude = Math.sqrt(ballVec[0]*ballVec[0] + ballVec[1]*ballVec[1])
                   resultingVelXComponent = velMagnitude*Math.cos(angleBetweenVelocityAndWall)
-                  resultingVelYComponent = velMagnitude*Math.sin(angleBetweenVelocityAndWall)
+                  resultingVelYComponent = -velMagnitude*Math.sin(angleBetweenVelocityAndWall)
 
                   //console.log("ê")
-
+                  ball.setVelocity([resultingVelXComponent, resultingVelYComponent])
+                  setTimeout(function(){ball.setVelocity([-resultingVelXComponent, resultingVelYComponent])}, 500)
                   ball.setVelocity([resultingVelXComponent, resultingVelYComponent])
                 }
               }
