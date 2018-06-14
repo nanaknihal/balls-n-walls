@@ -362,22 +362,7 @@ var model = {
         ball = this.balls[i]
         rad = ball.getRadius()
         for(var j = 0, ob = model.userObstacle, pix = ob.getPixels(), numPix = pix.length; j<numPix-1; j++){
-          /*//compute distance between ball center and line http://mathworld.wolfram.com/Point-LineDistance2-Dimensional.html
-          ballX = ball.getX()
-          ballY = ball.getY()
-          p1X = pix[j][0]
-          p1Y = pix[j][1]
-          p2X = pix[j+1][0]
-          p2Y = pix[j+1][1]
-          //console.log(pix[j], pix[j+1])
-          lineXComponent = p2X-p1X
-          lineYComponent = p2Y-p1Y
-          distance = Math.abs( lineXComponent*(p1Y-ballY) - (p1X-ballX)*lineYComponent ) / Math.sqrt(lineXComponent*lineXComponent + lineYComponent*lineYComponent)
-          //console.log(distance)
-          if(distance <= rad){ball.color = "blue"}
-          */
-
-          //compute distance between ball center:
+          //compute distance between ball center and closest point on wall:
             //first find intersection of ball velocity vector and wall:
               //step 1. compute equations of lines (in slope-intercept form)
                 var equation = function(m,b){
@@ -413,19 +398,26 @@ var model = {
 
 
                 //check whether the point of intersection is within the wall segment: //NOTE WE REALLY WANT TO CHECK WHETHER THE POINT OF *COLLISION* NOT INTERSECTION IS WITHIN BOUNDS. BUT THIS IS MORE COMPUTATIONALLY EFFICIENT. We'll see whether doing it this way is an issue.
-                var intersectionIsWithinWall = (intersection[0] >= Math.min(wallPoint[0], nextWallPoint[0])) &&
-                                               (intersection[0] <= Math.max(wallPoint[0], nextWallPoint[0])) &&
-                                               (intersection[1] >= Math.min(wallPoint[1], nextWallPoint[1])) &&
-                                               (intersection[1] <= Math.max(wallPoint[1], nextWallPoint[1]))
 
-                if(intersectionIsWithinWall){console.log("intersection")}
+
+
                 /*Now that the intersection has been found, find the angle between the velocity and the wall*/
-                //remember the velocity's starting point is the center of the circle
-                //angleBetweenVelocityAndXAxis = Math.atan2((intersection[1]-velStartPoint[1]), (intersection[0]-velStartPoint))
-                //angleBetweenWallandYAxis = Math.atan2(intersection[0], intersection[1])
-                angleBetweenVelocityAndWall = "as"
+                /*Make sure the SIGNS OF ALL THESE ANGLES ARE CORRECT:*/
+                angleBetweenVelocityAndXAxis = Math.atan2((intersection[1]-ballPoint[1]), (intersection[0]-ballPoint[0]))
+                angleBetweenWallAndYAxis = Math.atan2(intersection[0], intersection[1])
+
+                angleBetweenVelocityAndWall = Math.PI/2 + angleBetweenVelocityAndXAxis - angleBetweenWallAndYAxis
+
+                angleBetweenWallAndXAxis = Math.PI/2 - angleBetweenWallAndYAxis
+                //resulting velocity (Vf)
+                angleBetweenResultingVelocityAndWall = angleBetweenWallAndXAxis - 
 
 
+                var closestPointIsWithinSegment = (closestPoint[0] >= Math.min(wallPoint[0], nextWallPoint[0])) &&
+                                                  (closestPoint[0] <= Math.max(wallPoint[0], nextWallPoint[0])) &&
+                                                  (closestPoint[1] >= Math.min(wallPoint[1], nextWallPoint[1])) &&
+                                                  (closestPoint[1] <= Math.max(wallPoint[1], nextWallPoint[1]))
+                if(closestPointIsWithinSegment){console.log("ê")}
 
 
 
