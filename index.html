@@ -401,25 +401,29 @@ var model = {
                 /*Now that the intersection has been found, find the angle between the velocity and the wall*/
                 /*Make sure the SIGNS OF ALL THESE ANGLES ARE CORRECT:*/
                 angleBetweenVelocityAndXAxis = Math.atan2((intersection[1]-ballPoint[1]), (intersection[0]-ballPoint[0]))
-                angleBetweenWallAndYAxis = Math.atan2(intersection[0], intersection[1])
 
+                angleBetweenWallAndYAxis = Math.atan2(intersection[0], intersection[1])
+                console.log(angleBetweenVelocityAndXAxis)
                 angleBetweenVelocityAndWall = Math.PI/2 + angleBetweenVelocityAndXAxis - angleBetweenWallAndYAxis
 
                 angleBetweenWallAndXAxis = Math.PI/2 - angleBetweenWallAndYAxis
 
-                //The ball can be touching the wall even if it doesn't intersect, so we need to find the distance to the closst point on the wall:
-                //The line between this and the ball is always pi/2 radians from the ball, so we can use the sin:
-                velMagnitude = Math.sqrt(ballVec[0]*ballVec[0] + ballVec[1]*ballVec[1])
-                ballToWallClosestDistance = velMagnitude * Math.sin(angleBetweenVelocityAndWall)
+                ballToIntersectionDistance = Math.sqrt(Math.pow(intersection[0]-ballPoint[0], 2) + Math.pow(intersection[1]-ballPoint[1], 2)) //Pythagorean
 
+
+                //The ball can be touching the wall even if it doesn't intersect, so we need to find the distance to the closest point on the wall:
+                //The line between this and the ball is always pi/2 radians from the ball, so we can use the sin:
+
+                ballToWallClosestDistance = ballToIntersectionDistance * Math.sin(angleBetweenVelocityAndWall)
+                //console.log(ballToWallClosestDistance)
                 ballWithinLineRange = false
-                if(ballToWallClosestDistance < rad){
+                if(Math.abs(ballToWallClosestDistance) < rad){
                   ballWithinLineRange = true
-                  console.log("withinLineRAnge")
+                  console.log("withinLineRange")
                 }
 
 
-
+                //TODO: make this so it uses the closest point, not the intersection point. THIS SHOULD MAKE COLLISIONS HAPPEN EVEN AT THE EDGES OF LINE SEGMENTS
                 var pointIsWithinSegment = (intersection[0] >= Math.min(wallPoint[0], nextWallPoint[0])) &&
                                                   (intersection[0] <= Math.max(wallPoint[0], nextWallPoint[0])) &&
                                                   (intersection[1] >= Math.min(wallPoint[1], nextWallPoint[1])) &&
@@ -432,14 +436,13 @@ var model = {
                   angleBetweenResultingVelocityAndXAxis = angleBetweenWallAndXAxis + angleBetweenVelocityAndWall
                   //now, we know the angle of the velocity. we just need the magnitute:
                   velMagnitude = Math.sqrt(ballVec[0]*ballVec[0] + ballVec[1]*ballVec[1])
-                  resultingVelXComponent = velMagnitude*Math.cos(angleBetweenResultingVelocityAndXAxis)
-                  resultingVelYComponent = velMagnitude*Math.sin(angleBetweenResultingVelocityAndXAxis)
+                  resultingVelXComponent = velMagnitude*Math.cos(angleBetweenVelocityAndWall)
+                  resultingVelYComponent = velMagnitude*Math.sin(angleBetweenVelocityAndWall)
 
-                  console.log("ê")
+                  //console.log("ê")
 
                   ball.setVelocity([resultingVelXComponent, resultingVelYComponent])
                 }
-                ball.move()
               }
             }
           }
