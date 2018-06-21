@@ -418,6 +418,7 @@ var model = {
                   ballWithinLineRange = true
                   console.log("inRange")
                 }
+                
 
                 /*Now, find the exact point where the closest line from ball-to-wall intersects with the wall. This is the point of collision,
                  *and is different than the point of intersection, where the velocity vector intersects with the wall. Unfortunately,
@@ -435,7 +436,7 @@ var model = {
                   *run is just rise/wallExtensionEquation.m
                  */
 
-                 var distanceFromVIntersectionToCollision  = ballToWallClosestDistance/Math.tan(angleBetweenVelocityAndWall)
+                 var distanceFromVIntersectionToCollision = ballToWallClosestDistance/Math.tan(angleBetweenVelocityAndWall)
                  //parameters for quadratic formula used to calculate rise. These parameters were figured out by hand. They appear in the above
                  //comment althouh just as their values, not as a, b, or c. In the actual code, the equation is made simpler by substituting a, b,
                  //and c for their respective values, so that the code is easier to read (and possibly slightly more efficient because b is not recalculated)
@@ -458,9 +459,10 @@ var model = {
                                                   (collisionPoint[1] >= Math.min(wallPoint[1], nextWallPoint[1])) &&
                                                   (collisionPoint[1] <= Math.max(wallPoint[1], nextWallPoint[1]))
 
+                console.log(intersection)
                 if(collisionIsWithinSegment && ballWithinLineRange){
                   //there's a collision
-                  console.log("s")
+
                   //resulting velocity (Vf)
                   angleBetweenResultingVelocityAndXAxis = angleBetweenWallAndXAxis + angleBetweenVelocityAndWall
                   //now, we know the angle of the velocity. we just need the magnitute:
