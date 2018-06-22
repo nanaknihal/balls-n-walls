@@ -92,8 +92,9 @@ jsPsych.init({
 
 var model = {
   gameOver: false,
+  currentTime: 0,
   //"e" is for explosive
-  balls: [new ball(100,220)],//, new ball(200,210,"e"), new ball(200,100), new ball(87,210,"e"), new ball(100,100), new ball(50,50, new ball(400,30), new ball(300,210,"e"))],
+  balls: [new ball(100,220), new ball(200,210,"e"), new ball(200,100), new ball(87,210,"e"), new ball(100,100), new ball(50,50, new ball(400,30), new ball(300,210,"e"))],
 
 
   /*MAKE SURE TO NOT MAKE THE WIDTHS NEGATIVE - THE wall.highestPoint, leftestPoint, etc. methods will not work if they
@@ -182,8 +183,9 @@ var model = {
 
 
   getBalls: function(){return this.balls},
-  update: function(){
-
+  update: function(newTime){
+    timestepDuration = newTime - this.currentTime
+    this.currentTime = newTime
     this.checkForWallCollisions = function(){
     /*update the balls*/
     var updatedBalls = []; //to check for collisions, balls' positions will need to be compared to updated balls - not
@@ -469,7 +471,7 @@ var model = {
                                                              (collisionPoint[1] >= Math.min(wallPoint[1], nextWallPoint[1]) - rad) &&
                                                              (collisionPoint[1] <= Math.max(wallPoint[1], nextWallPoint[1]) + rad)
 
-                view.showPoint(collisionPoint)
+                //view.showPoint(collisionPoint)
                 //console.log(angleBetweenVelocityAndWall*57.3)
                 //if(!collisionIsWithinSegmentPlusBallRadius && !ballWithinLineRange){console.log(ballToWallClosestDistance)}
                 if(collisionIsWithinSegmentPlusBallRadius && ballWithinLineRange){
@@ -527,7 +529,7 @@ function ball(x, y, isExplosive) {
   this.wallCollider = (this.explosive) ? new wallExplodeAnimation() : new standardWallCollideAnimation();
   this.radius = 20
   this.getRadius = function(){return this.radius}
-  this.velocity = [2,3]//[5-Math.random()*10,5-Math.random()*10] //x and y components of velocity, respectively
+  this.velocity = [0.05-Math.random()/100, 0.05-Math.random()/100] //x and y components of velocity, respectively
   this.x = x//Math.random()*view.gameWidth
   //this.x_prev = null, //previous position is important to calculate angle of movement
   this.y = y//Math.random()* view.gameHeight
@@ -563,14 +565,15 @@ function ball(x, y, isExplosive) {
   //move the ball one increment accorsing to its current velocity and position:
   this.move = function(){
     /*update x-axis position using differential equation dx/dt = v_x*/
-    var dx = this.getVelocity()[0] // * dt, but let's just say dt is 1
+    var dx = this.getVelocity()[0] * timestepDuration
     var new_x = this.getX() + dx; //Combining this line and the next would slightly increase performanc and readability,
     this.setX(new_x) //but they're separate for the upcoming assert test so it can use new_x
-    var dy = this.getVelocity()[1]
+    var dy = this.getVelocity()[1] * timestepDuration
+    //console.log(timestepDuration)
     var new_y = cur_y + dy
     this.setY(new_y);
     //remember, take some of these lines out if you wanna really maximize efficiency
-    console.assert((this.getX() == new_x) && (this.getY() == new_y))
+    //console.assert((this.getX() == new_x) && (this.getY() == new_y))
     //if(Math.abs(this.getVelocity()[0]) > 2 || Math.abs(this.getVelocity()[1]) > 2){console.log("slow down")}
   }
 }
@@ -715,7 +718,7 @@ var controller = {
   beginGame : function(){
     view.init();
     controller.loadCanvas();
-    updateGame();
+    updateGame(0); //beginning time is 0
     this.getWallsFromUser(); //this adds an Event Listener
     },
 
@@ -743,10 +746,10 @@ var controller = {
 }
 
 
-function updateGame(){
+function updateGame(currentTime){
   window.requestAnimationFrame(function(){
     if(!model.gameOver){
-      model.update();
+      model.update(currentTime);
       view.update(model);
       window.requestAnimationFrame(updateGame)
     }
