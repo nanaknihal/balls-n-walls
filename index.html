@@ -20,11 +20,11 @@ var welcome = {
 timeline.push(welcome);
 
 /*width and height: */
-w=650; h=650
+w=650; h=650;
 var game = {
   type:"html-keyboard-response",
   stimulus: "<!--main canvas where game happens:-->" +
-  "<canvas id='mainCanvas' height='" + h + "' width = '" + w + "'></canvas>" + "<button onclick='controller.beginGame()'>S T A R T</button>"
+  "<canvas id='mainCanvas' height='" + h + "' width = '" + w + "'></canvas>" + "<button onclick='controller.beginGame(levelZero)'>S T A R T</button>"
   +
   "<!--overlay canvas that doesn't need to be refreshed constantly:-->" +
   //it may be good to not hard-code the top and left value but rather use variables...this will be decided later when we do more styling
@@ -97,11 +97,27 @@ var distanceBetween = function(p1, p2){
 
 /*--Game stuff:--*/
 
-var model = {
-  gameOver: false,
-  currentTime: 0,
-  //"e" is for explosive
-  balls: [new ball(100,220), new ball(200,210,"e"), new ball(200,100), new ball(87,210,"e"), new ball(100,100), new ball(50,50, new ball(400,30), new ball(300,210,"e"))],
+var model = function(numBalls, numExplodingBalls, /*velocityMultiplier*/) {
+  this.gameOver = false
+  this.isGameOver = function(){return this.gameOver} //overdoing it on the getters, setters, and LoD? maybe
+  this.currentTime = 0
+  this.balls = [];
+
+  ballRadius = 20
+  for(var i = 0; i<numBalls; i++){
+    //random x-y coordinates of a new ball:
+    var x = Math.round(ballRadius + Math.random()*(w-2*ballRadius));
+    var y = Math.round(ballRadius + Math.random()*(h-2*ballRadius));
+
+    this.balls.push(new ball(x,y,ballRadius))
+  }
+
+  for(var i = 0; i<numExplodingBalls; i++){
+    var x = Math.round(ballRadius + Math.random()*(w-2*ballRadius))
+    var y = Math.round(ballRadius + Math.random()*(h-2*ballRadius))
+    this.balls.push(new ball(x,y,ballRadius,"e")) //e for explosive
+  }
+
 
 
   /*MAKE SURE TO NOT MAKE THE WIDTHS NEGATIVE - THE wall.highestPoint, leftestPoint, etc. methods will not work if they
@@ -109,7 +125,7 @@ var model = {
    *efficient because more steps would be involved in those methods, which are called a lot. It also may be good to have
    *the highestPoint, lowestPoint, etc. methods of the four walls at the edges of the canvas only be called once instead
    *of for every ball in every update. Also make sure the balls are not already touching the walls upon initialization*/
-   walls: [new wall(0,0,w,1), new wall(0,0,1,h), new wall(0,h-2,w,1), new wall(w-2,0,1,h)], //default border walls of 0px
+   this.walls = [new wall(0,0,w,1), new wall(0,0,1,h), new wall(0,h-2,w,1), new wall(w-2,0,1,h)], //default border walls of 0px
 
   /*USER OBSTACLE: a set of pixels that the user selected to be included in the "obstacle." The user probably sees this as
    *"obstacle" as multiple obstacles, but the program treats them all as one. It doesn't care how the pixels are grouped,
@@ -117,7 +133,7 @@ var model = {
    *
    *The obstacle has a radius. If a ball is closer than ball.radius + obstacle.radius, a collision will be registered */
 
-    userObstacle : {
+    this.userObstacle = {
       pixels : new Array(),
       radius : 4,
       maxPixels: 5,
@@ -184,13 +200,13 @@ var model = {
 
   //not necessary to have this function but it's good encapsulation and helps with Law of Demeter (even though it technically violates it)
   //if efficiency is a concern, we can get rid of it:
-  addPixelsToUserObstacle : function(event){
+  this.addPixelsToUserObstacle = function(event){
     model.userObstacle.addPixels(event)
-  },
+  }
 
 
-  getBalls: function(){return this.balls},
-  update: function(newTime){
+  this.getBalls = function(){return this.balls},
+  this.update = function(newTime){
     timestepDuration = newTime - this.currentTime
     this.currentTime = newTime
     this.checkForWallCollisions = function(){
@@ -370,7 +386,7 @@ var model = {
       for(var i = 0, numBalls = this.balls.length; i < numBalls; i++){
         ball = this.balls[i]
         rad = ball.getRadius()
-        for(var j = 0, ob = model.userObstacle, pix = ob.getPixels(), numPix = pix.length; j<numPix-1; j++){
+        for(var j = 0, ob = this.userObstacle, pix = ob.getPixels(), numPix = pix.length; j<numPix-1; j++){
           //compute distance between ball center and closest point on wall:
             //first find intersection of ball velocity vector and wall:
               //step 1. compute equations of lines (in slope-intercept form)
@@ -530,7 +546,7 @@ var model = {
 }
 
 //constructor for balls: (x and y are initial position)
-function ball(x, y, isExplosive) {
+function ball(x, y, radius, isExplosive) {
   this.NoSetVelocity = false //prevent double-setting the velocity by implementing a velocity-setting timeout period
   this.endTimeout = function(){this.NoSetVelocity = false}
   this.initiateTimeout = function(){
@@ -542,7 +558,7 @@ function ball(x, y, isExplosive) {
   }
   this.color = "#AAABC8"
   this.getColor = function() {return this.color}
-
+  this.setColor = function(col) {this.color = col}
   this.explosive = (isExplosive == "e")
 
   this.collide = function(collision_type){
@@ -558,9 +574,9 @@ function ball(x, y, isExplosive) {
     }
   }
   this.wallCollider = (this.explosive) ? new wallExplodeAnimation() : new standardWallCollideAnimation();
-  this.radius = 20
+  this.radius = radius
   this.getRadius = function(){return this.radius}
-  this.velocity = [0.1-Math.random()/100*randomOneOrNegativeOne(), 0.1-Math.random()/100*randomOneOrNegativeOne()] //x and y components of velocity, respectively.
+  this.velocity = [(0.1-Math.random()/100)*randomOneOrNegativeOne(), (0.1-Math.random()/100)*randomOneOrNegativeOne()] //x and y components of velocity, respectively.
   this.x = x//Math.random()*view.gameWidth
   //this.x_prev = null, //previous position is important to calculate angle of movement
   this.y = y//Math.random()* view.gameHeight
@@ -651,6 +667,23 @@ var view = {
   init: function(){
     this.can = document.getElementById('mainCanvas')
     this.ctx = this.can.getContext("2d")
+  },
+
+  showInitialFrame(model, duration){
+    //just call view's update function once. However, the exploding balls' colors must be changed. TODO: add a nice countdown animation on top, on the overlay canvas maybe
+
+    //change the exploding balls' colors:
+    for(var j = 0, balls = model.getBalls(), numBalls = balls.length; j < numBalls; j++){
+      ball = balls[j];
+      if(ball.explosive){
+        oldColor = ball.getColor()
+
+        ball.setColor("orange")
+        setTimeout(function(){ball.setColor(oldColor)},duration)
+      }
+
+    }
+    this.update(model)
   },
 
   update: function(model){
@@ -745,16 +778,22 @@ var view = {
 
 }
 
-var controller = {
+function controller(model, view){
 
-  can : null,
-  ctx : null,
 
-  beginGame : function(){
+  beginGame : function(level){
+
     view.init();
     controller.loadCanvas();
-    updateGame(0); //beginning time is 0
+
+    var initialFrameDuration = 1300 //ms
+    view.showInitialFrame(this.model,initialFrameDuration) //show the frame where the exploding balls look different
+
+    //then start the first update
     this.getWallsFromUser(); //this adds an Event Listener
+    setTimeout(function(){
+      updateGame(0, this.model); //beginning time is 0
+    }, duration)
     },
 
   ballHitBall : function(){console.log("Game Over")},
@@ -780,11 +819,25 @@ var controller = {
 
 }
 
+//takes a model as an argument. It may be good to make view and controller as arguments, but I don't foresee a realy use in doing so
+function level(mod) {
+  this.model = mod
+  this.view = view,
+  this.controller = controller,
+  this.gameOver = function(){return this.model.isGameOver()}
+  this.update = function(currentTime){
+     this.model.update(currentTime)
+     this.view.update(this.model)}
+}
+
+var levelZero = new level(new model(3,5));
+
+curLevel = levelZero;
+
 function updateGame(currentTime){
   window.requestAnimationFrame(function(){
-    if(!model.gameOver){
-      model.update(currentTime);
-      view.update(model);
+    if(!curLevel.gameOver()){
+      curLevel.update(currentTime);
       window.requestAnimationFrame(updateGame)
     }
   })
