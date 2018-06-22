@@ -86,7 +86,14 @@ jsPsych.init({
   }
 })
 
+var randomOneOrNegativeOne = function(){return Math.random()< 0.5 ? -1 : 1}
 
+//takes two arrays of length 2 representing points
+var distanceBetween = function(p1, p2){
+  var xdist = p2[0]-p1[0]
+  var ydist = p2[1]-p1[1]
+  return Math.sqrt(xdist*xdist + ydist*ydist)
+}
 
 /*--Game stuff:--*/
 
@@ -414,7 +421,7 @@ var model = {
                 //The line between this and the ball is always pi/2 radians from the ball, so we can use the sin:
 
                 ballToWallClosestDistance = ballToIntersectionDistance * Math.sin(angleBetweenVelocityAndWall)//MATH.ABS?
-                //console.log(ballToWallClosestDistance)
+
                 ballWithinLineRange = false
                 if(Math.abs(ballToWallClosestDistance) < Math.abs(rad)){
                   ballWithinLineRange = true
@@ -466,27 +473,51 @@ var model = {
                  collisionPoint = [intersection[0]-HoriDistanceBetweenCollisionAndIntersection, intersection[1]-VertDistanceBetweenCollisionAndIntersection]
 
                 //Check whether the collision point is actually within the wall and not just in its extension
-                var collisionIsWithinSegmentPlusBallRadius = (collisionPoint[0] >= Math.min(wallPoint[0], nextWallPoint[0]) - rad) &&
-                                                             (collisionPoint[0] <= Math.max(wallPoint[0], nextWallPoint[0]) + rad) &&
-                                                             (collisionPoint[1] >= Math.min(wallPoint[1], nextWallPoint[1]) - rad) &&
-                                                             (collisionPoint[1] <= Math.max(wallPoint[1], nextWallPoint[1]) + rad)
-
+                collisionIsWithinSegment = (collisionPoint[0] >= Math.min(wallPoint[0], nextWallPoint[0])) &&
+                                                             (collisionPoint[0] <= Math.max(wallPoint[0], nextWallPoint[0])) &&
+                                                             (collisionPoint[1] >= Math.min(wallPoint[1], nextWallPoint[1])) &&
+                                                             (collisionPoint[1] <= Math.max(wallPoint[1], nextWallPoint[1]))
+                //Consider the following scenario: the collisionPoint is not actually the closest point on the wall's extension. This happens when the ball collides with
+                // an endpoint of the wall. For these cases:
+                if(!collisionIsWithinSegment && (distanceBetween(ballPoint, wallPoint) <= rad || distanceBetween(ballPoint, nextWallPoint) <=rad) ){
+                  //alert("a")
+                  collisionIsWithinSegment = true;
+                  ballWithinLineRange = true;
+                  collisionPoint = wallPoint;
+                }
                 //view.showPoint(collisionPoint)
                 //console.log(angleBetweenVelocityAndWall*57.3)
-                //if(!collisionIsWithinSegmentPlusBallRadius && !ballWithinLineRange){console.log(ballToWallClosestDistance)}
-                if(collisionIsWithinSegmentPlusBallRadius && ballWithinLineRange){
+                //alert(ballToWallClosestDistance + ", " + collisionIsWithinSegmentPlusBallRadius + ", " + ballWithinLineRange + ", " + collisionPoint)
+                //if(!collisionIsWithinSegment && ballWithinLineRange){console.log(collisionPoint)}
+
+                if(collisionIsWithinSegment && ballWithinLineRange){
                   //there's a collision
+                  ball.collide(ball)
+                  //sometimes, the balls can end up in the walls. The user should be allowed to draw walls through balls,
+                  //and the balls can occasionally find their way into walls. In these cases, balls should just pass through
+                  //and their velocities should not be changed. Hence,
+                  ballIsInsideWall = Math.abs(ballToWallClosestDistance) + 8 < rad //8px is given as leeway
+                  //alert(angleBetweenVelocityAndWall*57.3)
+                  if(!ballIsInsideWall){
 
-                  //resulting velocity (Vf)
-                  angleBetweenResultingVelocityAndXAxis = angleBetweenWallAndXAxis + angleBetweenVelocityAndWall
-                  //now, we know the angle of the velocity. we just need the magnitute:
-                  velMagnitude = Math.sqrt(ballVec[0]*ballVec[0] + ballVec[1]*ballVec[1])
-                  resultingVelXComponent = velMagnitude*Math.cos(angleBetweenVelocityAndWall)
-                  resultingVelYComponent = velMagnitude*Math.sin(angleBetweenVelocityAndWall)
+                    //calculate resulting velocity (Vf):
 
-                  ball.setVelocity([resultingVelXComponent, resultingVelYComponent])
-                  //ball.dontCollideFor(100)
-                  //setTimeout(function(){ball.setVelocity([-resultingVelXComponent, resultingVelYComponent])}, 500)
+                    //sometimes the angle of collision is very small and the resulting angle is calculated as being the same. In these cases, the angle should be
+                    //artificially increased:
+                    //if(Math.abs(angleBetweenVelocityAndWall) < 0.1){alert(angleBetweenVelocityAndWall); angleBetweenVelocityAndWall = angleBetweenVelocityAndWall*100}
+                    angleBetweenResultingVelocityAndXAxis = angleBetweenWallAndXAxis + angleBetweenVelocityAndWall
+                    //alert(angleBetweenWallAndXAxis + ":" + angleBetweenVelocityAndWall)
+
+                    //now, we know the angle of the velocity. we just need the magnitute:
+                    velMagnitude = Math.sqrt(ballVec[0]*ballVec[0] + ballVec[1]*ballVec[1])
+                    resultingVelXComponent = velMagnitude*Math.cos(angleBetweenResultingVelocityAndXAxis)
+                    resultingVelYComponent = velMagnitude*Math.sin(angleBetweenResultingVelocityAndXAxis)
+                    //alert(angleBetweenVelocityAndWall*57.3)//"previous velocity:" + ball.getVelocity() + ", new velocity:" + [resultingVelXComponent, resultingVelYComponent])
+                    ball.setVelocity([resultingVelXComponent, resultingVelYComponent])
+
+                    ball.dontCollideFor(100)
+                    //setTimeout(function(){ball.setVelocity([-resultingVelXComponent, resultingVelYComponent])}, 500)
+                }
                 }
               }
             }
@@ -500,10 +531,10 @@ var model = {
 
 //constructor for balls: (x and y are initial position)
 function ball(x, y, isExplosive) {
-  this.velocityTimeoutOn = false //prevent double-setting the velocity by implementing a velocity-setting timeout period
-  this.endTimeout = function(){this.velocityTimeoutOn = false}
+  this.NoSetVelocity = false //prevent double-setting the velocity by implementing a velocity-setting timeout period
+  this.endTimeout = function(){this.NoSetVelocity = false}
   this.initiateTimeout = function(){
-  this.velocityTimeoutOn = true
+  this.NoSetVelocity = true
     setTimeout(this.endTimeout,10)
   }
   this.dontCollideFor = function(ms){
@@ -529,7 +560,7 @@ function ball(x, y, isExplosive) {
   this.wallCollider = (this.explosive) ? new wallExplodeAnimation() : new standardWallCollideAnimation();
   this.radius = 20
   this.getRadius = function(){return this.radius}
-  this.velocity = [0.05-Math.random()/100, 0.05-Math.random()/100] //x and y components of velocity, respectively
+  this.velocity = [0.1-Math.random()/100*randomOneOrNegativeOne(), 0.1-Math.random()/100*randomOneOrNegativeOne()] //x and y components of velocity, respectively.
   this.x = x//Math.random()*view.gameWidth
   //this.x_prev = null, //previous position is important to calculate angle of movement
   this.y = y//Math.random()* view.gameHeight
@@ -564,6 +595,10 @@ function ball(x, y, isExplosive) {
 
   //move the ball one increment accorsing to its current velocity and position:
   this.move = function(){
+    //account for strange timestepDuration values like 0 or very high values:
+    if(timestepDuration == 0 | timestepDuration > 400){
+      timestepDuration = 30
+    }
     /*update x-axis position using differential equation dx/dt = v_x*/
     var dx = this.getVelocity()[0] * timestepDuration
     var new_x = this.getX() + dx; //Combining this line and the next would slightly increase performanc and readability,
@@ -744,7 +779,6 @@ var controller = {
 
 
 }
-
 
 function updateGame(currentTime){
   window.requestAnimationFrame(function(){
