@@ -402,8 +402,8 @@ var model = {
                 /*Now that the intersection has been found, find the angle between the velocity and the wall*/
                 /*Make sure the SIGNS OF ALL THESE ANGLES ARE CORRECT:*/
                 angleBetweenVelocityAndXAxis = Math.atan2((intersection[1]-ballPoint[1]), (intersection[0]-ballPoint[0]))
-                angleBetweenWallAndYAxis = Math.atan2(intersection[0], intersection[1])
-                angleBetweenVelocityAndWall = Math.PI/2 + angleBetweenVelocityAndXAxis - angleBetweenWallAndYAxis
+                angleBetweenWallAndYAxis = Math.PI/2-Math.atan(wallExtensionEquation.m)
+                angleBetweenVelocityAndWall = Math.PI/2 - angleBetweenVelocityAndXAxis - angleBetweenWallAndYAxis
                 angleBetweenWallAndXAxis = Math.PI/2 - angleBetweenWallAndYAxis
                 ballToIntersectionDistance = Math.sqrt(Math.pow(intersection[0]-ballPoint[0], 2) + Math.pow(intersection[1]-ballPoint[1], 2)) //Pythagorean
 
@@ -416,7 +416,6 @@ var model = {
                 ballWithinLineRange = false
                 if(Math.abs(ballToWallClosestDistance) < Math.abs(rad)){
                   ballWithinLineRange = true
-                  console.log("inRange")
                 }
 
                 /*NOT USING THIS METHOD ANYMORE:*/
@@ -471,7 +470,8 @@ var model = {
                                                              (collisionPoint[1] <= Math.max(wallPoint[1], nextWallPoint[1]) + rad)
 
                 view.showPoint(collisionPoint)
-                if(!collisionIsWithinSegmentPlusBallRadius && !ballWithinLineRange){console.log(ballToWallClosestDistance)}
+                //console.log(angleBetweenVelocityAndWall*57.3)
+                //if(!collisionIsWithinSegmentPlusBallRadius && !ballWithinLineRange){console.log(ballToWallClosestDistance)}
                 if(collisionIsWithinSegmentPlusBallRadius && ballWithinLineRange){
                   //there's a collision
 
@@ -482,8 +482,8 @@ var model = {
                   resultingVelXComponent = velMagnitude*Math.cos(angleBetweenVelocityAndWall)
                   resultingVelYComponent = velMagnitude*Math.sin(angleBetweenVelocityAndWall)
 
-                  ball.setVelocity([-resultingVelXComponent, -resultingVelYComponent])
-                  ball.dontCollideFor(1000)
+                  ball.setVelocity([resultingVelXComponent, resultingVelYComponent])
+                  //ball.dontCollideFor(100)
                   //setTimeout(function(){ball.setVelocity([-resultingVelXComponent, resultingVelYComponent])}, 500)
                 }
               }
@@ -502,12 +502,10 @@ function ball(x, y, isExplosive) {
   this.endTimeout = function(){this.velocityTimeoutOn = false}
   this.initiateTimeout = function(){
   this.velocityTimeoutOn = true
-    setTimeout(this.  endTimeout,1000)
-    setTimeout(alert(this.velocityTimeoutOn),1000)
+    setTimeout(this.endTimeout,10)
   }
   this.dontCollideFor = function(ms){
     this.initiateTimeout()
-    //setTimeout
   }
   this.color = "#AAABC8"
   this.getColor = function() {return this.color}
@@ -552,8 +550,9 @@ function ball(x, y, isExplosive) {
   this.getVelocity = function(){return this.velocity};
 
   this.setVelocity = function(v){
-    //alert('setting Vel');
-      this.velocity = v
+      if(!this.velocityTimeoutOn){
+        this.velocity = v
+      }
   }
 
   this.highestPoint = function(){return this.y - this.radius}
