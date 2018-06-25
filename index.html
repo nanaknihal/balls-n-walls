@@ -24,7 +24,7 @@ w=650; h=650;
 var game = {
   type:"html-keyboard-response",
   stimulus: "<!--main canvas where game happens:-->" +
-  "<canvas id='mainCanvas' height='" + h + "' width = '" + w + "'></canvas>" + "<button onclick='controller.beginGame(levelZero)'>S T A R T</button>"
+  "<canvas id='mainCanvas' height='" + h + "' width = '" + w + "'></canvas>" + "<button onclick='curLevel.beginGame(levelZero)'>S T A R T</button>"
   +
   "<!--overlay canvas that doesn't need to be refreshed constantly:-->" +
   //it may be good to not hard-code the top and left value but rather use variables...this will be decided later when we do more styling
@@ -97,24 +97,24 @@ var distanceBetween = function(p1, p2){
 
 /*--Game stuff:--*/
 
-var model = function(numBalls, numExplodingBalls, /*velocityMultiplier*/) {
+function model(numBalls, numExplodingBalls /*,velocityMultiplier*/) {
   this.gameOver = false
   this.isGameOver = function(){return this.gameOver} //overdoing it on the getters, setters, and LoD? maybe
   this.currentTime = 0
   this.balls = [];
 
-  ballRadius = 20
-  for(var i = 0; i<numBalls; i++){
-    //random x-y coordinates of a new ball:
-    var x = Math.round(ballRadius + Math.random()*(w-2*ballRadius));
-    var y = Math.round(ballRadius + Math.random()*(h-2*ballRadius));
 
+  for(var i = 0; i<numBalls; i++){
+    var ballRadius = 20
+    //random x-y coordinates of a new ball:
+    x = Math.round(ballRadius + Math.random()*(w-2*ballRadius));
+    y = Math.round(ballRadius + Math.random()*(h-2*ballRadius));
     this.balls.push(new ball(x,y,ballRadius))
   }
 
-  for(var i = 0; i<numExplodingBalls; i++){
-    var x = Math.round(ballRadius + Math.random()*(w-2*ballRadius))
-    var y = Math.round(ballRadius + Math.random()*(h-2*ballRadius))
+  for(var i = 0; i<numExplodingBalls; i++){  //exploding balls can't be too close to the edges; that isn't fair
+    x = Math.round(5*ballRadius + Math.random()*(w-5*ballRadius));
+    y = Math.round(ballRadius + Math.random()*(h-5*ballRadius));
     this.balls.push(new ball(x,y,ballRadius,"e")) //e for explosive
   }
 
@@ -201,7 +201,7 @@ var model = function(numBalls, numExplodingBalls, /*velocityMultiplier*/) {
   //not necessary to have this function but it's good encapsulation and helps with Law of Demeter (even though it technically violates it)
   //if efficiency is a concern, we can get rid of it:
   this.addPixelsToUserObstacle = function(event){
-    model.userObstacle.addPixels(event)
+    this.userObstacle.addPixels(event)
   }
 
 
@@ -547,7 +547,6 @@ var model = function(numBalls, numExplodingBalls, /*velocityMultiplier*/) {
 
 //constructor for balls: (x and y are initial position)
 function ball(x, y, radius, isExplosive) {
-  this.NoSetVelocity = false //prevent double-setting the velocity by implementing a velocity-setting timeout period
   this.endTimeout = function(){this.NoSetVelocity = false}
   this.initiateTimeout = function(){
   this.NoSetVelocity = true
@@ -560,7 +559,7 @@ function ball(x, y, radius, isExplosive) {
   this.getColor = function() {return this.color}
   this.setColor = function(col) {this.color = col}
   this.explosive = (isExplosive == "e")
-
+  this.getExplosive = function(){return this.explosive}
   this.collide = function(collision_type){
     this.onCollide(collision_type)
   }
@@ -781,13 +780,13 @@ var view = {
 function controller(model, view){
 
 
-  beginGame : function(level){
+  this.beginGame = function(level){
 
     view.init();
-    controller.loadCanvas();
+    this.loadCanvas();
 
     var initialFrameDuration = 1300 //ms
-    view.showInitialFrame(this.model,initialFrameDuration) //show the frame where the exploding balls look different
+    view.showInitialFrame(model,initialFrameDuration) //show the frame where the exploding balls look different
 
     //then start the first update
     this.getWallsFromUser(); //this adds an Event Listener
@@ -796,16 +795,16 @@ function controller(model, view){
     }, duration)
     },
 
-  ballHitBall : function(){console.log("Game Over")},
+  this.ballHitBall = function(){console.log("Game Over")},
 
-  loadCanvas : function(){this.can = document.getElementById("mainCanvas"); this.ctx = this.can.getContext("2d")},
+  this.loadCanvas = function(){this.can = document.getElementById("mainCanvas"); this.ctx = this.can.getContext("2d")},
 
-  getWallsFromUser : function(){
+  this.getWallsFromUser = function(){
     //first, add the event listener for mouseclicks
     document.addEventListener("mousedown", this.findWallDrawingPath);
   },
 
-  findWallDrawingPath : function(event){
+  this.findWallDrawingPath = function(event){
     //first, collect the first pixel:
     model.addPixelsToUserObstacle(event)
 
@@ -813,7 +812,7 @@ function controller(model, view){
     //get rid of the mousemove listener when the mouse is released:
     document.addEventListener("mouseup", function(){document.removeEventListener("mousemove", model.addPixelsToUserObstacle)})
 
-  },
+  }
 
 
 
@@ -823,11 +822,15 @@ function controller(model, view){
 function level(mod) {
   this.model = mod
   this.view = view,
-  this.controller = controller,
+  this.controller = new controller(mod, view),
   this.gameOver = function(){return this.model.isGameOver()}
   this.update = function(currentTime){
      this.model.update(currentTime)
-     this.view.update(this.model)}
+     this.view.update(this.model)
+  }
+  this.beginGame = function(){
+    this.controller.beginGame()
+  }
 }
 
 var levelZero = new level(new model(3,5));
