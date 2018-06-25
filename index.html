@@ -98,11 +98,12 @@ var distanceBetween = function(p1, p2){
 /*--Game stuff:--*/
 
 function model(numBalls, numExplodingBalls /*,velocityMultiplier*/) {
-  this.gameOver = false
-  this.isGameOver = function(){return this.gameOver} //overdoing it on the getters, setters, and LoD? maybe
+  this.frozen = false //game pauses and model freezes
+  this.freeze = function(){this.frozen = true}
   this.currentTime = 0
-  this.balls = [];
-
+  this.balls = []; //including exploding balls
+  this.explodingBalls = [];
+  this.numExplodingBalls = function(){return this.explodingBalls.length}
 
   for(var i = 0; i<numBalls; i++){
     var ballRadius = 20
@@ -113,11 +114,12 @@ function model(numBalls, numExplodingBalls /*,velocityMultiplier*/) {
   }
 
   for(var i = 0; i<numExplodingBalls; i++){  //exploding balls can't be too close to the edges; that isn't fair
-    x = Math.round(5*ballRadius + Math.random()*(w-5*ballRadius));
-    y = Math.round(ballRadius + Math.random()*(h-5*ballRadius));
-    this.balls.push(new ball(x,y,ballRadius,"e")) //e for explosive
+    x = Math.round(10*ballRadius + Math.random()*(w-20*ballRadius));
+    y = Math.round(10*ballRadius + Math.random()*(h-20*ballRadius));
+    bal = new ball(x,y,ballRadius,"e") //e for explosive
+    this.balls.push(bal)
+    this.explodingBalls.push(bal)
   }
-
 
 
   /*MAKE SURE TO NOT MAKE THE WIDTHS NEGATIVE - THE wall.highestPoint, leftestPoint, etc. methods will not work if they
@@ -207,6 +209,7 @@ function model(numBalls, numExplodingBalls /*,velocityMultiplier*/) {
 
   this.getBalls = function(){return this.balls},
   this.update = function(newTime){
+   if(!this.frozen){ //don't update if it's frozen
     timestepDuration = newTime - this.currentTime
     this.currentTime = newTime
     this.checkForWallCollisions = function(){
@@ -543,6 +546,7 @@ function model(numBalls, numExplodingBalls /*,velocityMultiplier*/) {
 
 
   }
+ }
 }
 
 //constructor for balls: (x and y are initial position)
@@ -561,12 +565,14 @@ function ball(x, y, radius, isExplosive) {
   this.explosive = (isExplosive == "e")
   this.getExplosive = function(){return this.explosive}
   this.collide = function(collision_type){
+    if(collision_type == "wall" && this.explosive){
+      curLevel.defusalMode()
+    }
     this.onCollide(collision_type)
   }
   this.onCollide = function(collision_type){
     this.color = "#FF0000"
     if(collision_type == "wall") {
-      //maybe implement three strikes before dying?
       this.wallCollider.collide(this.x, this.y);
     } else if (collision_type == "ball") {
         controller.ballHitBall();
@@ -656,10 +662,10 @@ function wall(x,y/*top left x and y*/, w, l/*length and width*/){
 }
 
 var view = {
-
   //get canvas, context
   can: null,
   ctx: null,
+  highlightingSelectedBalls: false,
   pointsToShow: new Array(),
   showPoint: function(pt) {this.pointsToShow.push(pt)},
 
@@ -686,8 +692,8 @@ var view = {
   },
 
   update: function(model){
-    var can = this.can;
-    var ctx = this.ctx;
+    //var can = this.can;
+    var ctx = this.ctx; //easier to work with than having to write this.ctx each time
     //clear the context:
     ctx.clearRect(0,0, w, h);
     var balls = model.getBalls();
@@ -753,14 +759,12 @@ var view = {
       ctx.closePath();
     }
 
-
   },
 
   //img is a link to the image file
   showImgAtFor: function(img, x, y, duration){
-    this.overlayCan = document.getElementById("overlay")
-    octx = this.overlayCan.getContext('2d')
-
+    ocan = document.getElementById("overlay")
+    octx = ocan.getContext('2d')
     var imgElement = new Image();
     imgElement.src = img;
     octx.drawImage(imgElement, x, y)
@@ -773,12 +777,74 @@ var view = {
   },
 
   //display a message to the player
-  message: function(msg){alert(msg)}
+  message: function(msg){alert(msg)},
+
+  displayDefusalMessage: function(){
+    defusalTimeLimit = 10000
+    ocan = document.getElementById("overlay")
+    octx = ocan.getContext('2d')
+
+    octx.font = "30px Helvetica"
+    octx.strokeText("Defusal Mode", w/2, h/3)
+
+    octx.font = ("12px Arial")
+
+    octx.fillText("You have " + defusalTimeLimit/1000 + " seconds to defuse the bombs by clicking the correct balls", w/2, 2*h/3)
+    this.timer.reset(defusalTimeLimit/100, "red")
+  },
+
+  highlightSelectedBalls: function(event){
+    //iterate through the balls to check whether the mouth is within them:
+    balls = curLevel.model.getBalls()
+    for(var j = 0, numBalls = balls.length; j < numBalls; j++){
+      if(distanceBetween([event.pageX,event.pageY], [ball.getX(), ball.getY()]) < ball.getRadius){
+        //display a border around the ball
+        ctx.beginPath()
+        ctx.fillStyle = "yellow"
+        ctx.arc(ball.getX, ball.getY, ball.getRadius()+1, 0, 2*Math.PI)
+        ctx.fill()
+        ctx.closePath();
+
+      }
+    }
+  },
+  //timer displaying:
+  timer : {
+    hidden: false, //toggle whether it's displayed
+    color: "red",
+    countdown: true, //default is countdown-mode, not countup-mode
+    countdownTime: null,
+    startTime: null, //it needs to be set
+    curTime: null,
+    updateCurTime: function(){this.startTime - new Date()}, //startDate must be set already for this to work properly
+    reset: function(countdownTime, color, countdown) {
+      this.countdownTime = countdownTime;
+      this.startTime = new Date();
+    },
+    displayTimer: function(){
+      //draw timer:
+      if(this.hidden){
+        return null //exit the function if it's hidden, before the recursive call
+      }
+        //ocan = document.getElementById("overlay")
+        //octx = ocan.getContext('2d')
+        octx.font = ("12px Arial")
+        time = Math.round((this.timer.curTime % 60000)/1000)
+        octx.fillText(time, w/2,10) //NOTE: assuming time counter should always be under a minute
+        setTimeout(function(){this.updateCurTime(); this.displayTimer()}, 1000) //recursive call
+      }
+
+    }
+
+
+
 
 }
 
 function controller(model, view){
 
+  this.gameOver = false
+  this.isGameOver = function(){return this.gameOver} //overdoing it on the getters, setters, and LoD? maybe
 
   this.beginGame = function(level){
 
@@ -793,7 +859,7 @@ function controller(model, view){
     setTimeout(function(){
       updateGame(0, this.model); //beginning time is 0
     }, duration)
-    },
+    }
 
   this.ballHitBall = function(){console.log("Game Over")},
 
@@ -814,7 +880,45 @@ function controller(model, view){
 
   }
 
+  this.defusalMode = function(){
+    view.displayDefusalMessage()
+    document.addEventListener("mousedown", this.registerDefusalGuess)
+    document.addEventListener("mousemove", view.highlightSelectedBalls)
+    var oldLevel = curLevel
+    setInterval(function(){
+      if(curLevel == oldLevel){ //if the level hasn't been changed yet, the game's over after the timer's up
+        this.gameOver()
+      }
+    },
+    defusalTimeLimit)
+  }
 
+  this.guessesRemaining = model.numExplodingBalls()
+  this.correctGuesses = 0
+  this.incorrectGuesses = 0
+  this.registerDefusalGuess = function(event){
+    if(this.guessesRemaining > 0){
+      result = model.checkDefusalGuess([event.pageX, event.pageY])
+      switch(result){
+        case true: //correct guess
+          this.correctGuesses++
+          this.guessesRemaining--
+          break;
+        case false:
+          this.incorrectGuesses++
+          this.guessesRemaining-- //-- instead of set to 0 because then we can collect data about how many the got right/wrong
+          break;
+        case "notABall":
+          break;
+
+      }
+
+    } else { //if there are no guesses remaining:
+      document.removeEventListener("mousedown", this.registerDefusalGuess)
+      document.removeEventListener("mousemove", view.highlightSelectedBalls)
+    }
+
+  }
 
 }
 
@@ -822,8 +926,8 @@ function controller(model, view){
 function level(mod) {
   this.model = mod
   this.view = view,
-  this.controller = new controller(mod, view),
-  this.gameOver = function(){return this.model.isGameOver()}
+  this.controller = new controller(this.model, this.view),
+  this.gameOver = function(){return this.controller.isGameOver()}
   this.update = function(currentTime){
      this.model.update(currentTime)
      this.view.update(this.model)
@@ -831,9 +935,14 @@ function level(mod) {
   this.beginGame = function(){
     this.controller.beginGame()
   }
+  this.defusalMode = function(){
+    this.model.freeze()
+    this.controller.defusalMode()
+  }
+
 }
 
-var levelZero = new level(new model(3,5));
+var levelZero = new level(new model(4,2));
 
 curLevel = levelZero;
 
@@ -845,7 +954,6 @@ function updateGame(currentTime){
     }
   })
 }
-
 
 
 </script>
