@@ -806,6 +806,12 @@ var view = {
 
       }
     }
+
+    //recursive call
+    if(curLevel.defusalModeOn){
+      window.requestAnimationFrame(view.highlightSelectedBalls)
+      alert("reqanfr")
+    }
   },
   //timer displaying:
   timer : {
@@ -849,8 +855,8 @@ var view = {
 function controller(model, view){
 
   this.gameOver = false
+  this.defusalModeOn = false
   this.isGameOver = function(){return this.gameOver} //overdoing it on the getters, setters, and LoD? maybe
-
   this.beginGame = function(level){
 
     view.init();
@@ -886,6 +892,7 @@ function controller(model, view){
   }
 
   this.defusalMode = function(){
+    this.defusalModeOn = true
     defusalTimeLimit = 10000
     view.displayDefusalMessage(defusalTimeLimit)
     //remove the wall drawing listeners
@@ -906,7 +913,9 @@ function controller(model, view){
     setInterval(function(){
       if(curLevel == oldLevel){ //if the level hasn't been changed yet, the game's over after the timer's up
         this.gameOver()
-      }
+      } else{}
+      //turn off defusalMode
+      this.defusalModeOn = false
     },
     defusalTimeLimit)
   }
