@@ -203,7 +203,7 @@ function model(numBalls, numExplodingBalls /*,velocityMultiplier*/) {
   //not necessary to have this function but it's good encapsulation and helps with Law of Demeter (even though it technically violates it)
   //if efficiency is a concern, we can get rid of it:
   this.addPixelsToUserObstacle = function(event){
-    this.userObstacle.addPixels(event)
+    curLevel.model.userObstacle.addPixels(event)
   }
 
 
@@ -779,8 +779,8 @@ var view = {
   //display a message to the player
   message: function(msg){alert(msg)},
 
-  displayDefusalMessage: function(){
-    defusalTimeLimit = 10000
+  displayDefusalMessage: function(defusalTimeLimit){
+
     ocan = document.getElementById("overlay")
     octx = ocan.getContext('2d')
 
@@ -790,7 +790,6 @@ var view = {
     octx.font = ("12px Arial")
 
     octx.fillText("You have " + defusalTimeLimit/1000 + " seconds to defuse the bombs by clicking the correct balls", w/2, 2*h/3)
-    this.timer.reset(defusalTimeLimit/100, "red")
   },
 
   highlightSelectedBalls: function(event){
@@ -812,14 +811,18 @@ var view = {
   timer : {
     hidden: false, //toggle whether it's displayed
     color: "red",
+    fontSize:12,
+    x: w/2, // x positioning
+    y: 10,
     countdown: true, //default is countdown-mode, not countup-mode
     countdownTime: null,
-    startTime: null, //it needs to be set
+    startTime: 0, //null, (it needs to be set)
     curTime: null,
-    updateCurTime: function(){this.startTime - new Date()}, //startDate must be set already for this to work properly
+    //updateCurTime: function(){this.startTime - new Date()}, //startDate must be set already for this to work properly
+    updateCurTime: function(){this.curTime = this.curTime + 1},
     reset: function(countdownTime, color, countdown) {
       this.countdownTime = countdownTime;
-      this.startTime = new Date();
+      this.startTime = 0;//new Date();
     },
     displayTimer: function(){
       //draw timer:
@@ -828,10 +831,12 @@ var view = {
       }
         //ocan = document.getElementById("overlay")
         //octx = ocan.getContext('2d')
-        octx.font = ("12px Arial")
-        time = Math.round((this.timer.curTime % 60000)/1000)
-        octx.fillText(time, w/2,10) //NOTE: assuming time counter should always be under a minute
-        setTimeout(function(){this.updateCurTime(); this.displayTimer()}, 1000) //recursive call
+        octx.clearRect(this.x,this.y-this.fontSize, this.fontSize*2, this.fontSize)
+        octx.font = this.fontSize + "px Arial"
+        //time = Math.round((this.curTime % 60000)/1000)
+        time = this.curTime == null ? 0:this.curTime
+        octx.fillText(time, this.x, this.y) //NOTE: assuming time counter should always be under a minute
+        setTimeout(function(){view.timer.updateCurTime(); view.timer.displayTimer();}, 1000) //recursive call
       }
 
     }
@@ -881,9 +886,22 @@ function controller(model, view){
   }
 
   this.defusalMode = function(){
-    view.displayDefusalMessage()
-    document.addEventListener("mousedown", this.registerDefusalGuess)
+    defusalTimeLimit = 10000
+    view.displayDefusalMessage(defusalTimeLimit)
+    //remove the wall drawing listeners
+    document.removeEventListener("mousedown", this.findWallDrawingPath)
+    document.removeEventListener("mousemove", model.addPixelsToUserObstacle)
+
+    //listen for new guesses:
     document.addEventListener("mousemove", view.highlightSelectedBalls)
+    document.addEventListener("mousedown", this.registerDefusalGuess)
+
+    //start the timer
+    view.timer.reset(defusalTimeLimit/100, "red") //violation of LoD but I think it's ok
+    alert('reset')
+    view.timer.displayTimer()
+
+
     var oldLevel = curLevel
     setInterval(function(){
       if(curLevel == oldLevel){ //if the level hasn't been changed yet, the game's over after the timer's up
@@ -914,8 +932,10 @@ function controller(model, view){
       }
 
     } else { //if there are no guesses remaining:
+      //remove the guessing event listeners
       document.removeEventListener("mousedown", this.registerDefusalGuess)
       document.removeEventListener("mousemove", view.highlightSelectedBalls)
+
     }
 
   }
