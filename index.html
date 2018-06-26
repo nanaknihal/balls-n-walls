@@ -97,7 +97,7 @@ var distanceBetween = function(p1, p2){
 
 /*--Game stuff:--*/
 
-function model(numBalls, numExplodingBalls, velocityMultiplier) {
+function model(numBalls, numExplodingBalls, speed) {
   this.frozen = false //game pauses and model freezes
   this.freeze = function(){this.frozen = true}
   this.currentTime = 0
@@ -110,13 +110,13 @@ function model(numBalls, numExplodingBalls, velocityMultiplier) {
     //random x-y coordinates of a new ball:
     x = Math.round(ballRadius + Math.random()*(w-2*ballRadius));
     y = Math.round(ballRadius + Math.random()*(h-2*ballRadius));
-    this.balls.push(new ball(x,y,ballRadius, velocityMultiplier))
+    this.balls.push(new ball(x,y,ballRadius, speed))
   }
 
   for(var i = 0; i<numExplodingBalls; i++){  //exploding balls can't be too close to the edges; that isn't fair
     x = Math.round(10*ballRadius + Math.random()*(w-20*ballRadius));
     y = Math.round(10*ballRadius + Math.random()*(h-20*ballRadius));
-    bal = new ball(x,y,ballRadius,velocityMultiplier, "e") //e for explosive
+    bal = new ball(x,y,ballRadius,speed, "e") //e for explosive
     this.balls.push(bal)
     this.explodingBalls.push(bal)
   }
@@ -561,7 +561,7 @@ function model(numBalls, numExplodingBalls, velocityMultiplier) {
 }
 
 //constructor for balls: (x and y are initial position)
-function ball(x, y, radius, velocityMultiplier, isExplosive) {
+function ball(x, y, radius, speed, isExplosive) {
   this.endTimeout = function(){this.NoSetVelocity = false}
   this.initiateTimeout = function(){
   this.NoSetVelocity = true
@@ -592,7 +592,11 @@ function ball(x, y, radius, velocityMultiplier, isExplosive) {
   this.wallCollider = (this.explosive) ? new wallExplodeAnimation() : new standardWallCollideAnimation();
   this.radius = radius
   this.getRadius = function(){return this.radius}
-  this.velocity = [(0.1-Math.random()/100)*randomOneOrNegativeOne()*velocityMultiplier, (0.1-Math.random()/100)*randomOneOrNegativeOne()*velocityMultiplier] //x and y components of velocity, respectively.
+  //all balls must have the same speed but random direction: therefore their:
+  //x velocity = their speed*cos(random angle), y velocity: speed*sin(same angle)
+
+  var randomAngle = Math.random()*2*Math.PI
+  this.velocity = [speed*Math.cos(randomAngle), speed*Math.sin(randomAngle)]
   this.x = x//Math.random()*view.gameWidth
   //this.x_prev = null, //previous position is important to calculate angle of movement
   this.y = y//Math.random()* view.gameHeight
@@ -995,7 +999,7 @@ function level(mod) {
 
 }
 
-function levelZero() {return new level(new model(4,2,10))}
+function levelZero() {return new level(new model(4,2,1))}
 
 curLevel = levelZero();
 
