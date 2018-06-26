@@ -473,7 +473,7 @@ function model(numBalls, numExplodingBalls, speed) {
                                                              (collisionPoint[1] <= Math.max(wallPoint[1], nextWallPoint[1]))
                 //Consider the following scenario: the collisionPoint is not actually the closest point on the wall's extension. This happens when the ball collides with
                 // an endpoint of the wall. For these cases:
-                if(!collisionIsWithinSegment && (distanceBetween(ballPoint, wallPoint) <= rad || distanceBetween(ballPoint, nextWallPoint) <=rad) ){
+                if(!collisionIsWithinSegment && ((distanceBetween(ballPoint, wallPoint) <= rad || distanceBetween(ballPoint, nextWallPoint) <=rad)) ){
                   //alert("a")
                   collisionIsWithinSegment = true;
                   ballWithinLineRange = true;
