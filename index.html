@@ -304,6 +304,7 @@ function model(numBalls, numExplodingBalls, velocityMultiplier) {
         if(collidingWVert || collidingWHori){
           wallCollided == true;
           ball.collide("wall");
+          if(ball.exploding)
           //multiply the velocity by -1 on appropriate axis. but how do we find the appropriate axis?:
             //by looking for the side of the wall the ball is closest to
             var highWallDistance = Math.abs(cur_y - wh)
@@ -547,6 +548,16 @@ function model(numBalls, numExplodingBalls, velocityMultiplier) {
 
   }
  }
+
+ this.checkDefusalGuess = function(clickPoint){
+   alert("Checkin'")
+    clickIsInBall = false
+    for(var k = 0; k < numBalls; k++){
+      if(distanceBetween(clickPoint, [balls[k].getX(), balls[k].getY()] ) <= balls[k].getRadius()){
+        alert("Correct")
+      }
+    }
+  }
 }
 
 //constructor for balls: (x and y are initial position)
@@ -563,7 +574,7 @@ function ball(x, y, radius, velocityMultiplier, isExplosive) {
   this.getColor = function() {return this.color}
   this.setColor = function(col) {this.color = col}
   this.explosive = (isExplosive == "e")
-  this.getExplosive = function(){return this.explosive}
+  this.isBallExplosive = function(){return this.explosive}
   this.collide = function(collision_type){
     if(collision_type == "wall" && this.explosive){
       curLevel.defusalMode()
@@ -680,7 +691,7 @@ var view = {
     //change the exploding balls' colors:
     for(var j = 0, balls = model.getBalls(), numBalls = balls.length; j < numBalls; j++){
       ball = balls[j];
-      if(ball.explosive){
+        if(ball.isBallExplosive()){
         oldColor = ball.getColor()
 
         ball.setColor("orange")
@@ -808,7 +819,7 @@ var view = {
     }
 
     //recursive call
-    if(curLevel.defusalModeOn){
+    if(curLevel.isDefusalModeOn()){
       window.requestAnimationFrame(view.highlightSelectedBalls)
       alert("reqanfr")
     }
@@ -825,11 +836,11 @@ var view = {
     countdownTime: null,
     startTime: 0, //null, (it needs to be set)
     curTime: null,
-    //updateCurTime: function(){this.startTime - new Date()}, //startDate must be set already for this to work properly
-    updateCurTime: function(){this.curTime++},
+    updateCurTime: function(){view.timer.curTime = Math.abs(this.startTime - new Date().getSeconds())}, //startDate must be set already for this to work properly. note times will reset after a minute.
+    //updateCurTime: function(){this.curTime++},
     reset: function(countdownTime, color, countdown) {
       this.countdownTime = countdownTime;
-      this.startTime = 0;//new Date();
+      this.startTime = new Date().getSeconds(); //0
     },
     displayTimer: function(){
       //draw timer:
@@ -843,7 +854,8 @@ var view = {
         //time = Math.round((this.curTime % 60000)/1000)
         time = this.curTime == null ? 0:this.curTime
         octx.fillText(time, this.x, this.y) //NOTE: assuming time counter should always be under a minute
-        setTimeout(function(){view.timer.updateCurTime(); view.timer.displayTimer();}, 1000) //recursive call
+
+        setTimeout(function(){view.timer.updateCurTime();view.timer.displayTimer();}, 1000) //recursive call
       }
 
     }
@@ -893,31 +905,36 @@ function controller(model, view){
   }
 
   this.defusalMode = function(){
-    this.defusalModeOn = true
-    defusalTimeLimit = 10000
-    view.displayDefusalMessage(defusalTimeLimit)
-    //remove the wall drawing listeners
-    document.removeEventListener("mousedown", this.findWallDrawingPath)
-    document.removeEventListener("mousemove", model.addPixelsToUserObstacle)
 
-    //listen for new guesses:
-    document.addEventListener("mousemove", view.highlightSelectedBalls)
-    document.addEventListener("mousedown", this.registerDefusalGuess)
+    //only start defusalMode if it's not on already - this prevents it being triggered multiple times by collisions:
+    if(!this.defusalModeOn){
+      this.defusalModeOn = true
+      defusalTimeLimit = 10000
+      view.displayDefusalMessage(defusalTimeLimit)
+      //remove the wall drawing listeners
+      document.removeEventListener("mousedown", this.findWallDrawingPath)
+      document.removeEventListener("mousemove", model.addPixelsToUserObstacle)
 
-    //start the timer
-    view.timer.reset(defusalTimeLimit/100, "red") //violation of LoD but I think it's ok
-    view.timer.displayTimer()
+      //listen for new guesses:
+      document.addEventListener("mousemove", view.highlightSelectedBalls)
+      document.addEventListener("mousedown", this.registerDefusalGuess)
+
+      //start the timer
+      view.timer.reset(defusalTimeLimit/100, "red") //violation of LoD but I think it's ok
+      view.timer.displayTimer()
 
 
-    var oldLevel = curLevel
-    setInterval(function(){
-      if(curLevel == oldLevel){ //if the level hasn't been changed yet, the game's over after the timer's up
-        curLevel.controller.endGame()
-      } else{}
-      //turn off defusalMode
-      this.defusalModeOn = false
-    },
-    defusalTimeLimit)
+      var oldLevel = curLevel
+      setTimeout(function(){
+        if(curLevel == oldLevel){ //if the level hasn't been changed yet, the game's over after the timer's up
+          curLevel.controller.endGame()
+        } else{}
+        //turn off defusalMode
+        this.defusalModeOn = false
+      },
+      defusalTimeLimit)
+    }
+
   }
 
   this.guessesRemaining = model.numExplodingBalls()
@@ -949,7 +966,7 @@ function controller(model, view){
 
   }
   this.endGame = function(){
-    timer.hide()
+    view.timer.hide()
     alert("Game Over...Restarting")
     curLevel = new levelZero()
   }
@@ -974,10 +991,11 @@ function level(mod) {
     this.model.freeze()
     this.controller.defusalMode()
   }
+  this.isDefusalModeOn =function(){ return controller.defusalModeOn; alert("im beign called")}
 
 }
 
-function levelZero() {return new level(new model(4,2, 0.3))}
+function levelZero() {return new level(new model(4,2,10))}
 
 curLevel = levelZero();
 
