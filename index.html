@@ -203,52 +203,48 @@ function model(numBalls, numExplodingBalls, speed) {
    if(!this.frozen){ //don't update if it's frozen
     timestepDuration = newTime - this.currentTime
     this.currentTime = newTime
+
+
+    //check for collision with any previously updated balls:
+    //commenting this out because we don't need collisions (maybe will implement later)
+    /*
+    var ballCollided = false;
+    //assuming all balls have same, constant radius! that seems fine for the purpose of this experiment (and is much better for efficiency):
+    rad = ball.getRadius();
+    rad2 = rad*rad;
+    for(var k = 0, numUpdBalls = updatedBalls.length; k < numUpdBalls && !ballCollided/*it will stop on collisions; k++){
+      x_diff = cur_x - updatedBalls[k].getX();
+      y_diff = cur_y - updatedBalls[k].getY();
+      distance = Math.pow(x_diff, 2) + Math.pow(y_diff, 2);
+
+
+
+      if(distance < rad2){
+        ballCollided == true;
+        ball.collide("ball");
+
+      }
+    }*/
+
+
+    //Checks for collision with the four walls surrounding the game, NOT user-defined obstacles/walls
     this.checkForWallCollisions = function(){
     /*update the balls*/
-    var updatedBalls = []; //to check for collisions, balls' positions will need to be compared to updated balls - not
-                           //non-updated balls.
 
     for(var i = 0, numBalls = this.balls.length; i < numBalls; i++){
 
       var ball = this.balls[i];
-      cur_x = ball.getX();
-      cur_y = ball.getY();
-
-
-
-      //check for collision with any previously updated balls:
-      //commenting this out because we don't need collisions (maybe will implement later)
-      /*
-      var ballCollided = false;
-      //assuming all balls have same, constant radius! that seems fine for the purpose of this experiment (and is much better for efficiency):
-      rad = ball.getRadius();
-      rad2 = rad*rad;
-      for(var k = 0, numUpdBalls = updatedBalls.length; k < numUpdBalls && !ballCollided/*it will stop on collisions; k++){
-        x_diff = cur_x - updatedBalls[k].getX();
-        y_diff = cur_y - updatedBalls[k].getY();
-        distance = Math.pow(x_diff, 2) + Math.pow(y_diff, 2);
-
-
-
-        if(distance < rad2){
-          ballCollided == true;
-          ball.collide("ball");
-
-        }
-      }*/
-
-      //check for collision with any previously updated walls:
-      var wallCollided = false;
+      ballPoint = [ball.getX(), ball.getY()]
 
       for(var k = 0, numWalls = this.walls.length; k < numWalls; k++){
 
         wall = this.walls[k]
 
 
-        wall_x = wall.getX()
-        wall_y = wall.getY()
-        wall_l = wall.getL()
-        wall_w = wall.getW()
+        wallX = wall.getX()
+        wallY = wall.getY()
+        wallL = wall.getL()
+        wallW = wall.getW()
 
 
         rad = ball.getRadius()
@@ -258,10 +254,10 @@ function model(numBalls, numExplodingBalls, speed) {
         //var be = ball.leftestPoint()
         //var br = ball.rightestPoint()
 
-        var wh = wall.highestPoint()
-        var wl = wall.lowestPoint()
-        var we = wall.leftestPoint()
-        var wr = wall.rightestPoint()
+        var wh = wall.highestSide()
+        var wl = wall.lowestSide()
+        var we = wall.leftestSide()
+        var wr = wall.rightestSide()
 
         /*WHEN A BALL INTERSECTS WITH A WALL:
           one of the rectangle's four edges is within the circle's area (closer to the center than the circle).
@@ -273,62 +269,49 @@ function model(numBalls, numExplodingBalls, speed) {
           vice versa with horizontal walls and y coordinates vs. x coordinates
         */
 
-        //NOTE: the following only works with walls that are thinner than the ball. This is a simplifying assumption. There should never be walls
-        //thicker than the balls
-        collidingWVert = (Math.abs(cur_x - wall_x) < rad) || (Math.abs(cur_x - (wall_x+wall_w)) < rad) //either of the walls' sides
-                                                                                                       //x coordinate is closer to the center
-                                                                                                       //than the radius is
+        //NOTE: you can increase the padding for better performance withhigher velocities
+        padding = 2
+        function oneDimDistance(a,b) {return Math.abs(a-b)} //his is just encapsulation of a simple but soon-to-be frequently used procedure
 
-        collidingWHori = (Math.abs(cur_y - wall_y) < rad) || (Math.abs(cur_y - (wall_y+wall_l)) < rad) //same but with y
+        closestSideOfWallVertically = (oneDimDistance(ballPoint[1], wh) < oneDimDistance(ballPoint[1], wl)) ? wh : wl
 
-        //NOTE: the following only works with walls without negative coordinates, lengths, and widths. making walls like that is unecessary
-        //and would necesitate a slower algorithm here, whereas converting negative coordinates to positive coordinates once, upon construction,
-        //is more efficient. This is called for every ball and every wall at every update!:
-//TRY THIS:  //centerIsWithinWallY = (cur_y >= wh) && (cur_x <= wl)
-            //centerIsWithinWallX = (cur_x >= we) && (cur_x <= wr)
+        closestSideOfWallHorizontally = (oneDimDistance(ballPoint[0], we) < oneDimDistance(ballPoint[0], wr)) ? we : wr
 
-
-
-
-
-
-        if(collidingWVert || collidingWHori){
-          wallCollided == true;
+        closestVertDistance = oneDimDistance(ballPoint[1], closestSideOfWallVertically)
+        closestHoriDistance = oneDimDistance(ballPoint[0], closestSideOfWallHorizontally)
+        console.log(closestSideOfWallVertically, closestSideOfWallHorizontally)
+        if(closestVertDistance <= rad+padding || closestHoriDistance <= rad+padding){
           ball.collide("wall");
-          if(ball.exploding)
           //multiply the velocity by -1 on appropriate axis. but how do we find the appropriate axis?:
-            //by looking for the side of the wall the ball is closest to
-            var highWallDistance = Math.abs(cur_y - wh)
-            var lowWallDistance = Math.abs(cur_y - wl)
-            var leftWallDistance = Math.abs(cur_x - we)
-            var rightWallDistance = Math.abs(cur_x - wr)
-            var wallDistances = [highWallDistance, lowWallDistance, leftWallDistance, rightWallDistance]
+          //by looking for the side of the wall the ball is closest to
 
-            closestWallDistance = wallDistances[0] //initialize it with the first value of the wallDistances array.
-                                                   //^this makes sense because of how the loop will iterate:
-            //closestWall = "aVerticalWall"
+            closestWall = "both" //default value. this is usefeul when the ball collides with both at the same time (which is very rare)
 
-            for(var l = 1; l < 4; l++){
-              if(wallDistances[l]/*l starts at 1*/  < closestWallDistance){
-                closestWallDistance = wallDistances[l];
-              }
+            if(closestVertDistance < closestHoriDistance){
+              closestWall = "vert"
+            } else if(closestHoriDistance < closestVertDistance){
+              closestWall = "hori"
             }
 
-        //now multiply the appropriate component of velocity
-        vel = ball.getVelocity();
-        if((closestWallDistance == highWallDistance) || (closestWallDistance == lowWallDistance)){
-          ball.setVelocity([vel[0], -vel[1]])
-        } else if ((closestWallDistance == leftWallDistance) || (closestWallDistance == rightWallDistance)) {
-          //because it's else if, the upper and lower edges will be prioritized if two of the distances are equal
-          ball.setVelocity([-vel[0], vel[1]])
-        }
+            //now, find and set the ball's velocity
+            vel = ball.getVelocity()
+            switch(closestWall){
+            case "vert":
+              ball.setVelocity([vel[0], -vel[1]])
+              break
+            case "hori":
+              ball.setVelocity([-vel[0], vel[1]])
+              break
+            case "both":
+              ball.setVelocity([-vel[0], -vel[1]])
+              break
 
+            }
+
+          //move the ball one increment after setting its velocity (or leaving it):
+          }
         }
       }
-      //move the ball one increment after setting its velocity (or leaving it):
-      ball.move()
-      updatedBalls.push(ball);
-    }
     }
 
     this.checkForObstacleCollisions = function(){
@@ -535,7 +518,10 @@ function model(numBalls, numExplodingBalls, speed) {
           }
     this.checkForWallCollisions()
     this.checkForObstacleCollisions()
-
+    //move the balls
+    for(var i = 0, numBalls = this.balls.length; i < numBalls; i++){
+      this.balls[i].move()
+    }
 
   }
  }
@@ -568,7 +554,7 @@ function ball(x, y, radius, speed, isExplosive) {
   this.isBallExplosive = function(){return this.explosive}
   this.collide = function(collision_type){
     if(collision_type == "wall" && this.explosive){
-      curLevel.defusalMode()
+      //curLevel.defusalMode() UNCOMMENT THIS TO HAVE DEFUSAL MODE
     }
     this.onCollide(collision_type)
   }
@@ -615,10 +601,10 @@ function ball(x, y, radius, speed, isExplosive) {
       }
   }
 
-  this.highestPoint = function(){return this.y - this.radius}
-  this.lowestPoint = function(){return this.y + this.radius}
-  this.leftestPoint = function() {return this.x - this.radius}
-  this.rightestPoint = function() {return this.x + this.radius}
+  this.highestRow = function(){return this.y - this.radius}
+  this.lowestRow = function(){return this.y + this.radius}
+  this.leftestColumn = function() {return this.x - this.radius}
+  this.rightestColumn = function() {return this.x + this.radius}
 
   //move the ball one increment accorsing to its current velocity and position:
   this.move = function(){
@@ -628,12 +614,12 @@ function ball(x, y, radius, speed, isExplosive) {
     }
     /*update x-axis position using differential equation dx/dt = v_x*/
     var dx = this.getVelocity()[0] * timestepDuration
-    var new_x = this.getX() + dx; //Combining this line and the next would slightly increase performanc and readability,
-    this.setX(new_x) //but they're separate for the upcoming assert test so it can use new_x
+    var newX = this.getX() + dx;
+    this.setX(newX)
     var dy = this.getVelocity()[1] * timestepDuration
     //console.log(timestepDuration)
-    var new_y = cur_y + dy
-    this.setY(new_y);
+    var newY = this.getY() + dy
+    this.setY(newY);
     //remember, take some of these lines out if you wanna really maximize efficiency
     //console.assert((this.getX() == new_x) && (this.getY() == new_y))
     //if(Math.abs(this.getVelocity()[0]) > 2 || Math.abs(this.getVelocity()[1]) > 2){console.log("slow down")}
@@ -661,10 +647,10 @@ function wall(x,y/*top left x and y*/, w, l/*length and width*/){
   this.getL = function(){return l}
   this.getW = function(){return w}
 
-  this.highestPoint = function(){return y}
-  this.lowestPoint = function(){return y+l}
-  this.leftestPoint = function(){return x}
-  this.rightestPoint = function(){return x+w}
+  this.highestSide = function(){return y}
+  this.lowestSide = function(){return y+l}
+  this.leftestSide = function(){return x}
+  this.rightestSide = function(){return x+w}
 }
 
 var view = {
@@ -690,7 +676,7 @@ var view = {
         oldColor = ball.getColor()
 
         ball.setColor("orange")
-        setTimeout(function(){ball.setColor(oldColor)},duration)
+        setTimeout(function(){ball.setColor(oldColor)},duration) //this works, it sets both ///delete this comment later when it's unecessary
       }
 
     }
@@ -990,7 +976,7 @@ function level(mod) {
 
 }
 
-function levelZero() {return new level(new model(4,2,0.01))}
+function levelZero() {return new level(new model(4,4,0.111))}
 
 curLevel = levelZero();
 
