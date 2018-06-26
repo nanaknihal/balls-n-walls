@@ -97,7 +97,7 @@ var distanceBetween = function(p1, p2){
 
 /*--Game stuff:--*/
 
-function model(numBalls, numExplodingBalls /*,velocityMultiplier*/) {
+function model(numBalls, numExplodingBalls, velocityMultiplier) {
   this.frozen = false //game pauses and model freezes
   this.freeze = function(){this.frozen = true}
   this.currentTime = 0
@@ -110,13 +110,13 @@ function model(numBalls, numExplodingBalls /*,velocityMultiplier*/) {
     //random x-y coordinates of a new ball:
     x = Math.round(ballRadius + Math.random()*(w-2*ballRadius));
     y = Math.round(ballRadius + Math.random()*(h-2*ballRadius));
-    this.balls.push(new ball(x,y,ballRadius))
+    this.balls.push(new ball(x,y,ballRadius, velocityMultiplier))
   }
 
   for(var i = 0; i<numExplodingBalls; i++){  //exploding balls can't be too close to the edges; that isn't fair
     x = Math.round(10*ballRadius + Math.random()*(w-20*ballRadius));
     y = Math.round(10*ballRadius + Math.random()*(h-20*ballRadius));
-    bal = new ball(x,y,ballRadius,"e") //e for explosive
+    bal = new ball(x,y,ballRadius,velocityMultiplier, "e") //e for explosive
     this.balls.push(bal)
     this.explodingBalls.push(bal)
   }
@@ -550,7 +550,7 @@ function model(numBalls, numExplodingBalls /*,velocityMultiplier*/) {
 }
 
 //constructor for balls: (x and y are initial position)
-function ball(x, y, radius, isExplosive) {
+function ball(x, y, radius, velocityMultiplier, isExplosive) {
   this.endTimeout = function(){this.NoSetVelocity = false}
   this.initiateTimeout = function(){
   this.NoSetVelocity = true
@@ -581,7 +581,7 @@ function ball(x, y, radius, isExplosive) {
   this.wallCollider = (this.explosive) ? new wallExplodeAnimation() : new standardWallCollideAnimation();
   this.radius = radius
   this.getRadius = function(){return this.radius}
-  this.velocity = [(0.1-Math.random()/100)*randomOneOrNegativeOne(), (0.1-Math.random()/100)*randomOneOrNegativeOne()] //x and y components of velocity, respectively.
+  this.velocity = [(0.1-Math.random()/100)*randomOneOrNegativeOne()*velocityMultiplier, (0.1-Math.random()/100)*randomOneOrNegativeOne()*velocityMultiplier] //x and y components of velocity, respectively.
   this.x = x//Math.random()*view.gameWidth
   //this.x_prev = null, //previous position is important to calculate angle of movement
   this.y = y//Math.random()* view.gameHeight
@@ -816,6 +816,7 @@ var view = {
   //timer displaying:
   timer : {
     hidden: false, //toggle whether it's displayed
+    hide: function() {this.hidden = true},
     color: "red",
     fontSize:12,
     x: w/2, // x positioning
@@ -825,7 +826,7 @@ var view = {
     startTime: 0, //null, (it needs to be set)
     curTime: null,
     //updateCurTime: function(){this.startTime - new Date()}, //startDate must be set already for this to work properly
-    updateCurTime: function(){this.curTime = this.curTime + 1},
+    updateCurTime: function(){this.curTime++},
     reset: function(countdownTime, color, countdown) {
       this.countdownTime = countdownTime;
       this.startTime = 0;//new Date();
@@ -905,14 +906,13 @@ function controller(model, view){
 
     //start the timer
     view.timer.reset(defusalTimeLimit/100, "red") //violation of LoD but I think it's ok
-    alert('reset')
     view.timer.displayTimer()
 
 
     var oldLevel = curLevel
     setInterval(function(){
       if(curLevel == oldLevel){ //if the level hasn't been changed yet, the game's over after the timer's up
-        this.gameOver()
+        curLevel.controller.endGame()
       } else{}
       //turn off defusalMode
       this.defusalModeOn = false
@@ -948,6 +948,12 @@ function controller(model, view){
     }
 
   }
+  this.endGame = function(){
+    timer.hide()
+    alert("Game Over...Restarting")
+    curLevel = new levelZero()
+  }
+
 
 }
 
@@ -971,9 +977,9 @@ function level(mod) {
 
 }
 
-var levelZero = new level(new model(4,2));
+function levelZero() {return new level(new model(4,2, 0.3))}
 
-curLevel = levelZero;
+curLevel = levelZero();
 
 function updateGame(currentTime){
   window.requestAnimationFrame(function(){
