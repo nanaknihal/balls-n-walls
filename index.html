@@ -139,8 +139,8 @@ function model(numBalls, numExplodingBalls, speed) {
       pixels : new Array(),
       radius : 4,
       maxPixels: 5,
-      minDistanceBetweenPixelsSquared: 2000,
-      minDistanceToCallItSamePixelSquared: 300,
+      minDistanceBetweenPixels: 90,
+      //minDistanceToCallItSamePixelSquared: 300,
       pixelLimitExceeded: false,
 
       addPixels : function(event){
@@ -151,18 +151,9 @@ function model(numBalls, numExplodingBalls, speed) {
           return; //break it so the function doesn't try to add the value again
         }
         var validPosition = true
-        //add them if they're far enough from the previous pixels. If they're close the first pixel, just add the first pixel as the last:
+        //add them if they're far enough from the previous pixels.
         for(var l=0; l<numPix; l++){
-          xDistance = event.pageX - this.pixels[l][0]
-          yDistance = event.pageY - this.pixels[l][1]
-          //console.log(xDistance,yDistance)
-          //if it is very close to already existing pixel (the l-th one) and there are 2 or more pixels of separation between the new pixel and l,
-          //let them add l'th pixel again so they can make a polygon
-          if ((xDistance*xDistance + yDistance*yDistance < this.minDistanceToCallItSamePixelSquared)
-                &&(Math.abs(l - numPix) > 1)) {
-               this.pixels.push(this.pixels[l])
-
-          } else if(xDistance*xDistance + yDistance*yDistance < this.minDistanceBetweenPixelsSquared){ //Pythagorean - are they within range
+          if(distanceBetween([event.pageX, event.pageY], this.pixels[l]) < this.minDistanceBetweenPixels){
              validPosition = false;
              break;
           }
@@ -999,7 +990,7 @@ function level(mod) {
 
 }
 
-function levelZero() {return new level(new model(4,2,1))}
+function levelZero() {return new level(new model(4,2,0.01))}
 
 curLevel = levelZero();
 
