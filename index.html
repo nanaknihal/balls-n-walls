@@ -24,11 +24,15 @@ w=650; h=650;
 var game = {
   type:"html-keyboard-response",
   stimulus: "<!--main canvas where game happens:-->" +
-  "<canvas id='mainCanvas' height='" + h + "' width = '" + w + "'></canvas>" + "<button onclick='curLevel.beginGame(levelZero)'>S T A R T</button>"
+  "<canvas id='mainCanvas' height='" + h + "' width = '" + w + "'></canvas>" + "<button onclick='curLevel.beginGame()'>S T A R T</button>"
   +
   "<!--overlay canvas that doesn't need to be refreshed constantly:-->" +
   //it may be good to not hard-code the top and left value but rather use variables...this will be decided later when we do more styling
-  "<canvas id='overlay' style='position:absolute; left: 0; top: 0; z-index:1' height='" + h + "' width = '" + w + "'></canvas>"
+  "<canvas id='overlay' style='position:absolute; left: 0; top: 0; z-index:2' height='" + h + "' width = '" + w + "'></canvas>"
+  +
+  "<!--selection canvas for ball selection in defusal mode:-->" +
+  //it may be good to not hard-code the top and left value but rather use variables...this will be decided later when we do more styling
+  "<canvas id='selectionCanvas' style='position:absolute; left: 0; top: 0; z-index:1' height='" + h + "' width = '" + w + "'></canvas>"
 
 };
 timeline.push(game);
@@ -473,7 +477,7 @@ function model(numBalls, numExplodingBalls, speed) {
                                                              (collisionPoint[1] <= Math.max(wallPoint[1], nextWallPoint[1]))
                 //Consider the following scenario: the collisionPoint is not actually the closest point on the wall's extension. This happens when the ball collides with
                 // an endpoint of the wall. For these cases:
-                if(!collisionIsWithinSegment && ((distanceBetween(ballPoint, wallPoint) <= rad || distanceBetween(ballPoint, nextWallPoint) <=rad)) ){
+                if(!collisionIsWithinSegment && ((distanceBetween(ballPoint, wallPoint) <= rad || distanceBetween(ballPoint, nextWallPoint) <=rad))){
                   //alert("a")
                   collisionIsWithinSegment = true;
                   ballWithinLineRange = true;
@@ -498,7 +502,7 @@ function model(numBalls, numExplodingBalls, speed) {
 
                     //sometimes the angle of collision is very small and the resulting angle is calculated as being the same. In these cases, the angle should be
                     //artificially increased:
-                    //if(Math.abs(angleBetweenVelocityAndWall) < 0.1){alert(angleBetweenVelocityAndWall); angleBetweenVelocityAndWall = angleBetweenVelocityAndWall*100}
+                    if(Math.abs(angleBetweenVelocityAndWall) < 0.1){alert(angleBetweenVelocityAndWall); angleBetweenVelocityAndWall = angleBetweenVelocityAndWall*100}
                     angleBetweenResultingVelocityAndXAxis = angleBetweenWallAndXAxis + angleBetweenVelocityAndWall
                     //alert(angleBetweenWallAndXAxis + ":" + angleBetweenVelocityAndWall)
 
@@ -527,13 +531,19 @@ function model(numBalls, numExplodingBalls, speed) {
  }
 
  this.checkDefusalGuess = function(clickPoint){
-   alert("Checkin'")
-    clickIsInBall = false
-    for(var k = 0; k < numBalls; k++){
+   //alert("Checkin'")
+    clickIsInABall = false
+    balls = curLevel.model.getBalls()
+    for(var k = 0, numBalls = balls.length; k < numBalls; k++){
       if(distanceBetween(clickPoint, [balls[k].getX(), balls[k].getY()] ) <= balls[k].getRadius()){
-        alert("Correct")
+        clickIsInABall = true
+        if(ball.isBallExplosive() && !curLevel.controller.ballWasAlreadyGuessed(ball)){curLevel.controller.addGuessedBall(ball); return true}
       }
     }
+    //after iterating through all of them and none of them beign correct guesses (because correct guesses would have resulted in return true)
+    if(clickIsInABall){
+      return false
+    } else {return "notABall"}
   }
 }
 
@@ -554,7 +564,7 @@ function ball(x, y, radius, speed, isExplosive) {
   this.isBallExplosive = function(){return this.explosive}
   this.collide = function(collision_type){
     if(collision_type == "wall" && this.explosive){
-      //curLevel.defusalMode() UNCOMMENT THIS TO HAVE DEFUSAL MODE
+      curLevel.defusalMode() //COMMENT THIS TO DISABLE DEFUSAL MODE
     }
     this.onCollide(collision_type)
   }
@@ -785,25 +795,38 @@ var view = {
   },
 
   highlightSelectedBalls: function(event){
+    can = document.getElementById('selectionCanvas')
+    ctx = can.getContext('2d')
     //iterate through the balls to check whether the mouth is within them:
     balls = curLevel.model.getBalls()
     for(var j = 0, numBalls = balls.length; j < numBalls; j++){
-      if(distanceBetween([event.pageX,event.pageY], [ball.getX(), ball.getY()]) < ball.getRadius){
+      ball = balls[j]
+      if(distanceBetween([event.pageX,event.pageY], [ball.getX(), ball.getY()]) < ball.getRadius()){
         //display a border around the ball
         ctx.beginPath()
-        ctx.fillStyle = "yellow"
-        ctx.arc(ball.getX, ball.getY, ball.getRadius()+1, 0, 2*Math.PI)
-        ctx.fill()
+        ctx.fillStyle = ball.getColor()
+        var selectionRadiusAddOn = 1
+        var totalRadius = ball.getRadius()+selectionRadiusAddOn
+        ctx.arc(ball.getX(), ball.getY(), totalRadius, 0, 2*Math.PI)
+        ctx.stroke()
         ctx.closePath();
 
+      } else {
+        //clear the rect aronud the ball
+        var totalDiameter = totalRadius * 2
+        ctx.beginPath()
+        ctx.rect(ball.getX()-totalRadius-1, ball.getY()-totalRadius-1, totalDiameter+2, totalDiameter+2)
+        ctx.stroke()
+        ctx.closePath()
       }
+
     }
 
     //recursive call
-    if(curLevel.isDefusalModeOn()){
+    /*if(curLevel.isDefusalModeOn()){
       window.requestAnimationFrame(view.highlightSelectedBalls)
       alert("reqanfr")
-    }
+    }*/
   },
   //timer displaying:
   timer : {
@@ -851,7 +874,7 @@ function controller(model, view){
   this.gameOver = false
   this.defusalModeOn = false
   this.isGameOver = function(){return this.gameOver} //overdoing it on the getters, setters, and LoD? maybe
-  this.beginGame = function(level){
+  this.beginGame = function(){
 
     view.init();
     this.loadCanvas();
@@ -905,33 +928,33 @@ function controller(model, view){
       view.timer.displayTimer()
 
 
-      var oldLevel = curLevel
+
       setTimeout(function(){
-        if(curLevel == oldLevel){ //if the level hasn't been changed yet, the game's over after the timer's up
+        if(curLevel.controller.defusalModeOn){ //if the level hasn't been changed yet, the game's over after the timer's up //violation of LoD, maybe fix
           curLevel.controller.endGame()
-        } else{}
-        //turn off defusalMode
-        this.defusalModeOn = false
-      },
+        }},
       defusalTimeLimit)
     }
 
   }
 
-  this.guessesRemaining = model.numExplodingBalls()
-  this.correctGuesses = 0
-  this.incorrectGuesses = 0
+  guessesRemaining = model.numExplodingBalls()
+  //alert(guessesRemaining)
+  correctGuesses = 0
+  incorrectGuesses = 0
   this.registerDefusalGuess = function(event){
-    if(this.guessesRemaining > 0){
+    if(guessesRemaining > 0){
       result = model.checkDefusalGuess([event.pageX, event.pageY])
       switch(result){
         case true: //correct guess
-          this.correctGuesses++
-          this.guessesRemaining--
+          correctGuesses++
+          guessesRemaining--
+          alert(guessesRemaining)
           break;
         case false:
-          this.incorrectGuesses++
-          this.guessesRemaining-- //-- instead of set to 0 because then we can collect data about how many the got right/wrong
+          incorrectGuesses++
+          guessesRemaining-- //-- instead of set to 0 because then we can collect data about how many the got right/wrong
+          alert(guessesRemaining)
           break;
         case "notABall":
           break;
@@ -939,6 +962,7 @@ function controller(model, view){
       }
 
     } else { //if there are no guesses remaining:
+      //alert(guessesRemaining)
       //remove the guessing event listeners
       document.removeEventListener("mousedown", this.registerDefusalGuess)
       document.removeEventListener("mousemove", view.highlightSelectedBalls)
@@ -946,10 +970,14 @@ function controller(model, view){
     }
 
   }
+
+  guessedBalls = [];
+  this.ballWasAlreadyGuessed = function(ball){return guessedBalls.includes(ball)}
+  this.addGuessedBall = function(ball){guessedBalls.push(ball)}
   this.endGame = function(){
     view.timer.hide()
     alert("Game Over...Restarting")
-    curLevel = new levelZero()
+    curLevel = levelZero()
   }
 
 
