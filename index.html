@@ -120,8 +120,8 @@ function model(numBalls, numExplodingBalls, speed) {
   for(var i = 0; i<numBalls; i++){
     var ballRadius = 20
     //random x-y coordinates of a new ball:
-    x = Math.round(ballRadius + Math.random()*(w-2*ballRadius));
-    y = Math.round(ballRadius + Math.random()*(h-2*ballRadius));
+    x = Math.round(1.5*ballRadius + Math.random()*(w-3*ballRadius));
+    y = Math.round(1.5*ballRadius + Math.random()*(h-3*ballRadius)); //.5*ballradius minimum disrance from wall
     this.balls.push(new ball(x,y,ballRadius, speed))
   }
 
@@ -151,7 +151,7 @@ function model(numBalls, numExplodingBalls, speed) {
       pixels : new Array(),
       radius : 4,
       maxPixels: 5,
-      minDistanceBetweenPixels: 200,
+      minDistanceBetweenPixels: 189,
       //minDistanceToCallItSamePixelSquared: 300,
       pixelLimitExceeded: false,
 
@@ -291,7 +291,7 @@ function model(numBalls, numExplodingBalls, speed) {
 
         closestVertDistance = oneDimDistance(ballPoint[1], closestSideOfWallVertically)
         closestHoriDistance = oneDimDistance(ballPoint[0], closestSideOfWallHorizontally)
-        console.log(closestSideOfWallVertically, closestSideOfWallHorizontally)
+
         if(closestVertDistance <= rad+padding || closestHoriDistance <= rad+padding){
           ball.collide("wall");
           //multiply the velocity by -1 on appropriate axis. but how do we find the appropriate axis?:
@@ -422,7 +422,6 @@ function model(numBalls, numExplodingBalls, speed) {
                 angleBetweenWallAndXAxis = Math.PI/2 - angleBetweenWallAndYAxis
                 ballToIntersectionDistance = Math.sqrt(Math.pow(intersection[0]-ballPoint[0], 2) + Math.pow(intersection[1]-ballPoint[1], 2)) //Pythagorean
 
-
                 //The ball can be touching the wall even if it doesn't intersect, so we need to find the distance to the closest point on the wall:
                 //The line between this and the ball is always pi/2 radians from the ball, so we can use the sin:
 
@@ -497,20 +496,21 @@ function model(numBalls, numExplodingBalls, speed) {
                 //if(!collisionIsWithinSegment && ballWithinLineRange){console.log(collisionPoint)}
 
                 if(collisionIsWithinSegment && ballWithinLineRange){
+
                   //there's a collision
                   ball.collide(ball)
                   //sometimes, the balls can end up in the walls. The user should be allowed to draw walls through balls,
                   //and the balls can occasionally find their way into walls. In these cases, balls should just pass through
                   //and their velocities should not be changed. Hence,
-                  ballIsInsideWall = Math.abs(ballToWallClosestDistance) + 8 < rad //8px is given as leeway
+                  ballIsInsideWall = Math.abs(ballToWallClosestDistance) + 3 < rad //3px are given as leeway
                   //alert(angleBetweenVelocityAndWall*57.3)
+
                   if(!ballIsInsideWall){
 
                     //calculate resulting velocity (Vf):
-
                     //sometimes the angle of collision is very small and the resulting angle is calculated as being the same. In these cases, the angle should be
                     //artificially increased:
-                    if(Math.abs(angleBetweenVelocityAndWall) < 0.1){alert(angleBetweenVelocityAndWall); angleBetweenVelocityAndWall = angleBetweenVelocityAndWall*100}
+                    if(Math.abs(angleBetweenVelocityAndWall) < 0.2){alert(angleBetweenVelocityAndWall); /*angleBetweenVelocityAndWall = angleBetweenVelocityAndWall*100*/}
                     angleBetweenResultingVelocityAndXAxis = angleBetweenWallAndXAxis + angleBetweenVelocityAndWall
                     //alert(angleBetweenWallAndXAxis + ":" + angleBetweenVelocityAndWall)
 
@@ -806,14 +806,15 @@ var view = {
     ctx = can.getContext('2d')
     //iterate through the balls to check whether the mouth is within them:
     balls = curLevel.model.getBalls()
-    for(var j = 0, numBalls = balls.length; j < numBalls; j++){
-      ball = balls[j]
+    for(var n = 0, numBalls = balls.length; n < numBalls; n++){
+      ball = balls[n]
+      var selectionRadiusAddOn = 1
+      var totalRadius = ball.getRadius()+selectionRadiusAddOn
+
       if(distanceBetween([event.pageX,event.pageY], [ball.getX(), ball.getY()]) < ball.getRadius()){
         //display a border around the ball
         ctx.beginPath()
         ctx.fillStyle = ball.getColor()
-        var selectionRadiusAddOn = 1
-        var totalRadius = ball.getRadius()+selectionRadiusAddOn
         ctx.arc(ball.getX(), ball.getY(), totalRadius, 0, 2*Math.PI)
         ctx.stroke()
         ctx.closePath();
@@ -822,7 +823,7 @@ var view = {
         //clear the rect aronud the ball
         var totalDiameter = totalRadius * 2
         ctx.beginPath()
-        ctx.rect(ball.getX()-totalRadius-1, ball.getY()-totalRadius-1, totalDiameter+2, totalDiameter+2)
+        ctx.clearRect(ball.getX()-totalRadius-1, ball.getY()-totalRadius-1, totalDiameter+2, totalDiameter+2)
         ctx.stroke()
         ctx.closePath()
       }
@@ -961,12 +962,14 @@ function controller(model, view,levelDuration){
         case true: //correct guess
           correctGuesses++
           guessesRemaining--
-          alert(guessesRemaining)
+          alert("correct")
           break;
         case false:
           incorrectGuesses++
           guessesRemaining-- //-- instead of set to 0 because then we can collect data about how many the got right/wrong
-          alert(guessesRemaining)
+          alert("incorrect guess; restarting")
+          controller.endGame()
+          return null
           break;
         case "notABall":
           break;
@@ -974,7 +977,7 @@ function controller(model, view,levelDuration){
       }
 
     } else { //if there are no guesses remaining:
-      //alert(guessesRemaining)
+      alert("level passed! ")
       //remove the guessing event listeners
       document.removeEventListener("mousedown", this.registerDefusalGuess)
       document.removeEventListener("mousemove", view.highlightSelectedBalls)
@@ -1018,14 +1021,14 @@ function level(mod, levelDuration) {
   this.resetAllBalldesigns = function(model){
     balls = model.getBalls()
     for(var m=0, numBalls = balls.length; m<numBalls; m++){
-      balls[m].setColor(ballColor); console.log(ball.getColor())
+      balls[m].setColor(ballColor);
     }
   }
 }
 
 
 
-function levelZero() {return new level(new model(4,4,0.04))}
+function levelZero() {return new level(new model(4,3,/*0.1*/0.04))}
 
 curLevel = levelZero();
 
