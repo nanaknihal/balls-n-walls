@@ -82,7 +82,7 @@ var test_procedure = {
 }
 timeline.push(test_procedure);
 */
-
+ballColor = "grey"
 jsPsych.init({
   timeline: timeline,
   on_finish: function(){
@@ -274,7 +274,7 @@ function model(numBalls, numExplodingBalls, speed) {
         */
 
         //NOTE: you can increase the padding for better performance withhigher velocities
-        padding = 2
+        padding = 3
         function oneDimDistance(a,b) {return Math.abs(a-b)} //his is just encapsulation of a simple but soon-to-be frequently used procedure
 
         closestSideOfWallVertically = (oneDimDistance(ballPoint[1], wh) < oneDimDistance(ballPoint[1], wl)) ? wh : wl
@@ -557,7 +557,7 @@ function ball(x, y, radius, speed, isExplosive) {
   this.dontCollideFor = function(ms){
     this.initiateTimeout()
   }
-  this.color = "#AAABC8"
+  this.color = ballColor
   this.getColor = function() {return this.color}
   this.setColor = function(col) {this.color = col}
   this.explosive = (isExplosive == "e")
@@ -569,7 +569,7 @@ function ball(x, y, radius, speed, isExplosive) {
     this.onCollide(collision_type)
   }
   this.onCollide = function(collision_type){
-    this.color = "#FF0000"
+    //this.color = "#FF0000"
     if(collision_type == "wall") {
       this.wallCollider.collide(this.x, this.y);
     } else if (collision_type == "ball") {
@@ -683,10 +683,9 @@ var view = {
     for(var j = 0, balls = model.getBalls(), numBalls = balls.length; j < numBalls; j++){
       ball = balls[j];
         if(ball.isBallExplosive()){
-        oldColor = ball.getColor()
 
         ball.setColor("orange")
-        setTimeout(function(){ball.setColor(oldColor)},duration) //this works, it sets both ///delete this comment later when it's unecessary
+        setTimeout(function(){curLevel.resetAllBalldesigns(curLevel.model)},duration) //this works, it sets both ///delete this comment later when it's unecessary
       }
 
     }
@@ -1000,11 +999,19 @@ function level(mod) {
     this.model.freeze()
     this.controller.defusalMode()
   }
-  this.isDefusalModeOn =function(){ return controller.defusalModeOn; alert("im beign called")}
+  this.isDefusalModeOn = function(){ return controller.defusalModeOn; alert("im beign called")}
 
+  this.resetAllBalldesigns = function(model){
+    balls = model.getBalls()
+    for(var m=0, numBalls = balls.length; m<numBalls; m++){
+      balls[m].setColor(ballColor); console.log(ball.getColor())
+    }
+  }
 }
 
-function levelZero() {return new level(new model(4,4,0.111))}
+
+
+function levelZero() {return new level(new model(4,4,0.11))}
 
 curLevel = levelZero();
 
