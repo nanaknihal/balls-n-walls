@@ -147,67 +147,29 @@ function model(numBalls, numExplodingBalls, speed) {
    *
    *The obstacle has a radius. If a ball is closer than ball.radius + obstacle.radius, a collision will be registered */
 
-    this.userObstacle = {
-      pixels : new Array(),
-      radius : 4,
-      maxPixels: 5,
-      minDistanceBetweenPixels: 189,
-      //minDistanceToCallItSamePixelSquared: 300,
-      pixelLimitExceeded: false,
-
-      addPixels : function(event){
-        //if there are no existing pixels/points, just add it without the for loop
-        numPix = this.pixels.length;
-        if(numPix == 0){
-          this.pixels.push([event.pageX, event.pageY])
-          return; //break it so the function doesn't try to add the value again
-        }
-        var validPosition = true
-        //add them if they're far enough from the previous pixels.
-        for(var l=0; l<numPix; l++){
-          if(distanceBetween([event.pageX, event.pageY], this.pixels[l]) < this.minDistanceBetweenPixels){
-             validPosition = false;
-             break;
-          }
-        }
-
-        if(validPosition){
-            this.pixels.push([event.pageX, event.pageY])
-          }
-
-        while(this.pixels.length > this.maxPixels){
-
-          //console.log(this.pixels)
-          this.pixels.shift() //get rid of the first element
-          //console.log(this.pixels)
-        }
-        //console.log(this.pixels)
-      },
-
-/*
-        if(([event.pageX, event.pageY]){} //if(this.pixels.length == this.maxPixels){
-          this.pixels.push([event.pageX, event.pageY])
-        } else if (this.pixels.length >= this.maxPixels) {
-          //if this is the first time exceeding the pixel limit:
-          if(!this.pixelLimitExceeded){
-            view.message("You can't use too much wall... that would make it easy")
-            //set it to true so this message only displays once:
-            this.pixelLimitExceeded = true;
-          }
+    this.maxObstacles = numExplodingBalls //1 wall per exploding ball sounds good
 
 
-        }
-      },*/
-      getPixels : function(){return this.pixels},
-      getRadius : function(){return this.radius}
-    },
+    this.userObstacles = [];
+    this.mostRecentObstacle = function(){return this.userObstacles[this.userObstacles.length-1]} //last element in the array
+    this.addNewObstacle = function(){this.userObstacles.push(new userObstacle())}
+
+    this.removeExcessObstacles = function(){
+      while(this.userObstacles.length > this.maxObstacles){this.userObstacles.shift()}
+    }
+
+    this.addPixelsToUserObstacles = function(event){
+      //if(curLevel.model.userObstacles.length < 1){this.addNewObstacle()} //make a new user obstacle if none exist
+
+      if(event.type == "mousedown"){console.log("md"); this.addNewObstacle(); console.log(this.userObstacles.length)}//make a new user obstacle if it was a mousedown not a mousemove
+
+      //if(userObstacle.atMaxLength()){this.addNewObstacle()}     //make a new user obstacle if the current one has the maximum number of points
+      curLevel.model.mostRecentObstacle().addPixels(event)
+      curLevel.model.removeExcessObstacles() //remove any excess obstaclds if there are any real-time, while pixels are being added
+      console.log(curLevel.model.userObstacles)
+    }
 
 
-  //not necessary to have this function but it's good encapsulation and helps with Law of Demeter (even though it technically violates it)
-  //if efficiency is a concern, we can get rid of it:
-  this.addPixelsToUserObstacle = function(event){
-    curLevel.model.userObstacle.addPixels(event)
-  }
 
 
   this.getBalls = function(){return this.balls},
@@ -371,161 +333,169 @@ function model(numBalls, numExplodingBalls, speed) {
         }
       }*///////////
 
+      //functions to help find intersections of balls and obstacles:
+      var equation = function(m,b){
+        this.m = m;
+        this.b = b;
+        //getters and setters are probably unecessary
+      }
+
+      //arguments: point in form [x,y] and vec in form [xComponent, yComponent]
+      function equationFromPointAnd2dVec(point, vec){
+        var slope = vec[1]/vec[0]
+        var intercept = point[1] - slope*point[0]
+        return new equation(slope, intercept)
+      }
+
+      function intersectionOf2Equations(e1, e2){
+          x = (e2.b-e1.b)/(e1.m-e2.m)
+          y = e1.m*x+e1.b
+          console.assert(Math.round(y) == Math.round(e2.m*x+e2.b))//remove this for production if we reeally need an insignificant efficiency boost -
+                                                                  //just checking whether both equations give the same y value for the x value
+          return [x,y]
+      }
+
+
+
+
 
       //iterate through all the balls and pixels (except last pixel because there will be no line drawn from it):
       for(var i = 0, numBalls = this.balls.length; i < numBalls; i++){
         ball = this.balls[i]
         rad = ball.getRadius()
-        for(var j = 0, ob = this.userObstacle, pix = ob.getPixels(), numPix = pix.length; j<numPix-1; j++){
-          //compute distance between ball center and closest point on wall:
-            //first find intersection of ball velocity vector and wall:
-              //step 1. compute equations of lines (in slope-intercept form)
-                var equation = function(m,b){
-                  this.m = m;
-                  this.b = b;
-                  //getters and setters are probably unecessary
+        ballPoint = [ball.getX(), ball.getY()]
+        ballVec = ball.getVelocity()
+        ballTrajectoryEquation = equationFromPointAnd2dVec(ballPoint, ballVec)
+
+        for(var o = 0, obs = this.userObstacles, numObs = obs.length; o<numObs; o++){
+          var ob = obs[o]
+          for(var j = 0, pix = ob.getPixels(), numPix = pix.length; j<numPix-1; j++){
+            //compute distance between ball center and closest point on wall:
+              //first find intersection of ball velocity vector and wall:
+                //step 1. compute equations of lines (in slope-intercept form)
+
+                  wallPoint = pix[j]
+                  nextWallPoint = pix[j+1]
+                  wallVec = [nextWallPoint[0]-wallPoint[0], nextWallPoint[1]-wallPoint[1]]
+                  wallExtensionEquation = equationFromPointAnd2dVec(wallPoint, wallVec)
+
+                  intersection = intersectionOf2Equations(ballTrajectoryEquation,wallExtensionEquation)
+
+
+
+                  /*Now that the intersection has been found, find the angle between the velocity and the wall*/
+                  /*Make sure the SIGNS OF ALL THESE ANGLES ARE CORRECT:*/
+                  angleBetweenVelocityAndXAxis = Math.atan2((intersection[1]-ballPoint[1]), (intersection[0]-ballPoint[0]))
+                  angleBetweenWallAndYAxis = Math.PI/2-Math.atan(wallExtensionEquation.m)
+                  angleBetweenVelocityAndWall = Math.PI/2 - angleBetweenVelocityAndXAxis - angleBetweenWallAndYAxis
+                  angleBetweenWallAndXAxis = Math.PI/2 - angleBetweenWallAndYAxis
+                  ballToIntersectionDistance = Math.sqrt(Math.pow(intersection[0]-ballPoint[0], 2) + Math.pow(intersection[1]-ballPoint[1], 2)) //Pythagorean
+
+                  //The ball can be touching the wall even if it doesn't intersect, so we need to find the distance to the closest point on the wall:
+                  //The line between this and the ball is always pi/2 radians from the ball, so we can use the sin:
+
+                  ballToWallClosestDistance = ballToIntersectionDistance * Math.sin(angleBetweenVelocityAndWall)//MATH.ABS?
+
+                  ballWithinLineRange = false
+                  if(Math.abs(ballToWallClosestDistance) < Math.abs(rad)){
+                    ballWithinLineRange = true
+                  }
+
+                  /*NOT USING THIS METHOD ANYMORE:*/
+                  /*Now, find the exact point where the closest line from ball-to-wall intersects with the wall. This is the point of collision,
+                   *and is different than the point of intersection, where the velocity vector intersects with the wall. Unfortunately,
+                   *this cannot easily be done with the previous methods (equationFromPointAnd2dVec, etc.) because only the vector's magnitudes are known
+                   *as a result, a different method is used: first, finding the distance between the collision point and the velocity-wall intersection point.
+                   *This is ballToWallClosestDistance/tan(angleBetweenVelocityAndWall).
+                   *We already know the slope of the wall (wallExtensionEquation.m), so we need to figure out what point is x distance away, where x is the
+                   *distance we just calculated between the collision and interserction.
+
+                   *The "run" and "rise" (x-distance and y-distance between the collision and intersection points) have a certain relationship:
+                   *rise/run = wallExtensionEquation.m. Also, rise^2 + run^2 = ballToWallClosestDistance. These two equations can be solved for.
+                   *Solving for rise, the resulting equation is rise = Math.sqrt(
+                   (-Math.pow(distanceFromVIntersectionToCollision,2) + Math.sqrt(Math.pow(distanceFromVIntersectionToCollision, 4) - 4*Math.pow(wallExtensionEquation.m, 2)))/2
+                 )
+                    *run is just rise/wallExtensionEquation.m
+
+
+                    var distanceFromVIntersectionToCollision = ballToWallClosestDistance/Math.tan(angleBetweenVelocityAndWall)
+                    //parameters for quadratic formula used to calculate rise. These parameters were figured out by hand. They appear in the above
+                    //comment althouh just as their values, not as a, b, or c. In the actual code, the equation is made simpler by substituting a, b,
+                    //and c for their respective values, so that the code is easier to read (and possibly slightly more efficient because b is not recalculated)
+                    //var a = 1
+                    var b = Math.pow(distanceFromVIntersectionToCollision,2)
+                    var c = Math.pow(wallExtensionEquation.m, 2)
+                    var rise = Math.sqrt(
+                     (-b + Math.sqrt(b*b - 4*c))/2 //This is the quadratic equation
+                    ) //then the solution to the equation is square-rooted. The result value of rise as determined by solving the system of equations mentioned.
+
+                    var run = rise/wallExtensionEquation.m
+
+                    //Now, find the actual point of collision:
+                    collisionPoint = [intersection[0]-run, intersection[1]-rise] */
+
+
+                   /*USING THIS:*/
+                   //See diagrams //NOTE: ADD DIAGRAMS
+                   distanceBetweenCollisionAndIntersection = ballToIntersectionDistance * Math.sin(Math.PI/2 - angleBetweenVelocityAndWall)
+
+                   HoriDistanceBetweenCollisionAndIntersection = Math.sqrt(distanceBetweenCollisionAndIntersection*distanceBetweenCollisionAndIntersection /
+                                                                          (wallExtensionEquation.m*wallExtensionEquation.m + 1))
+                   //slope (m) = vertical-distance/horizontal-distance
+                   VertDistanceBetweenCollisionAndIntersection = /*-/ABS?*/ wallExtensionEquation.m*HoriDistanceBetweenCollisionAndIntersection
+
+                   collisionPoint = [intersection[0]-HoriDistanceBetweenCollisionAndIntersection, intersection[1]-VertDistanceBetweenCollisionAndIntersection]
+
+                  //Check whether the collision point is actually within the wall and not just in its extension
+                  collisionIsWithinSegment = (collisionPoint[0] >= Math.min(wallPoint[0], nextWallPoint[0])) &&
+                                                               (collisionPoint[0] <= Math.max(wallPoint[0], nextWallPoint[0])) &&
+                                                               (collisionPoint[1] >= Math.min(wallPoint[1], nextWallPoint[1])) &&
+                                                               (collisionPoint[1] <= Math.max(wallPoint[1], nextWallPoint[1]))
+                  //Consider the following scenario: the collisionPoint is not actually the closest point on the wall's extension. This happens when the ball collides with
+                  // an endpoint of the wall. For these cases:
+                  if(!collisionIsWithinSegment && ((distanceBetween(ballPoint, wallPoint) <= rad || distanceBetween(ballPoint, nextWallPoint) <=rad))){
+                    //alert("a")
+                    collisionIsWithinSegment = true;
+                    ballWithinLineRange = true;
+                    collisionPoint = wallPoint;
+                  }
+                  //view.showPoint(collisionPoint)
+                  //console.log(angleBetweenVelocityAndWall*57.3)
+                  //alert(ballToWallClosestDistance + ", " + collisionIsWithinSegmentPlusBallRadius + ", " + ballWithinLineRange + ", " + collisionPoint)
+                  //if(!collisionIsWithinSegment && ballWithinLineRange){console.log(collisionPoint)}
+
+                  if(collisionIsWithinSegment && ballWithinLineRange){
+
+                    //there's a collision
+                    ball.collide(ball)
+                    //sometimes, the balls can end up in the walls. The user should be allowed to draw walls through balls,
+                    //and the balls can occasionally find their way into walls. In these cases, balls should just pass through
+                    //and their velocities should not be changed. Hence,
+                    ballIsInsideWall = Math.abs(ballToWallClosestDistance) + 3 < rad //3px are given as leeway
+                    //alert(angleBetweenVelocityAndWall*57.3)
+
+                    if(!ballIsInsideWall){
+
+                      //calculate resulting velocity (Vf):
+                      //sometimes the angle of collision is very small and the resulting angle is calculated as being the same. In these cases, the angle should be
+                      //artificially increased:
+                      if(Math.abs(angleBetweenVelocityAndWall) < 0.2){alert(angleBetweenVelocityAndWall); /*angleBetweenVelocityAndWall = angleBetweenVelocityAndWall*100*/}
+                      angleBetweenResultingVelocityAndXAxis = angleBetweenWallAndXAxis + angleBetweenVelocityAndWall
+                      //alert(angleBetweenWallAndXAxis + ":" + angleBetweenVelocityAndWall)
+
+                      //now, we know the angle of the velocity. we just need the magnitute:
+                      velMagnitude = Math.sqrt(ballVec[0]*ballVec[0] + ballVec[1]*ballVec[1])
+                      resultingVelXComponent = velMagnitude*Math.cos(angleBetweenResultingVelocityAndXAxis)
+                      resultingVelYComponent = velMagnitude*Math.sin(angleBetweenResultingVelocityAndXAxis)
+                      //alert(angleBetweenVelocityAndWall*57.3)//"previous velocity:" + ball.getVelocity() + ", new velocity:" + [resultingVelXComponent, resultingVelYComponent])
+                      ball.setVelocity([resultingVelXComponent, resultingVelYComponent])
+
+                      ball.dontCollideFor(100)
+                      //setTimeout(function(){ball.setVelocity([-resultingVelXComponent, resultingVelYComponent])}, 500)
+                  }
+                  }
                 }
-
-                //arguments: point in form [x,y] and vec in form [xComponent, yComponent]
-                function equationFromPointAnd2dVec(point, vec){
-                  var slope = vec[1]/vec[0]
-                  var intercept = point[1] - slope*point[0]
-                  return new equation(slope, intercept)
-                }
-
-                function intersectionOf2Equations(e1, e2){
-                    x = (e2.b-e1.b)/(e1.m-e2.m)
-                    y = e1.m*x+e1.b
-                    console.assert(Math.round(y) == Math.round(e2.m*x+e2.b))//remove this for production if we reeally need an insignificant efficiency boost -
-                                                                            //just checking whether both equations give the same y value for the x value
-                    return [x,y]
-                }
-
-                ballPoint = [ball.getX(), ball.getY()]
-                ballVec = ball.getVelocity()
-                ballTrajectoryEquation = equationFromPointAnd2dVec(ballPoint, ballVec)
-
-                wallPoint = pix[j]
-                nextWallPoint = pix[j+1]
-                wallVec = [nextWallPoint[0]-wallPoint[0], nextWallPoint[1]-wallPoint[1]]
-                wallExtensionEquation = equationFromPointAnd2dVec(wallPoint, wallVec)
-
-                intersection = intersectionOf2Equations(ballTrajectoryEquation,wallExtensionEquation)
-
-
-
-                /*Now that the intersection has been found, find the angle between the velocity and the wall*/
-                /*Make sure the SIGNS OF ALL THESE ANGLES ARE CORRECT:*/
-                angleBetweenVelocityAndXAxis = Math.atan2((intersection[1]-ballPoint[1]), (intersection[0]-ballPoint[0]))
-                angleBetweenWallAndYAxis = Math.PI/2-Math.atan(wallExtensionEquation.m)
-                angleBetweenVelocityAndWall = Math.PI/2 - angleBetweenVelocityAndXAxis - angleBetweenWallAndYAxis
-                angleBetweenWallAndXAxis = Math.PI/2 - angleBetweenWallAndYAxis
-                ballToIntersectionDistance = Math.sqrt(Math.pow(intersection[0]-ballPoint[0], 2) + Math.pow(intersection[1]-ballPoint[1], 2)) //Pythagorean
-
-                //The ball can be touching the wall even if it doesn't intersect, so we need to find the distance to the closest point on the wall:
-                //The line between this and the ball is always pi/2 radians from the ball, so we can use the sin:
-
-                ballToWallClosestDistance = ballToIntersectionDistance * Math.sin(angleBetweenVelocityAndWall)//MATH.ABS?
-
-                ballWithinLineRange = false
-                if(Math.abs(ballToWallClosestDistance) < Math.abs(rad)){
-                  ballWithinLineRange = true
-                }
-
-                /*NOT USING THIS METHOD ANYMORE:*/
-                /*Now, find the exact point where the closest line from ball-to-wall intersects with the wall. This is the point of collision,
-                 *and is different than the point of intersection, where the velocity vector intersects with the wall. Unfortunately,
-                 *this cannot easily be done with the previous methods (equationFromPointAnd2dVec, etc.) because only the vector's magnitudes are known
-                 *as a result, a different method is used: first, finding the distance between the collision point and the velocity-wall intersection point.
-                 *This is ballToWallClosestDistance/tan(angleBetweenVelocityAndWall).
-                 *We already know the slope of the wall (wallExtensionEquation.m), so we need to figure out what point is x distance away, where x is the
-                 *distance we just calculated between the collision and interserction.
-
-                 *The "run" and "rise" (x-distance and y-distance between the collision and intersection points) have a certain relationship:
-                 *rise/run = wallExtensionEquation.m. Also, rise^2 + run^2 = ballToWallClosestDistance. These two equations can be solved for.
-                 *Solving for rise, the resulting equation is rise = Math.sqrt(
-                 (-Math.pow(distanceFromVIntersectionToCollision,2) + Math.sqrt(Math.pow(distanceFromVIntersectionToCollision, 4) - 4*Math.pow(wallExtensionEquation.m, 2)))/2
-               )
-                  *run is just rise/wallExtensionEquation.m
-
-
-                  var distanceFromVIntersectionToCollision = ballToWallClosestDistance/Math.tan(angleBetweenVelocityAndWall)
-                  //parameters for quadratic formula used to calculate rise. These parameters were figured out by hand. They appear in the above
-                  //comment althouh just as their values, not as a, b, or c. In the actual code, the equation is made simpler by substituting a, b,
-                  //and c for their respective values, so that the code is easier to read (and possibly slightly more efficient because b is not recalculated)
-                  //var a = 1
-                  var b = Math.pow(distanceFromVIntersectionToCollision,2)
-                  var c = Math.pow(wallExtensionEquation.m, 2)
-                  var rise = Math.sqrt(
-                   (-b + Math.sqrt(b*b - 4*c))/2 //This is the quadratic equation
-                  ) //then the solution to the equation is square-rooted. The result value of rise as determined by solving the system of equations mentioned.
-
-                  var run = rise/wallExtensionEquation.m
-
-                  //Now, find the actual point of collision:
-                  collisionPoint = [intersection[0]-run, intersection[1]-rise] */
-
-
-                 /*USING THIS:*/
-                 //See diagrams //NOTE: ADD DIAGRAMS
-                 distanceBetweenCollisionAndIntersection = ballToIntersectionDistance * Math.sin(Math.PI/2 - angleBetweenVelocityAndWall)
-
-                 HoriDistanceBetweenCollisionAndIntersection = Math.sqrt(distanceBetweenCollisionAndIntersection*distanceBetweenCollisionAndIntersection /
-                                                                        (wallExtensionEquation.m*wallExtensionEquation.m + 1))
-                 //slope (m) = vertical-distance/horizontal-distance
-                 VertDistanceBetweenCollisionAndIntersection = /*-/ABS?*/ wallExtensionEquation.m*HoriDistanceBetweenCollisionAndIntersection
-
-                 collisionPoint = [intersection[0]-HoriDistanceBetweenCollisionAndIntersection, intersection[1]-VertDistanceBetweenCollisionAndIntersection]
-
-                //Check whether the collision point is actually within the wall and not just in its extension
-                collisionIsWithinSegment = (collisionPoint[0] >= Math.min(wallPoint[0], nextWallPoint[0])) &&
-                                                             (collisionPoint[0] <= Math.max(wallPoint[0], nextWallPoint[0])) &&
-                                                             (collisionPoint[1] >= Math.min(wallPoint[1], nextWallPoint[1])) &&
-                                                             (collisionPoint[1] <= Math.max(wallPoint[1], nextWallPoint[1]))
-                //Consider the following scenario: the collisionPoint is not actually the closest point on the wall's extension. This happens when the ball collides with
-                // an endpoint of the wall. For these cases:
-                if(!collisionIsWithinSegment && ((distanceBetween(ballPoint, wallPoint) <= rad || distanceBetween(ballPoint, nextWallPoint) <=rad))){
-                  //alert("a")
-                  collisionIsWithinSegment = true;
-                  ballWithinLineRange = true;
-                  collisionPoint = wallPoint;
-                }
-                //view.showPoint(collisionPoint)
-                //console.log(angleBetweenVelocityAndWall*57.3)
-                //alert(ballToWallClosestDistance + ", " + collisionIsWithinSegmentPlusBallRadius + ", " + ballWithinLineRange + ", " + collisionPoint)
-                //if(!collisionIsWithinSegment && ballWithinLineRange){console.log(collisionPoint)}
-
-                if(collisionIsWithinSegment && ballWithinLineRange){
-
-                  //there's a collision
-                  ball.collide(ball)
-                  //sometimes, the balls can end up in the walls. The user should be allowed to draw walls through balls,
-                  //and the balls can occasionally find their way into walls. In these cases, balls should just pass through
-                  //and their velocities should not be changed. Hence,
-                  ballIsInsideWall = Math.abs(ballToWallClosestDistance) + 3 < rad //3px are given as leeway
-                  //alert(angleBetweenVelocityAndWall*57.3)
-
-                  if(!ballIsInsideWall){
-
-                    //calculate resulting velocity (Vf):
-                    //sometimes the angle of collision is very small and the resulting angle is calculated as being the same. In these cases, the angle should be
-                    //artificially increased:
-                    if(Math.abs(angleBetweenVelocityAndWall) < 0.2){alert(angleBetweenVelocityAndWall); /*angleBetweenVelocityAndWall = angleBetweenVelocityAndWall*100*/}
-                    angleBetweenResultingVelocityAndXAxis = angleBetweenWallAndXAxis + angleBetweenVelocityAndWall
-                    //alert(angleBetweenWallAndXAxis + ":" + angleBetweenVelocityAndWall)
-
-                    //now, we know the angle of the velocity. we just need the magnitute:
-                    velMagnitude = Math.sqrt(ballVec[0]*ballVec[0] + ballVec[1]*ballVec[1])
-                    resultingVelXComponent = velMagnitude*Math.cos(angleBetweenResultingVelocityAndXAxis)
-                    resultingVelYComponent = velMagnitude*Math.sin(angleBetweenResultingVelocityAndXAxis)
-                    //alert(angleBetweenVelocityAndWall*57.3)//"previous velocity:" + ball.getVelocity() + ", new velocity:" + [resultingVelXComponent, resultingVelYComponent])
-                    ball.setVelocity([resultingVelXComponent, resultingVelYComponent])
-
-                    ball.dontCollideFor(100)
-                    //setTimeout(function(){ball.setVelocity([-resultingVelXComponent, resultingVelYComponent])}, 500)
-                }
-                }
-              }
+            }
             }
           }
     this.checkForWallCollisions()
@@ -671,6 +641,60 @@ function wall(x,y/*top left x and y*/, w, l/*length and width*/){
   this.rightestSide = function(){return x+w}
 }
 
+function userObstacle() {
+  this.pixels = new Array(),
+  this.maxPixels = 4,
+  this.radius = 4,
+  this.minDistanceBetweenPixels = 90,
+  //minDistanceToCallItSamePixelSquared: 300,
+  this.pixelLimitExceeded = false,
+
+  this.addPixels = function(event){
+    //if there are no existing pixels/points, just add it without the for loop
+    numPix = this.pixels.length;
+    if(numPix == 0){
+      this.pixels.push([event.pageX, event.pageY])
+      return; //break it so the function doesn't try to add the value again
+    }
+    var validPosition = true
+    //add them if they're far enough from the previous pixels.
+    for(var l=0; l<numPix; l++){
+      if(distanceBetween([event.pageX, event.pageY], this.pixels[l]) < this.minDistanceBetweenPixels){
+         validPosition = false;
+         break;
+      }
+    }
+
+    if(validPosition){
+        this.pixels.push([event.pageX, event.pageY])
+      }
+    while(this.pixels.length > this.maxPixels){
+        //console.log(this.pixels)
+        this.pixels.shift() //get rid of the first element
+        //console.log(this.pixels)
+    }
+  }
+
+/*
+    if(([event.pageX, event.pageY]){} //if(this.pixels.length == this.maxPixels){
+      this.pixels.push([event.pageX, event.pageY])
+    } else if (this.pixels.length >= this.maxPixels) {
+      //if this is the first time exceeding the pixel limit:
+      if(!this.pixelLimitExceeded){
+        view.message("You can't use too much wall... that would make it easy")
+        //set it to true so this message only displays once:
+        this.pixelLimitExceeded = true;
+      }
+
+
+    }
+  },*/
+
+  this.getPixels = function(){return this.pixels}
+  this.getRadius = function(){return this.radius}
+  //this.atMaxLength() = function(){return this.pixels.length == this.maxPointsInWall}
+}
+
 var view = {
   //get canvas, context
   can: null,
@@ -730,34 +754,37 @@ var view = {
     }
 
     //display the points/pixels in the user-defined wall as circles and draw line segments between them (except for before the first and after the last pixel)
-    for(var j = 0, ob = model.userObstacle, pix = ob.getPixels(), numPix = pix.length, rad = ob.getRadius(); j<numPix; j++){
-      //get x and y values of the pixel
-      x = pix[j][0]
-      y = pix[j][1]
+    for(var j = 0, obs = model.userObstacles, numObs = obs.length; j<numObs; j++){
+      var ob = obs[j]
+      for(var o = 0, pix = ob.getPixels(), numPix = pix.length, rad = ob.getRadius(); o<numPix; o++){
+        //get x and y values of the pixel
+        x = pix[o][0]
+        y = pix[o][1]
 
-      color = "maroon"
-      //draw circles of radius rad around each pixel
-      ctx.beginPath()
-      ctx.fillStyle = color
-      ctx.arc(x, y, rad, 0, 2*Math.PI)
-      ctx.fill()
-
-      //then draw a line from the pixel to the next pixel (if the next pixel exists)
-      if(j < numPix-1){
+        color = "maroon"
+        //draw circles of radius rad around each pixel
+        ctx.beginPath()
         ctx.fillStyle = color
-        ctx.moveTo(pix[j][0], pix[j][1])
-        ctx.lineTo(pix[j+1][0], pix[j+1][1])
-        ctx.stroke();
+        ctx.arc(x, y, rad, 0, 2*Math.PI)
+        ctx.fill()
+
+        //then draw a line from the pixel to the next pixel (if the next pixel exists)
+        if(o < numPix-1){
+          ctx.fillStyle = color
+          ctx.moveTo(pix[o][0], pix[o][1])
+          ctx.lineTo(pix[o+1][0], pix[o+1][1])
+          ctx.stroke();
+        }
+
+        ctx.closePath()
+
       }
-
-      ctx.closePath()
-
     }
 
     //show the points:
     for(var j = 0, pix = this.pointsToShow, numPix = pix.length; j<numPix; j++){
-      x = pix[j][0]
-      y = pix[j][1]
+      x = pix[o][0]
+      y = pix[o][1]
 
       color = "black"
       //draw circles of radius rad around each pixel
@@ -917,11 +944,11 @@ function controller(model, view,levelDuration){
 
   this.findWallDrawingPath = function(event){
     //first, collect the first pixel:
-    model.addPixelsToUserObstacle(event)
+    model.addPixelsToUserObstacles(event)
 
-    document.addEventListener("mousemove", model.addPixelsToUserObstacle);
+    document.addEventListener("mousemove", model.addPixelsToUserObstacles);
     //get rid of the mousemove listener when the mouse is released:
-    document.addEventListener("mouseup", function(){document.removeEventListener("mousemove", model.addPixelsToUserObstacle)})
+    document.addEventListener("mouseup", function(){document.removeEventListener("mousemove", model.addPixelsToUserObstacles); model.removeExcessObstacles()})
 
   }
 
@@ -934,14 +961,13 @@ function controller(model, view,levelDuration){
       view.displayDefusalMessage(defusalTimeLimit)
       //remove the wall drawing listeners
       document.removeEventListener("mousedown", this.findWallDrawingPath)
-      document.removeEventListener("mousemove", model.addPixelsToUserObstacle)
+      document.removeEventListener("mousemove", model.addPixelsToUserObstacles)
 
       //listen for new guesses:
       document.addEventListener("mousemove", view.highlightSelectedBalls)
       document.addEventListener("mousedown", this.registerDefusalGuess)
 
       //start the timer
-      alert(defusalTimeLimit/100+10)
       view.timer.reset(defusalTimeLimit/1000, "red", true)
       view.timer.displayTimer()
 
