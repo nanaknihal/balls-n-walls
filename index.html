@@ -645,7 +645,8 @@ function userObstacle() {
   this.pixels = new Array(),
   this.maxPixels = 4,
   this.radius = 4,
-  this.minDistanceBetweenPixels = 90,
+  this.minDistanceBetweenPixels = 60,
+  this.maxDistaneBetweenPixels = 200,
   //minDistanceToCallItSamePixelSquared: 300,
   this.pixelLimitExceeded = false,
 
@@ -659,7 +660,8 @@ function userObstacle() {
     var validPosition = true
     //add them if they're far enough from the previous pixels.
     for(var l=0; l<numPix; l++){
-      if(distanceBetween([event.pageX, event.pageY], this.pixels[l]) < this.minDistanceBetweenPixels){
+      dist = distanceBetween([event.pageX, event.pageY], this.pixels[l])
+      if(dist < this.minDistanceBetweenPixels || dist > this.maxDistaneBetweenPixels){
          validPosition = false;
          break;
       }
