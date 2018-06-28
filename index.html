@@ -841,6 +841,7 @@ var view = {
     hidden: false, //toggle whether it's displayed
     hide: function() {this.hidden = true},
     color: "red",
+    getColor: function(){return this.color},
     fontSize:12,
     x: w/2, // x positioning
     y: 10,
@@ -852,8 +853,10 @@ var view = {
     updateCurTime: function(){this.curTime = this.ctdwnTime - Math.abs(this.startTime - new Date().getSeconds())}, //startDate must be set already for this to work properly. note times will reset after a minute.
     //updateCurTime: function(){this.curTime++},
     reset: function(countdownTime, color, countdown) {
-      view.timer.setCountdownTime(countdownTime);
-      view.timer.startTime = new Date().getSeconds(); //0
+      this.setCountdownTime(countdownTime);
+      this.startTime = new Date().getSeconds(); //0
+      this.color = color
+      this.updateCurTime()
     },
 
 
@@ -869,6 +872,7 @@ var view = {
         octx.font = this.fontSize + "px Arial"
         //time = Math.round((this.curTime % 60000)/1000)
         time = this.curTime == null ? 0:this.curTime
+        octx.fillStyle = this.getColor()
         octx.fillText(time, this.x, this.y) //NOTE: assuming time counter should always be under a minute
         setTimeout(function(){view.timer.updateCurTime();view.timer.displayTimer();}, 1000) //recursive call
       }
