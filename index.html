@@ -693,7 +693,7 @@ var view = {
         if(ball.isBallExplosive()){
 
         ball.setColor("orange")
-        setTimeout(function(){curLevel.resetAllBalldesigns(curLevel.model)},duration) //this works, it sets both ///delete this comment later when it's unecessary
+        setTimeout(function(){curLevel.resetAllBalldesigns(curLevel.model)},duration)
       }
 
     }
@@ -845,14 +845,15 @@ var view = {
     x: w/2, // x positioning
     y: 10,
     countdown: true, //default is countdown-mode, not countup-mode
-    countdownTime: null,
-    startTime: 0, //null, (it needs to be set)
-    curTime: null,
-    updateCurTime: function(){view.timer.curTime = Math.abs(this.startTime - new Date().getSeconds())}, //startDate must be set already for this to work properly. note times will reset after a minute.
+    ctdwnTime: 0,
+    setCountdownTime: function(t){this.ctdwnTime = t},
+    startTime: 0, //0 means it hasn't been set
+    curTime: 60,
+    updateCurTime: function(){this.curTime = this.ctdwnTime - Math.abs(this.startTime - new Date().getSeconds())}, //startDate must be set already for this to work properly. note times will reset after a minute.
     //updateCurTime: function(){this.curTime++},
     reset: function(countdownTime, color, countdown) {
-      this.countdownTime = countdownTime;
-      this.startTime = new Date().getSeconds(); //0
+      view.timer.setCountdownTime(countdownTime);
+      view.timer.startTime = new Date().getSeconds(); //0
     },
 
 
@@ -862,14 +863,13 @@ var view = {
       if(this.hidden){
         return null //exit the function if it's hidden, before the recursive call
       }
-        //ocan = document.getElementById("overlay")
-        //octx = ocan.getContext('2d')
+        ocan = document.getElementById("overlay")
+        octx = ocan.getContext('2d')
         octx.clearRect(this.x,this.y-this.fontSize, this.fontSize*2, this.fontSize)
         octx.font = this.fontSize + "px Arial"
         //time = Math.round((this.curTime % 60000)/1000)
         time = this.curTime == null ? 0:this.curTime
         octx.fillText(time, this.x, this.y) //NOTE: assuming time counter should always be under a minute
-
         setTimeout(function(){view.timer.updateCurTime();view.timer.displayTimer();}, 1000) //recursive call
       }
 
@@ -896,8 +896,8 @@ function controller(model, view,levelDuration){
     //then start the first update
     this.getWallsFromUser(); //this adds an Event Listener
     setTimeout(function(){
-      //view.timer.reset(levelDuration, "green") //violation of LoD but I think it's ok
-      //view.timer.displayTimer() FIGURE OUT WHY THIS METHOD (OR MAYBE THE RESET?) MAKES IT LAGGY
+      view.timer.reset(levelDuration/1000, "green") //violation of LoD but I think it's ok
+      view.timer.displayTimer()// FIGURE OUT WHY THIS METHOD (OR MAYBE THE RESET?) MAKES IT LAGGY
       updateGame(0, this.model); //beginning time is 0
     }, duration)
     }
@@ -937,7 +937,8 @@ function controller(model, view,levelDuration){
       document.addEventListener("mousedown", this.registerDefusalGuess)
 
       //start the timer
-      view.timer.reset(defusalTimeLimit/100, "red")
+      alert(defusalTimeLimit/100+10)
+      view.timer.reset(defusalTimeLimit/1000, "red", true)
       view.timer.displayTimer()
 
 
@@ -1003,7 +1004,7 @@ function controller(model, view,levelDuration){
 function level(mod, levelDuration) {
   this.model = mod
   this.view = view,
-  this.controller = new controller(this.model, this.view, duration),
+  this.controller = new controller(this.model, this.view, levelDuration),
   this.gameOver = function(){return this.controller.isGameOver()}
   this.update = function(currentTime){
      this.model.update(currentTime)
@@ -1028,7 +1029,7 @@ function level(mod, levelDuration) {
 
 
 
-function levelZero() {return new level(new model(4,3,/*0.1*/0.04))}
+function levelZero() {return new level(new model(4,3,/*0.1*/0.04), 60000)}
 
 curLevel = levelZero();
 
