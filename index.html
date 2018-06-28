@@ -19,6 +19,14 @@ var welcome = {
 };
 timeline.push(welcome);
 
+var instructions = {
+  type:"html-keyboard-response",
+  stimulus:"Many balls are innocuous but some are exploding. The exploding balls are briefly shown at the beginning of the level. Then they are no longer highlighted. <br />"+
+           "Prevent the exploding balls from hitting the walls by drawing your own walls! Your wall can have multiple edges but the vertices of them cannot be too close! <br />"+
+           "That would make it too easy"
+};
+timeline.push(instructions);
+
 /*width and height: */
 w=650; h=650;
 var game = {
@@ -143,7 +151,7 @@ function model(numBalls, numExplodingBalls, speed) {
       pixels : new Array(),
       radius : 4,
       maxPixels: 5,
-      minDistanceBetweenPixels: 90,
+      minDistanceBetweenPixels: 200,
       //minDistanceToCallItSamePixelSquared: 300,
       pixelLimitExceeded: false,
 
@@ -845,8 +853,11 @@ var view = {
       this.countdownTime = countdownTime;
       this.startTime = new Date().getSeconds(); //0
     },
+
+
     displayTimer: function(){
       //draw timer:
+      octx = document.getElementById("overlay").getContext("2d")
       if(this.hidden){
         return null //exit the function if it's hidden, before the recursive call
       }
@@ -868,7 +879,7 @@ var view = {
 
 }
 
-function controller(model, view){
+function controller(model, view,levelDuration){
 
   this.gameOver = false
   this.defusalModeOn = false
@@ -884,6 +895,8 @@ function controller(model, view){
     //then start the first update
     this.getWallsFromUser(); //this adds an Event Listener
     setTimeout(function(){
+      //view.timer.reset(levelDuration, "green") //violation of LoD but I think it's ok
+      //view.timer.displayTimer() FIGURE OUT WHY THIS METHOD (OR MAYBE THE RESET?) MAKES IT LAGGY
       updateGame(0, this.model); //beginning time is 0
     }, duration)
     }
@@ -923,7 +936,7 @@ function controller(model, view){
       document.addEventListener("mousedown", this.registerDefusalGuess)
 
       //start the timer
-      view.timer.reset(defusalTimeLimit/100, "red") //violation of LoD but I think it's ok
+      view.timer.reset(defusalTimeLimit/100, "red")
       view.timer.displayTimer()
 
 
@@ -983,10 +996,11 @@ function controller(model, view){
 }
 
 //takes a model as an argument. It may be good to make view and controller as arguments, but I don't foresee a realy use in doing so
-function level(mod) {
+//edit: also takes levelDuration now, in ms.
+function level(mod, levelDuration) {
   this.model = mod
   this.view = view,
-  this.controller = new controller(this.model, this.view),
+  this.controller = new controller(this.model, this.view, duration),
   this.gameOver = function(){return this.controller.isGameOver()}
   this.update = function(currentTime){
      this.model.update(currentTime)
@@ -1011,7 +1025,7 @@ function level(mod) {
 
 
 
-function levelZero() {return new level(new model(4,4,0.11))}
+function levelZero() {return new level(new model(4,4,0.04))}
 
 curLevel = levelZero();
 
