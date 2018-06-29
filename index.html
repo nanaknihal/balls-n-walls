@@ -194,19 +194,26 @@ function model(numBalls, numExplodingBalls, speed) {
                                                               //just checking whether both equations give the same y value for the x value
       return [x,y]
   }
-  this.getBallObstacleDistance = function(ball,ob){
+  this.ballAndObstacleAreColliding = function(ball,ob){
+    for(var r = 0, pix = ob.getPixels(), numPix = pix.length; r<numPix-1; r++){
+      var wallPoint = pix[r]
+      var nextWallPoint = pix[r+1]
+      if(this.ballAndObstacleSegmentAreColliding(ball, wallPoint, nextWallPoint)){return true}
+    }
+
+    return false
+  }
+  this.ballAndObstacleSegmentAreColliding = function(ball, wallPoint, nextWallPoint){
     this.closestDistanceToObstacle = null
 
     var ballPoint = [ball.getX(), ball.getY()]
     var ballVec = ball.getVelocity()
     var ballTrajectoryEquation = equationFromPointAnd2dVec(ballPoint, ballVec)
+    var rad = ball.getRadius()
 
-    for(var j = 0, pix = ob.getPixels(), numPix = pix.length; j<numPix-1; j++){
       //compute distance between ball center and closest point on wall:
         //first find intersection of ball velocity vector and wall:
           //step 1. compute equations of lines (in slope-intercept form)
-            var wallPoint = pix[j]
-            var nextWallPoint = pix[j+1]
             var wallVec = [nextWallPoint[0]-wallPoint[0], nextWallPoint[1]-wallPoint[1]]
             var wallExtensionEquation = equationFromPointAnd2dVec(wallPoint, wallVec)
 
@@ -216,21 +223,69 @@ function model(numBalls, numExplodingBalls, speed) {
 
             /*Now that the intersection has been found, find the angle between the velocity and the wall*/
             /*Make sure the SIGNS OF ALL THESE ANGLES ARE CORRECT:*/
-            var angleBetweenVelocityAndXAxis = Math.atan2((intersection[1]-ballPoint[1]), (intersection[0]-ballPoint[0]))
-            var angleBetweenWallAndYAxis = Math.PI/2-Math.atan(wallExtensionEquation.m)
-            var angleBetweenVelocityAndWall = Math.PI/2 - angleBetweenVelocityAndXAxis - angleBetweenWallAndYAxis
-            var angleBetweenWallAndXAxis = Math.PI/2 - angleBetweenWallAndYAxis
-            var ballToIntersectionDistance = Math.sqrt(Math.pow(intersection[0]-ballPoint[0], 2) + Math.pow(intersection[1]-ballPoint[1], 2)) //Pythagorean
+            angleBetweenVelocityAndXAxis = Math.atan2((intersection[1]-ballPoint[1]), (intersection[0]-ballPoint[0]))
+            angleBetweenWallAndYAxis = Math.PI/2-Math.atan(wallExtensionEquation.m)
+            angleBetweenVelocityAndWall = Math.PI/2 - angleBetweenVelocityAndXAxis - angleBetweenWallAndYAxis
+            angleBetweenWallAndXAxis = Math.PI/2 - angleBetweenWallAndYAxis
+            ballToIntersectionDistance = Math.sqrt(Math.pow(intersection[0]-ballPoint[0], 2) + Math.pow(intersection[1]-ballPoint[1], 2)) //Pythagorean
 
             //The ball can be touching the wall even if it doesn't intersect, so we need to find the distance to the closest point on the wall:
             //The line between this and the ball is always pi/2 radians from the ball, so we can use the sin:
 
-            var ballToWallClosestDistance = ballToIntersectionDistance * Math.sin(angleBetweenVelocityAndWall)//MATH.ABS?
+            ballToWallClosestDistance = ballToIntersectionDistance * Math.sin(angleBetweenVelocityAndWall)//MATH.ABS?
+
+            ballWithinLineRange = false
+            if(Math.abs(ballToWallClosestDistance) < Math.abs(rad)){
+              ballWithinLineRange = true
+            }
+
+             /*USING THIS:*/
+             //See diagrams //NOTE: ADD DIAGRAMS
+             distanceBetweenCollisionAndIntersection = ballToIntersectionDistance * Math.sin(Math.PI/2 - angleBetweenVelocityAndWall)
+
+             HoriDistanceBetweenCollisionAndIntersection = Math.sqrt(distanceBetweenCollisionAndIntersection*distanceBetweenCollisionAndIntersection /
+                                                                    (wallExtensionEquation.m*wallExtensionEquation.m + 1))
+             //slope (m) = vertical-distance/horizontal-distance
+             VertDistanceBetweenCollisionAndIntersection = /*-/ABS?*/ wallExtensionEquation.m*HoriDistanceBetweenCollisionAndIntersection
+
+             collisionPoint = [intersection[0]-HoriDistanceBetweenCollisionAndIntersection, intersection[1]-VertDistanceBetweenCollisionAndIntersection]
+             
+            //Check whether the collision point is actually within the wall and not just in its extension
+
+            collisionIsWithinSegment = (collisionPoint[0] >= Math.min(wallPoint[0], nextWallPoint[0])) &&
+                                       (collisionPoint[0] <= Math.max(wallPoint[0], nextWallPoint[0])) &&
+                                       (collisionPoint[1] >= Math.min(wallPoint[1], nextWallPoint[1])) &&
+                                       (collisionPoint[1] <= Math.max(wallPoint[1], nextWallPoint[1]))
+
+            //Consider the following scenario: the collisionPoint is not actually the closest point on the wall's extension. This happens when the ball collides with
+            // an endpoint of the wall. For these cases:
+            if(!collisionIsWithinSegment && ((distanceBetween(ballPoint, wallPoint) <= rad || distanceBetween(ballPoint, nextWallPoint) <=rad))){
+              collisionIsWithinSegment = true;
+              ballWithinLineRange = true;
+              collisionPoint = wallPoint;
+
+            }
+            //view.showPoint(collisionPoint)
+            //console.log(angleBetweenVelocityAndWall*57.3)
+            //alert(ballToWallClosestDistance + ", " + collisionIsWithinSegmentPlusBallRadius + ", " + ballWithinLineRange + ", " + collisionPoint)
+            //if(!collisionIsWithinSegment && ballWithinLineRange){console.log(collisionPoint)}
+            if(collisionIsWithinSegment){
+              ball.color = "chartreuse"
+              view.showPoint(collisionPoint)
+            } else{
+              ball.color = "violet"
+            }
+            if(collisionIsWithinSegment && ballWithinLineRange){
+              return true
+            } else {return false}
+
+
+            /*
             if(ballToWallClosestDistance < this.closestDistanceToObstacle || this.closestDistanceToObstacle == null){
               this.closestDistanceToObstacle = ballToWallClosestDistance
             }
           }
-          return this.closestDistanceToObstacle
+          return this.closestDistanceToObstacle*/
 
   }
   this.update = function(newTime){
@@ -304,7 +359,7 @@ function model(numBalls, numExplodingBalls, speed) {
         */
 
         //NOTE: you can increase the padding for better performance withhigher velocities
-        padding = 4
+        padding = 6
         function oneDimDistance(a,b) {return Math.abs(a-b)} //his is just encapsulation of a simple but soon-to-be frequently used procedure
 
         closestSideOfWallVertically = (oneDimDistance(ballPoint[1], wh) < oneDimDistance(ballPoint[1], wl)) ? wh : wl
@@ -360,88 +415,32 @@ function model(numBalls, numExplodingBalls, speed) {
 
         for(var o = 0, obs = this.userObstacles, numObs = obs.length; o<numObs; o++){
           var ob = obs[o]
-          for(var j = 0, pix = ob.getPixels(), numPix = pix.length; j<numPix-1; j++){
+          //uncomment? for(var j = 0, pix = ob.getPixels(), numPix = pix.length; j<numPix-1; j++){
             //compute distance between ball center and closest point on wall:
               //first find intersection of ball velocity vector and wall:
                 //step 1. compute equations of lines (in slope-intercept form)
 
-                  wallPoint = pix[j]
+                //uncomment these? or delete, we'll see
+                  /*wallPoint = pix[j]
                   nextWallPoint = pix[j+1]
                   wallVec = [nextWallPoint[0]-wallPoint[0], nextWallPoint[1]-wallPoint[1]]
                   wallExtensionEquation = equationFromPointAnd2dVec(wallPoint, wallVec)
 
                   intersection = intersectionOf2Equations(ballTrajectoryEquation,wallExtensionEquation)
+*/
 
-
-
-                  /*Now that the intersection has been found, find the angle between the velocity and the wall*/
-                  /*Make sure the SIGNS OF ALL THESE ANGLES ARE CORRECT:*/
-                  angleBetweenVelocityAndXAxis = Math.atan2((intersection[1]-ballPoint[1]), (intersection[0]-ballPoint[0]))
-                  angleBetweenWallAndYAxis = Math.PI/2-Math.atan(wallExtensionEquation.m)
-                  angleBetweenVelocityAndWall = Math.PI/2 - angleBetweenVelocityAndXAxis - angleBetweenWallAndYAxis
-                  angleBetweenWallAndXAxis = Math.PI/2 - angleBetweenWallAndYAxis
-                  ballToIntersectionDistance = Math.sqrt(Math.pow(intersection[0]-ballPoint[0], 2) + Math.pow(intersection[1]-ballPoint[1], 2)) //Pythagorean
-
-                  //The ball can be touching the wall even if it doesn't intersect, so we need to find the distance to the closest point on the wall:
-                  //The line between this and the ball is always pi/2 radians from the ball, so we can use the sin:
-
-                  ballToWallClosestDistance = ballToIntersectionDistance * Math.sin(angleBetweenVelocityAndWall)//MATH.ABS?
-
-                  ballWithinLineRange = false
-                  if(Math.abs(ballToWallClosestDistance) < Math.abs(rad)){
-                    ballWithinLineRange = true
-                  }
-
-                   /*USING THIS:*/
-                   //See diagrams //NOTE: ADD DIAGRAMS
-                   distanceBetweenCollisionAndIntersection = ballToIntersectionDistance * Math.sin(Math.PI/2 - angleBetweenVelocityAndWall)
-
-                   HoriDistanceBetweenCollisionAndIntersection = Math.sqrt(distanceBetweenCollisionAndIntersection*distanceBetweenCollisionAndIntersection /
-                                                                          (wallExtensionEquation.m*wallExtensionEquation.m + 1))
-                   //slope (m) = vertical-distance/horizontal-distance
-                   VertDistanceBetweenCollisionAndIntersection = /*-/ABS?*/ wallExtensionEquation.m*HoriDistanceBetweenCollisionAndIntersection
-
-                   collisionPoint = [intersection[0]-HoriDistanceBetweenCollisionAndIntersection, intersection[1]-VertDistanceBetweenCollisionAndIntersection]
-
-                  //Check whether the collision point is actually within the wall and not just in its extension
-
-                  collisionIsWithinSegment = (collisionPoint[0] >= Math.min(wallPoint[0], nextWallPoint[0])) &&
-                                             (collisionPoint[0] <= Math.max(wallPoint[0], nextWallPoint[0])) &&
-                                             (collisionPoint[1] >= Math.min(wallPoint[1], nextWallPoint[1])) &&
-                                             (collisionPoint[1] <= Math.max(wallPoint[1], nextWallPoint[1]))
-
-                  //Consider the following scenario: the collisionPoint is not actually the closest point on the wall's extension. This happens when the ball collides with
-                  // an endpoint of the wall. For these cases:
-                  if(!collisionIsWithinSegment && ((distanceBetween(ballPoint, wallPoint) <= rad || distanceBetween(ballPoint, nextWallPoint) <=rad))){
-                    collisionIsWithinSegment = true;
-                    ballWithinLineRange = true;
-                    collisionPoint = wallPoint;
-                  }
-                  //view.showPoint(collisionPoint)
-                  //console.log(angleBetweenVelocityAndWall*57.3)
-                  //alert(ballToWallClosestDistance + ", " + collisionIsWithinSegmentPlusBallRadius + ", " + ballWithinLineRange + ", " + collisionPoint)
-                  //if(!collisionIsWithinSegment && ballWithinLineRange){console.log(collisionPoint)}
-                  if(collisionIsWithinSegment){
-                    ball.color = "chartreuse"
-                    view.showPoint(collisionPoint)
-                  } else{
-                    ball.color = "violet"
-                  }
-                  if(collisionIsWithinSegment && ballWithinLineRange){
+                  if(this.ballAndObstacleAreColliding(ball, ob)){
 
                     //there's a collision
                     ball.collide("userObstacle")
                     ball.color = "black"
                     //sometimes, the balls can end up in the walls. The user should be allowed to draw walls through balls,
                     //and the balls can occasionally find their way into walls. In these cases, balls should just pass through
-                    //and their velocities should not be changed. Hence,
-                    ballIsInsideWall = Math.abs(ballToWallClosestDistance) + 14 < rad //3px are given as leeway
-
                     //and their velocities should not be changed.
                     //This function will still try to chenge the balls' velocities and treat them as if they were normal ball
                     //that aren't already within obstacles. But the balls will block this change if they are within an obstacle
-                    //ballIsInsideWall = Math.abs(ballToWallClosestDistance) + 12 < rad //12px are given as leeway
-
+                    ballIsInsideWall = Math.abs(ballToWallClosestDistance) + 10 < rad //12px are given as leeway
+                    if(!ballIsInsideWall){
 
                       angleBetweenResultingVelocityAndXAxis = angleBetweenWallAndXAxis + angleBetweenVelocityAndWall
                       //alert(angleBetweenWallAndXAxis + ":" + angleBetweenVelocityAndWall)
@@ -451,11 +450,11 @@ function model(numBalls, numExplodingBalls, speed) {
                       resultingVelXComponent = velMagnitude*Math.cos(angleBetweenResultingVelocityAndXAxis)
                       resultingVelYComponent = velMagnitude*Math.sin(angleBetweenResultingVelocityAndXAxis)
                       ball.setVelocity([resultingVelXComponent, resultingVelYComponent])
+                    }
                   }
 
                   }
                 }
-            }
             }
 
     this.checkForWallCollisions()
@@ -485,14 +484,19 @@ function model(numBalls, numExplodingBalls, speed) {
   }
 }
 
+
 //constructor for balls: (x and y are initial position)
 function ball(x, y, radius, speed, isExplosive) {
   this.isInsideWall
   this.obstaclesIAmInsideOf = []
   this.isWithinObstacle = function(obstacle){
-    dist = curLevel.model.getBallObstacleDistance(this,obstacle)
+    /*dist = curLevel.model.getBallObstacleDistance(this,obstacle)
     var padding = 1
+    console.log(dist < this.radius - padding)
     return dist < this.radius - padding
+    */
+    console.log(curLevel.model.ballAndObstacleAreColliding(this,obstacle))
+    return curLevel.model.ballAndObstacleAreColliding(this,obstacle)
   }
 
   //Only say the ball is inside an obstacle if it is inside when the obstacle is created! Otherwise, there's no reason for the ball to be inside:
@@ -550,23 +554,23 @@ function ball(x, y, radius, speed, isExplosive) {
   this.getVelocity = function(){return this.velocity};
 
   this.setVelocity = function(v){
+    console.log(this.obstaclesIAmInsideOf)
       //don't allow setting velocity if ball is inside an obstacle.
       //let the velocity stay the same until it exits the obstacle. it should only be in an obstacle if the obstacle was created over the ball
       for(var p=0; p<this.obstaclesIAmInsideOf.length; p++){
-        var obstacle = this.obstaclesIAmInsideOf[p] //FIX: this is sometimes undefined
-        console.log(this.obstaclesIAmInsideOf, p)
-        if(!(obstacle instanceof userObstacle)){alert(obstacle.constructor.name)}
+        var obstacle = this.obstaclesIAmInsideOf[p]
         //if it's no longer within the obstacle:
         if(!this.isWithinObstacle(obstacle)){
           //remove the obstacle from the array:
           idx = this.obstaclesIAmInsideOf.indexOf(obstacle)
           this.obstaclesIAmInsideOf.splice(idx,1)
         }
-
-        //now, set the velocity iff it's not within any obstacles (it should smoothly pass through obsacles it's already within, and it should only be
-       //within them if they were created on top of it):
-        if(this.obstaclesIAmInsideOf.length < 1){this.velocity = v}
       }
+
+      //now, set the velocity iff it's not within any obstacles (it should smoothly pass through obsacles it's already within, and it should only be
+      //within them if they were created on top of it):
+      if(this.obstaclesIAmInsideOf.length < 1){this.velocity = v; console.log("setting velocity")} else{console.log("settingvelocity blcoked")}
+
   }
 
   this.highestRow = function(){return this.y - this.radius}
