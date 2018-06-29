@@ -147,7 +147,7 @@ function model(numBalls, numExplodingBalls, speed) {
    *
    *The obstacle has a radius. If a ball is closer than ball.radius + obstacle.radius, a collision will be registered */
 
-    this.maxObstacles = numExplodingBalls //1 wall per exploding ball sounds good
+    this.maxObstacles = 1 //1 wall per exploding ball sounds good
 
 
     this.userObstacles = [];
@@ -161,12 +161,11 @@ function model(numBalls, numExplodingBalls, speed) {
     this.addPixelsToUserObstacles = function(event){
       //if(curLevel.model.userObstacles.length < 1){this.addNewObstacle()} //make a new user obstacle if none exist
 
-      if(event.type == "mousedown"){console.log("md"); this.addNewObstacle(); console.log(this.userObstacles.length)}//make a new user obstacle if it was a mousedown not a mousemove
+      if(event.type == "mousedown"){this.addNewObstacle()}//make a new user obstacle if it was a mousedown not a mousemove
 
       //if(userObstacle.atMaxLength()){this.addNewObstacle()}     //make a new user obstacle if the current one has the maximum number of points
       curLevel.model.mostRecentObstacle().addPixels(event)
       curLevel.model.removeExcessObstacles() //remove any excess obstaclds if there are any real-time, while pixels are being added
-      console.log(curLevel.model.userObstacles)
     }
 
 
@@ -467,19 +466,15 @@ function model(numBalls, numExplodingBalls, speed) {
                   if(collisionIsWithinSegment && ballWithinLineRange){
 
                     //there's a collision
-                    ball.collide(ball)
+                    ball.collide("userObstacle")
                     //sometimes, the balls can end up in the walls. The user should be allowed to draw walls through balls,
                     //and the balls can occasionally find their way into walls. In these cases, balls should just pass through
                     //and their velocities should not be changed. Hence,
-                    ballIsInsideWall = Math.abs(ballToWallClosestDistance) + 3 < rad //3px are given as leeway
+                    ballIsInsideWall = Math.abs(ballToWallClosestDistance) + 12 < rad //3px are given as leeway
                     //alert(angleBetweenVelocityAndWall*57.3)
 
                     if(!ballIsInsideWall){
-
-                      //calculate resulting velocity (Vf):
-                      //sometimes the angle of collision is very small and the resulting angle is calculated as being the same. In these cases, the angle should be
-                      //artificially increased:
-                      if(Math.abs(angleBetweenVelocityAndWall) < 0.2){alert(angleBetweenVelocityAndWall); /*angleBetweenVelocityAndWall = angleBetweenVelocityAndWall*100*/}
+                      
                       angleBetweenResultingVelocityAndXAxis = angleBetweenWallAndXAxis + angleBetweenVelocityAndWall
                       //alert(angleBetweenWallAndXAxis + ":" + angleBetweenVelocityAndWall)
 
@@ -492,7 +487,8 @@ function model(numBalls, numExplodingBalls, speed) {
 
                       ball.dontCollideFor(100)
                       //setTimeout(function(){ball.setVelocity([-resultingVelXComponent, resultingVelYComponent])}, 500)
-                  }
+                  } else{ball.color = "black"}
+
                   }
                 }
             }
@@ -540,18 +536,21 @@ function ball(x, y, radius, speed, isExplosive) {
   this.setColor = function(col) {this.color = col}
   this.explosive = (isExplosive == "e")
   this.isBallExplosive = function(){return this.explosive}
-  this.collide = function(collision_type){
-    if(collision_type == "wall" && this.explosive){
-      curLevel.defusalMode() //COMMENT THIS TO DISABLE DEFUSAL MODE
+  this.collide = function(collisionType){
+    if(collisionType == "wall" && this.explosive){
+      //curLevel.defusalMode() //COMMENT THIS TO DISABLE DEFUSAL MODE
+    } else if(collisionType == "userObstacle"){
+      this.color = "#"+((1<<24)*Math.random()|0).toString(16)
+      console.log("c")
     }
-    this.onCollide(collision_type)
+    this.onCollide(collisionType)
+
   }
-  this.onCollide = function(collision_type){
+  this.onCollide = function(collisionType){
     //this.color = "#FF0000"
-    if(collision_type == "wall") {
+    if(collisionType == "wall") {
       this.wallCollider.collide(this.x, this.y);
-    } else if (collision_type == "ball") {
-        controller.ballHitBall();
+    } else if (collisionType == "ball") {
     }
   }
   this.wallCollider = (this.explosive) ? new wallExplodeAnimation() : new standardWallCollideAnimation();
@@ -1061,7 +1060,7 @@ function level(mod, levelDuration) {
 
 
 
-function levelZero() {return new level(new model(4,3,/*0.1*/0.04), 60000)}
+function levelZero() {return new level(new model(21,3,/*0.1*/0.04), 60000)}
 
 curLevel = levelZero();
 
