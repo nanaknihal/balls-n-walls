@@ -243,7 +243,7 @@ function model(numBalls, numExplodingBalls, speed) {
         */
 
         //NOTE: you can increase the padding for better performance withhigher velocities
-        padding = 3
+        padding = 4
         function oneDimDistance(a,b) {return Math.abs(a-b)} //his is just encapsulation of a simple but soon-to-be frequently used procedure
 
         closestSideOfWallVertically = (oneDimDistance(ballPoint[1], wh) < oneDimDistance(ballPoint[1], wl)) ? wh : wl
@@ -446,14 +446,15 @@ function model(numBalls, numExplodingBalls, speed) {
                    collisionPoint = [intersection[0]-HoriDistanceBetweenCollisionAndIntersection, intersection[1]-VertDistanceBetweenCollisionAndIntersection]
 
                   //Check whether the collision point is actually within the wall and not just in its extension
+
                   collisionIsWithinSegment = (collisionPoint[0] >= Math.min(wallPoint[0], nextWallPoint[0])) &&
-                                                               (collisionPoint[0] <= Math.max(wallPoint[0], nextWallPoint[0])) &&
-                                                               (collisionPoint[1] >= Math.min(wallPoint[1], nextWallPoint[1])) &&
-                                                               (collisionPoint[1] <= Math.max(wallPoint[1], nextWallPoint[1]))
+                                             (collisionPoint[0] <= Math.max(wallPoint[0], nextWallPoint[0])) &&
+                                             (collisionPoint[1] >= Math.min(wallPoint[1], nextWallPoint[1])) &&
+                                             (collisionPoint[1] <= Math.max(wallPoint[1], nextWallPoint[1]))
+
                   //Consider the following scenario: the collisionPoint is not actually the closest point on the wall's extension. This happens when the ball collides with
                   // an endpoint of the wall. For these cases:
                   if(!collisionIsWithinSegment && ((distanceBetween(ballPoint, wallPoint) <= rad || distanceBetween(ballPoint, nextWallPoint) <=rad))){
-                    //alert("a")
                     collisionIsWithinSegment = true;
                     ballWithinLineRange = true;
                     collisionPoint = wallPoint;
@@ -462,19 +463,26 @@ function model(numBalls, numExplodingBalls, speed) {
                   //console.log(angleBetweenVelocityAndWall*57.3)
                   //alert(ballToWallClosestDistance + ", " + collisionIsWithinSegmentPlusBallRadius + ", " + ballWithinLineRange + ", " + collisionPoint)
                   //if(!collisionIsWithinSegment && ballWithinLineRange){console.log(collisionPoint)}
-
+                  if(collisionIsWithinSegment){
+                    ball.color = "chartreuse"
+                    view.showPoint(collisionPoint)
+                  } else{
+                    ball.color = "violet"
+                  }
                   if(collisionIsWithinSegment && ballWithinLineRange){
 
                     //there's a collision
                     ball.collide("userObstacle")
+                    ball.color = "black"
                     //sometimes, the balls can end up in the walls. The user should be allowed to draw walls through balls,
                     //and the balls can occasionally find their way into walls. In these cases, balls should just pass through
                     //and their velocities should not be changed. Hence,
-                    ballIsInsideWall = Math.abs(ballToWallClosestDistance) + 12 < rad //3px are given as leeway
-                    //alert(angleBetweenVelocityAndWall*57.3)
+                    ballIsInsideWall = Math.abs(ballToWallClosestDistance) + 14 < rad //3px are given as leeway
+
+                    //alert(angleBetweenVelocityAndWall*57.8
 
                     if(!ballIsInsideWall){
-                      
+
                       angleBetweenResultingVelocityAndXAxis = angleBetweenWallAndXAxis + angleBetweenVelocityAndWall
                       //alert(angleBetweenWallAndXAxis + ":" + angleBetweenVelocityAndWall)
 
@@ -487,7 +495,7 @@ function model(numBalls, numExplodingBalls, speed) {
 
                       ball.dontCollideFor(100)
                       //setTimeout(function(){ball.setVelocity([-resultingVelXComponent, resultingVelYComponent])}, 500)
-                  } else{ball.color = "black"}
+                  }
 
                   }
                 }
@@ -540,8 +548,7 @@ function ball(x, y, radius, speed, isExplosive) {
     if(collisionType == "wall" && this.explosive){
       //curLevel.defusalMode() //COMMENT THIS TO DISABLE DEFUSAL MODE
     } else if(collisionType == "userObstacle"){
-      this.color = "#"+((1<<24)*Math.random()|0).toString(16)
-      console.log("c")
+      //this.color = "#"+((1<<24)*Math.random()|0).toString(16)
     }
     this.onCollide(collisionType)
 
@@ -645,7 +652,7 @@ function userObstacle() {
   this.maxPixels = 4,
   this.radius = 4,
   this.minDistanceBetweenPixels = 66,
-  this.maxDistaneBetweenPixels = 200,
+  this.maxDistaneBetweenPixels = 300,
   //minDistanceToCallItSamePixelSquared: 300,
   this.pixelLimitExceeded = false,
 
@@ -660,7 +667,9 @@ function userObstacle() {
     //add them if they're far enough from the previous pixels.
     for(var l=0; l<numPix; l++){
       dist = distanceBetween([event.pageX, event.pageY], this.pixels[l])
-      if(dist < this.minDistanceBetweenPixels || dist > this.maxDistaneBetweenPixels){
+
+      if(dist < this.minDistanceBetweenPixels || dist > this.maxDistaneBetweenPixels || /*the slope also cannot be perfectly vertical/undefined!: */this.pixels[l][0] == event.pageX){
+        //console.log(pixels[l][0], event.pageX)
          validPosition = false;
          break;
       }
@@ -784,8 +793,8 @@ var view = {
 
     //show the points:
     for(var j = 0, pix = this.pointsToShow, numPix = pix.length; j<numPix; j++){
-      x = pix[o][0]
-      y = pix[o][1]
+      x = pix[j][0]
+      y = pix[j][1]
 
       color = "black"
       //draw circles of radius rad around each pixel
@@ -896,7 +905,7 @@ var view = {
       }
         ocan = document.getElementById("overlay")
         octx = ocan.getContext('2d')
-        octx.clearRect(this.x,this.y-this.fontSize, this.fontSize*2, this.fontSize)
+        octx.clearRect(this.x,this.y-this.fontSize, this.fontSize*2, this.fontSize*2)
         octx.font = this.fontSize + "px Arial"
         //time = Math.round((this.curTime % 60000)/1000)
         time = this.curTime == null ? 0:this.curTime
