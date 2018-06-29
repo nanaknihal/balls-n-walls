@@ -552,8 +552,10 @@ function ball(x, y, radius, speed, isExplosive) {
   this.setVelocity = function(v){
       //don't allow setting velocity if ball is inside an obstacle.
       //let the velocity stay the same until it exits the obstacle. it should only be in an obstacle if the obstacle was created over the ball
-      for(var p=0, numObsInsideOf=this.obstaclesIAmInsideOf.length; p<numObsInsideOf; p++){
+      for(var p=0; p<this.obstaclesIAmInsideOf.length; p++){
         var obstacle = this.obstaclesIAmInsideOf[p] //FIX: this is sometimes undefined
+        console.log(this.obstaclesIAmInsideOf, p)
+        if(!(obstacle instanceof userObstacle)){alert(obstacle.constructor.name)}
         //if it's no longer within the obstacle:
         if(!this.isWithinObstacle(obstacle)){
           //remove the obstacle from the array:
