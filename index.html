@@ -11,6 +11,7 @@
 <body>
 </body>
 <script>
+var easterEggOn = false
 var timeline = []
 
 var welcome = {
@@ -249,7 +250,7 @@ function model(numBalls, numExplodingBalls, speed) {
              VertDistanceBetweenCollisionAndIntersection = /*-/ABS?*/ wallExtensionEquation.m*HoriDistanceBetweenCollisionAndIntersection
 
              collisionPoint = [intersection[0]-HoriDistanceBetweenCollisionAndIntersection, intersection[1]-VertDistanceBetweenCollisionAndIntersection]
-             
+
             //Check whether the collision point is actually within the wall and not just in its extension
 
             collisionIsWithinSegment = (collisionPoint[0] >= Math.min(wallPoint[0], nextWallPoint[0])) &&
@@ -259,7 +260,8 @@ function model(numBalls, numExplodingBalls, speed) {
 
             //Consider the following scenario: the collisionPoint is not actually the closest point on the wall's extension. This happens when the ball collides with
             // an endpoint of the wall. For these cases:
-            if(!collisionIsWithinSegment && ((distanceBetween(ballPoint, wallPoint) <= rad || distanceBetween(ballPoint, nextWallPoint) <=rad))){
+            var pad = 0
+            if(!collisionIsWithinSegment && ((distanceBetween(ballPoint, wallPoint) <= rad+pad || distanceBetween(ballPoint, nextWallPoint) <=rad+pad))){
               collisionIsWithinSegment = true;
               ballWithinLineRange = true;
               collisionPoint = wallPoint;
@@ -269,12 +271,7 @@ function model(numBalls, numExplodingBalls, speed) {
             //console.log(angleBetweenVelocityAndWall*57.3)
             //alert(ballToWallClosestDistance + ", " + collisionIsWithinSegmentPlusBallRadius + ", " + ballWithinLineRange + ", " + collisionPoint)
             //if(!collisionIsWithinSegment && ballWithinLineRange){console.log(collisionPoint)}
-            if(collisionIsWithinSegment){
-              ball.color = "chartreuse"
-              view.showPoint(collisionPoint)
-            } else{
-              ball.color = "violet"
-            }
+
             if(collisionIsWithinSegment && ballWithinLineRange){
               return true
             } else {return false}
@@ -359,7 +356,7 @@ function model(numBalls, numExplodingBalls, speed) {
         */
 
         //NOTE: you can increase the padding for better performance withhigher velocities
-        padding = 6
+        var padding = 6
         function oneDimDistance(a,b) {return Math.abs(a-b)} //his is just encapsulation of a simple but soon-to-be frequently used procedure
 
         closestSideOfWallVertically = (oneDimDistance(ballPoint[1], wh) < oneDimDistance(ballPoint[1], wl)) ? wh : wl
@@ -433,15 +430,14 @@ function model(numBalls, numExplodingBalls, speed) {
 
                     //there's a collision
                     ball.collide("userObstacle")
-                    ball.color = "black"
                     //sometimes, the balls can end up in the walls. The user should be allowed to draw walls through balls,
                     //and the balls can occasionally find their way into walls. In these cases, balls should just pass through
                     //and their velocities should not be changed.
                     //This function will still try to chenge the balls' velocities and treat them as if they were normal ball
                     //that aren't already within obstacles. But the balls will block this change if they are within an obstacle
                     ballIsInsideWall = Math.abs(ballToWallClosestDistance) + 10 < rad //12px are given as leeway
-                    if(!ballIsInsideWall){
-
+                    //if(!ballIsInsideWall){
+                    //  this.color = "red"//"#"+((1<<24)*Math.random()|0).toString(16)
                       angleBetweenResultingVelocityAndXAxis = angleBetweenWallAndXAxis + angleBetweenVelocityAndWall
                       //alert(angleBetweenWallAndXAxis + ":" + angleBetweenVelocityAndWall)
 
@@ -450,7 +446,7 @@ function model(numBalls, numExplodingBalls, speed) {
                       resultingVelXComponent = velMagnitude*Math.cos(angleBetweenResultingVelocityAndXAxis)
                       resultingVelYComponent = velMagnitude*Math.sin(angleBetweenResultingVelocityAndXAxis)
                       ball.setVelocity([resultingVelXComponent, resultingVelYComponent])
-                    }
+                  //  }
                   }
 
                   }
@@ -732,6 +728,13 @@ var view = {
       ctx.fillStyle = color
       ctx.arc(ball.getX(), ball.getY(), ball.getRadius(), 0, 2*Math.PI);
       ctx.fill();
+      //I couldn't help but do this; I needed a quick break from the rest of this :P
+      if(easterEggOn){
+        var imgElement = new Image();
+        imgElement.src = "ball.png";
+        ctx.drawImage(imgElement, ball.getX(), ball.getY());
+      }
+
       ctx.closePath();
     }
 
