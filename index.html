@@ -506,7 +506,7 @@ function ball(x, y, radius, speed, isExplosive) {
   this.isBallExplosive = function(){return this.explosive}
   this.collide = function(collisionType){
     if(collisionType == "wall" && this.explosive){
-      //curLevel.defusalMode() //COMMENT THIS TO DISABLE DEFUSAL MODE
+      curLevel.defusalMode() //COMMENT THIS TO DISABLE DEFUSAL MODE
     } else if(collisionType == "userObstacle"){
       //this.color = "#"+((1<<24)*Math.random()|0).toString(16)
     }
@@ -815,13 +815,11 @@ var view = {
 
     ocan = document.getElementById("overlay")
     octx = ocan.getContext('2d')
-
+    octx.textAlign = "center"
     octx.font = "30px Helvetica"
     octx.strokeText("Defusal Mode", w/2, h/3)
-
     octx.font = ("12px Arial")
-
-    octx.fillText("You have " + defusalTimeLimit/1000 + " seconds to defuse the bombs by clicking the correct balls", w/2, 2*h/3)
+    octx.fillText("You have " + defusalTimeLimit/1000 + " seconds to defuse the exploding balls. but don't choose the wrong ball!", w/2, h/2)
   },
 
   highlightSelectedBalls: function(event){
@@ -837,7 +835,7 @@ var view = {
       if(distanceBetween([event.pageX,event.pageY], [ball.getX(), ball.getY()]) < ball.getRadius()){
         //display a border around the ball
         ctx.beginPath()
-        ctx.fillStyle = ball.getColor()
+        ctx.strokeStyle = "red"
         ctx.arc(ball.getX(), ball.getY(), totalRadius, 0, 2*Math.PI)
         ctx.stroke()
         ctx.closePath();
@@ -867,7 +865,7 @@ var view = {
     getColor: function(){return this.color},
     fontSize:12,
     x: w/2, // x positioning
-    y: 10,
+    y: h/22,
     countdown: true, //default is countdown-mode, not countup-mode
     ctdwnTime: 0,
     setCountdownTime: function(t){this.ctdwnTime = t},
@@ -891,11 +889,13 @@ var view = {
       }
         ocan = document.getElementById("overlay")
         octx = ocan.getContext('2d')
-        octx.clearRect(this.x,this.y-this.fontSize, this.fontSize*2, this.fontSize*2)
+
+        octx.clearRect(this.x-this.fontSize,this.y-this.fontSize, this.fontSize*2, this.fontSize*2)
         octx.font = this.fontSize + "px Arial"
         //time = Math.round((this.curTime % 60000)/1000)
         time = this.curTime == null ? 0:this.curTime
         octx.fillStyle = this.getColor()
+        octx.textAlign = "center"
         octx.fillText(time, this.x, this.y) //NOTE: assuming time counter should always be under a minute
         setTimeout(function(){view.timer.updateCurTime();view.timer.displayTimer();}, 1000) //recursive call
       }
