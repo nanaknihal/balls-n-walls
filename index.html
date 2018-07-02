@@ -234,9 +234,10 @@ function model(numBalls, numExplodingBalls, speed) {
             //The line between this and the ball is always pi/2 radians from the ball, so we can use the sin:
 
             ballToWallClosestDistance = ballToIntersectionDistance * Math.sin(angleBetweenVelocityAndWall)//MATH.ABS?
+            var pad = 2 //padding radius for obstacle collisions
 
             ballWithinLineRange = false
-            if(Math.abs(ballToWallClosestDistance) < Math.abs(rad)){
+            if(Math.abs(ballToWallClosestDistance) < Math.abs(rad)+pad){
               ballWithinLineRange = true
             }
 
@@ -252,16 +253,16 @@ function model(numBalls, numExplodingBalls, speed) {
              collisionPoint = [intersection[0]-HoriDistanceBetweenCollisionAndIntersection, intersection[1]-VertDistanceBetweenCollisionAndIntersection]
 
             //Check whether the collision point is actually within the wall and not just in its extension
-
-            collisionIsWithinSegment = (collisionPoint[0] >= Math.min(wallPoint[0], nextWallPoint[0])) &&
-                                       (collisionPoint[0] <= Math.max(wallPoint[0], nextWallPoint[0])) &&
-                                       (collisionPoint[1] >= Math.min(wallPoint[1], nextWallPoint[1])) &&
-                                       (collisionPoint[1] <= Math.max(wallPoint[1], nextWallPoint[1]))
+            collisionIsWithinSegment = (collisionPoint[0] >= Math.min(wallPoint[0], nextWallPoint[0])-pad) &&
+                                       (collisionPoint[0] <= Math.max(wallPoint[0], nextWallPoint[0])+pad) &&
+                                       (collisionPoint[1] >= Math.min(wallPoint[1], nextWallPoint[1])-pad) &&
+                                       (collisionPoint[1] <= Math.max(wallPoint[1], nextWallPoint[1])+pad)
 
             //Consider the following scenario: the collisionPoint is not actually the closest point on the wall's extension. This happens when the ball collides with
             // an endpoint of the wall. For these cases:
-            var pad = 0
-            if(!collisionIsWithinSegment && ((distanceBetween(ballPoint, wallPoint) <= rad+pad || distanceBetween(ballPoint, nextWallPoint) <=rad+pad))){
+            var radPad = 2
+            if(((distanceBetween(ballPoint, wallPoint) <= rad+radPad || distanceBetween(ballPoint, nextWallPoint) <=rad+radPad))){
+              ball.color = "black"
               collisionIsWithinSegment = true;
               ballWithinLineRange = true;
               collisionPoint = wallPoint;
@@ -506,7 +507,7 @@ function ball(x, y, radius, speed, isExplosive) {
   this.isBallExplosive = function(){return this.explosive}
   this.collide = function(collisionType){
     if(collisionType == "wall" && this.explosive){
-      curLevel.defusalMode() //COMMENT THIS TO DISABLE DEFUSAL MODE
+      //curLevel.defusalMode() //COMMENT THIS TO DISABLE DEFUSAL MODE
     } else if(collisionType == "userObstacle"){
       //this.color = "#"+((1<<24)*Math.random()|0).toString(16)
     }
