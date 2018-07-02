@@ -250,15 +250,17 @@ function model(numBalls, numExplodingBalls, speed) {
 
             //Consider the following scenario: the collisionPoint is not actually the closest point on the wall's extension. This happens when the ball collides with
             // an endpoint of the wall. For these cases, set collisionPoint to the wall's endpoint:
-            var radPad = 2
+            var radPad = 0
             if(distanceBetween(ballPoint, wallPoint) <= rad+radPad) {
               collisionPoint = wallPoint;
+              ball.color = "green"
             }
             if(distanceBetween(ballPoint, nextWallPoint) <= rad+radPad) {
               collisionPoint = nextWallPoint;
+              ball.color = "green"
             }
             //Check whether the collision point is actually within the wall and not just in its extension
-            var obColPad = 2//collision padding - how far away a ball needs to be from an obstacle for it to collide
+            var obColPad = 3//collision padding - how far away a ball needs to be from an obstacle for it to collide
             collisionIsWithinSegment = (collisionPoint[0] >= Math.min(wallPoint[0], nextWallPoint[0])-obColPad) &&
                                        (collisionPoint[0] <= Math.max(wallPoint[0], nextWallPoint[0])+obColPad) &&
                                        (collisionPoint[1] >= Math.min(wallPoint[1], nextWallPoint[1])-obColPad) &&
@@ -270,10 +272,9 @@ function model(numBalls, numExplodingBalls, speed) {
 
             ballToWallClosestDistance = distanceBetween(collisionPoint, ballPoint)
 
-            var pad = 2 //padding radius for obstacle collisions
 
             ballWithinLineRange = false
-            if(Math.abs(ballToWallClosestDistance) < rad+pad){
+            if(Math.abs(ballToWallClosestDistance) < rad){
               ballWithinLineRange = true
             }
 
@@ -281,7 +282,7 @@ function model(numBalls, numExplodingBalls, speed) {
             //console.log(angleBetweenVelocityAndWall*57.3)
             //alert(ballToWallClosestDistance + ", " + collisionIsWithinSegmentPlusBallRadius + ", " + ballWithinLineRange + ", " + collisionPoint)
             //if(!collisionIsWithinSegment && ballWithinLineRange){console.log(collisionPoint)}
-
+            if(ballWithinLineRange){ball.color="purple"; /*view.showPoint(collisionPoint)*/} else {ball.color = ballColor}
             if(collisionIsWithinSegment && ballWithinLineRange){
               view.showPoint(collisionPoint)
               return true
@@ -367,7 +368,7 @@ function model(numBalls, numExplodingBalls, speed) {
         */
 
         //NOTE: you can increase the padding for better performance withhigher velocities
-        var padding = 6
+        var padding = 0
         function oneDimDistance(a,b) {return Math.abs(a-b)} //his is just encapsulation of a simple but soon-to-be frequently used procedure
 
         closestSideOfWallVertically = (oneDimDistance(ballPoint[1], wh) < oneDimDistance(ballPoint[1], wl)) ? wh : wl
@@ -528,7 +529,7 @@ function ball(x, y, radius, speed, isExplosive) {
     //disable collisions for a short time period to prevent getting trapped inside walls and obstacles
     var b = this
     setTimeout(function(){b.collisionsEnabled = false}, 10)
-    setTimeout(function(){b.collisionsEnabled = true}, 20)
+    setTimeout(function(){b.collisionsEnabled = true}, 100)
     //this.color = "#FF0000"
     if(collisionType == "wall") {
       this.wallCollider.collide(this.x, this.y);
