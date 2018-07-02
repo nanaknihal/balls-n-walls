@@ -237,18 +237,7 @@ function model(numBalls, numExplodingBalls, speed) {
             angleBetweenWallAndXAxis = Math.PI/2 - angleBetweenWallAndYAxis
             ballToIntersectionDistance = distanceBetween(ballPoint, intersection)
 
-            //The ball can be touching the wall even if it doesn't intersect, so we need to find the distance to the closest point on the wall:
-            //The line between this and the ball is always pi/2 radians from the ball, so we can use the sin:
 
-            ballToWallClosestDistance = ballToIntersectionDistance * Math.sin(angleBetweenVelocityAndWall)//MATH.ABS?
-            var pad = 2 //padding radius for obstacle collisions
-
-            ballWithinLineRange = false
-            if(Math.abs(ballToWallClosestDistance) < rad+pad){
-              ballWithinLineRange = true
-            }
-
-             /*USING THIS:*/
              //See diagrams //NOTE: ADD DIAGRAMS
              distanceBetweenCollisionAndIntersection = ballToIntersectionDistance * Math.sin(Math.PI/2 - angleBetweenVelocityAndWall)
 
@@ -259,22 +248,35 @@ function model(numBalls, numExplodingBalls, speed) {
 
              collisionPoint = [intersection[0]-HoriDistanceBetweenCollisionAndIntersection, intersection[1]-VertDistanceBetweenCollisionAndIntersection]
 
-            //Check whether the collision point is actually within the wall and not just in its extension
-            collisionIsWithinSegment = (collisionPoint[0] >= Math.min(wallPoint[0], nextWallPoint[0])-pad) &&
-                                       (collisionPoint[0] <= Math.max(wallPoint[0], nextWallPoint[0])+pad) &&
-                                       (collisionPoint[1] >= Math.min(wallPoint[1], nextWallPoint[1])-pad) &&
-                                       (collisionPoint[1] <= Math.max(wallPoint[1], nextWallPoint[1])+pad)
-
             //Consider the following scenario: the collisionPoint is not actually the closest point on the wall's extension. This happens when the ball collides with
-            // an endpoint of the wall. For these cases:
+            // an endpoint of the wall. For these cases, set collisionPoint to the wall's endpoint:
             var radPad = 2
-            if(((distanceBetween(ballPoint, wallPoint) <= rad+radPad || distanceBetween(ballPoint, nextWallPoint) <=rad+radPad))){
-              ball.color = "black"
-              collisionIsWithinSegment = true;
-              ballWithinLineRange = true;
+            if(distanceBetween(ballPoint, wallPoint) <= rad+radPad) {
               collisionPoint = wallPoint;
-
             }
+            if(distanceBetween(ballPoint, nextWallPoint) <= rad+radPad) {
+              collisionPoint = nextWallPoint;
+            }
+            //Check whether the collision point is actually within the wall and not just in its extension
+            var obColPad = 2//collision padding - how far away a ball needs to be from an obstacle for it to collide
+            collisionIsWithinSegment = (collisionPoint[0] >= Math.min(wallPoint[0], nextWallPoint[0])-obColPad) &&
+                                       (collisionPoint[0] <= Math.max(wallPoint[0], nextWallPoint[0])+obColPad) &&
+                                       (collisionPoint[1] >= Math.min(wallPoint[1], nextWallPoint[1])-obColPad) &&
+                                       (collisionPoint[1] <= Math.max(wallPoint[1], nextWallPoint[1])+obColPad)
+                                       if(collisionIsWithinSegment){ball.color="magenta"}
+
+            //The ball can be touching the wall even if it doesn't intersect, so we need to find the distance to the closest point on the wall:
+            //The line between this and the ball is always pi/2 radians from the ball, so we can use the sin:
+
+            ballToWallClosestDistance = distanceBetween(collisionPoint, ballPoint)
+
+            var pad = 2 //padding radius for obstacle collisions
+
+            ballWithinLineRange = false
+            if(Math.abs(ballToWallClosestDistance) < rad+pad){
+              ballWithinLineRange = true
+            }
+
             //view.showPoint(collisionPoint)
             //console.log(angleBetweenVelocityAndWall*57.3)
             //alert(ballToWallClosestDistance + ", " + collisionIsWithinSegmentPlusBallRadius + ", " + ballWithinLineRange + ", " + collisionPoint)
@@ -919,7 +921,7 @@ function controller(model, view,levelDuration){
   this.defusalModeOn = false
   this.isGameOver = function(){return this.gameOver} //overdoing it on the getters, setters, and LoD? maybe
   this.beginGame = function(){
-
+    /*
     this.engine = Engine.create()
     this.engine.world.gravity.y=0 //remove gravity
     this.render = Render.create({element: document.getElementById("matterjs-holder"), engine:this.engine, options: {width:w, height:h, background: "#aaaaaa"}})
@@ -948,7 +950,7 @@ function controller(model, view,levelDuration){
     World.add(this.engine.world, [this.circ, this.recc, this.box, this.leftWall, this.topWall, this.bottomWall, this.rightWall])
     Engine.run(this.engine)
     Render.run(this.render)
-
+    */
     view.init();
     this.loadCanvas();
 
