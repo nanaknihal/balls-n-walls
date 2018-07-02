@@ -494,7 +494,7 @@ function model(numBalls, numExplodingBalls, speed) {
 
 //constructor for balls: (x and y are initial position)
 function ball(x, y, radius, speed, isExplosive) {
-  this.isInsideWall
+  this.collisionsEnabled = true //collisions allowed
   this.obstaclesIAmInsideOf = []
   this.isWithinObstacle = function(obstacle){
     /*dist = curLevel.model.getBallObstacleDistance(this,obstacle)
@@ -525,6 +525,10 @@ function ball(x, y, radius, speed, isExplosive) {
 
   }
   this.onCollide = function(collisionType){
+    //disable collisions for a short time period to prevent getting trapped inside walls and obstacles
+    var b = this
+    setTimeout(function(){b.collisionsEnabled = false}, 10)
+    setTimeout(function(){b.collisionsEnabled = true}, 20)
     //this.color = "#FF0000"
     if(collisionType == "wall") {
       this.wallCollider.collide(this.x, this.y);
@@ -561,7 +565,6 @@ function ball(x, y, radius, speed, isExplosive) {
   this.getVelocity = function(){return this.velocity};
 
   this.setVelocity = function(v){
-    console.log(this.obstaclesIAmInsideOf)
       //don't allow setting velocity if ball is inside an obstacle.
       //let the velocity stay the same until it exits the obstacle. it should only be in an obstacle if the obstacle was created over the ball
       for(var p=0; p<this.obstaclesIAmInsideOf.length; p++){
@@ -575,8 +578,9 @@ function ball(x, y, radius, speed, isExplosive) {
       }
 
       //now, set the velocity iff it's not within any obstacles (it should smoothly pass through obsacles it's already within, and it should only be
-      //within them if they were created on top of it):
-      if(this.obstaclesIAmInsideOf.length < 1){this.velocity = v; console.log("setting velocity")} else{console.log("settingvelocity blcoked")}
+      //within them if they were created on top of it), and if collisions are enabled:
+      console.log(this.collisionsEnabled)
+      if(this.obstaclesIAmInsideOf.length < 1 && this.collisionsEnabled){this.velocity = v; console.log("setting velocity")} else{console.log("setting velocity blocked")}
 
   }
 
