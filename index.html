@@ -34,7 +34,7 @@ timeline.push(instructions);
 w=650; h=650;
 var game = {
   type:"html-keyboard-response",
-  stimulus: "<div id='matterjs-holder' height='" + h + "' width = '" + w + "'>" + "<!--main canvas where game happens:-->" +
+  stimulus: "<div id='matterjs-holder' height='" + h + "' width = '" + w + "'></div>" + "<!--main canvas where game happens:-->" +
   "<canvas id='mainCanvas' height='" + h + "' width = '" + w + "'></canvas>" + "<button onclick='curLevel.beginGame()'>S T A R T</button>"
   +
   "<!--overlay canvas that doesn't need to be refreshed constantly:-->" +
@@ -235,7 +235,7 @@ function model(numBalls, numExplodingBalls, speed) {
             angleBetweenWallAndYAxis = Math.PI/2-Math.atan(wallExtensionEquation.m)
             angleBetweenVelocityAndWall = Math.PI/2 - angleBetweenVelocityAndXAxis - angleBetweenWallAndYAxis
             angleBetweenWallAndXAxis = Math.PI/2 - angleBetweenWallAndYAxis
-            ballToIntersectionDistance = Math.sqrt(Math.pow(intersection[0]-ballPoint[0], 2) + Math.pow(intersection[1]-ballPoint[1], 2)) //Pythagorean
+            ballToIntersectionDistance = distanceBetween(ballPoint, intersection)
 
             //The ball can be touching the wall even if it doesn't intersect, so we need to find the distance to the closest point on the wall:
             //The line between this and the ball is always pi/2 radians from the ball, so we can use the sin:
@@ -244,7 +244,7 @@ function model(numBalls, numExplodingBalls, speed) {
             var pad = 2 //padding radius for obstacle collisions
 
             ballWithinLineRange = false
-            if(Math.abs(ballToWallClosestDistance) < Math.abs(rad)+pad){
+            if(Math.abs(ballToWallClosestDistance) < rad+pad){
               ballWithinLineRange = true
             }
 
@@ -281,6 +281,7 @@ function model(numBalls, numExplodingBalls, speed) {
             //if(!collisionIsWithinSegment && ballWithinLineRange){console.log(collisionPoint)}
 
             if(collisionIsWithinSegment && ballWithinLineRange){
+              view.showPoint(collisionPoint)
               return true
             } else {return false}
 
@@ -443,8 +444,8 @@ function model(numBalls, numExplodingBalls, speed) {
                     //and their velocities should not be changed.
                     //This function will still try to chenge the balls' velocities and treat them as if they were normal ball
                     //that aren't already within obstacles. But the balls will block this change if they are within an obstacle
-                    ballIsInsideWall = Math.abs(ballToWallClosestDistance) + 10 < rad //12px are given as leeway
-                    //if(!ballIsInsideWall){
+                    ballIsInsideWall = Math.abs(ballToWallClosestDistance) + 5 < rad //5px are given as leeway
+                    if(!ballIsInsideWall){
                     //  this.color = "red"//"#"+((1<<24)*Math.random()|0).toString(16)
                       angleBetweenResultingVelocityAndXAxis = angleBetweenWallAndXAxis + angleBetweenVelocityAndWall
                       //alert(angleBetweenWallAndXAxis + ":" + angleBetweenVelocityAndWall)
@@ -454,7 +455,7 @@ function model(numBalls, numExplodingBalls, speed) {
                       resultingVelXComponent = velMagnitude*Math.cos(angleBetweenResultingVelocityAndXAxis)
                       resultingVelYComponent = velMagnitude*Math.sin(angleBetweenResultingVelocityAndXAxis)
                       ball.setVelocity([resultingVelXComponent, resultingVelYComponent])
-                  //  }
+                  }
                   }
 
                   }
@@ -921,18 +922,30 @@ function controller(model, view,levelDuration){
 
     this.engine = Engine.create()
     this.engine.world.gravity.y=0 //remove gravity
-    this.render = Render.create({element: document.getElementById("matterjs-holder"), engine:this.engine})
+    this.render = Render.create({element: document.getElementById("matterjs-holder"), engine:this.engine, options: {width:w, height:h, background: "#aaaaaa"}})
     this.circ = Bodies.circle(400,200,30)
+    this.box = Bodies.rectangle(450,50,80,80)
+    this.topWall = Bodies.rectangle(w/2,0,w,1, {isStatic: true})
+    this.leftWall = Bodies.rectangle(0,h/2,1,h, {isStatic: true})
+    this.bottomWall = Bodies.rectangle(w/2,h-10,w,1, {isStatic: true})
+    this.rightWall = Bodies.rectangle(w,h/2,1,h, {isStatic: true})
+    this.recc = Bodies.rectangle(600,340,120,109, {isStatic:true})
+
     Matter.Body.setVelocity(this.circ, {x: 2, y:1})
+    Matter.Body.setMass(this.circ, 1000)
+    //Matter.Body.applyForce(this.circ, this.circ.position, {x: 0.01, y:0.01})
     this.circ.friction = 0
     this.circ.frictionAir = 0
-    this.box = Bodies.rectangle(450,50,80,80)
-    this.topWall = Bodies.rectangle(0,0,w,1, {isStatic: true})
-    this.leftWall = Bodies.rectangle(0,0,1,h, {isStatic: true})
-    this.bottomWall = Bodies.rectangle(0,h+5,w,1, {isStatic: true})
-    this.rightWall = Bodies.rectangle(w-2,0,1,h, {isStatic:true})
+    this.recc.friction = 0
+    this.recc.frictionAir = 0
+    this.circ.restitution = 0
+    this.recc.restitution = 0
+    var boundaryWalls = [this.leftWall, this.topWall, this.bottomWall, this.rightWall]
+    for(let w of boundaryWalls){
+      w.restitution = 0
+    }
     //(0,0,w,1), new wall(0,0,1,h), new wall(0,h-2,w,1), new wall(w-2,0,1,h)
-    World.add(this.engine.world, [this.circ, this.box, this.topWall, this.bottomWall, this.leftWall, this.rightWall])
+    World.add(this.engine.world, [this.circ, this.recc, this.box, this.leftWall, this.topWall, this.bottomWall, this.rightWall])
     Engine.run(this.engine)
     Render.run(this.render)
 
