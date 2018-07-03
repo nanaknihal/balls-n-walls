@@ -524,8 +524,10 @@ function model(numBalls, numExplodingBalls, speed) {
     balls = curLevel.model.getBalls()
     for(var k = 0, numBalls = balls.length; k < numBalls; k++){
       if(distanceBetween(clickPoint, [balls[k].getX(), balls[k].getY()] ) <= balls[k].getRadius()){
+        guessedBall = balls[k]
         clickIsInABall = true
-        if(ball.isBallExplosive() && !curLevel.controller.ballWasAlreadyGuessed(ball)){curLevel.controller.addGuessedBall(ball); return true}
+        console.log(guessedBall.getX(), guessedBall.getY())
+        if(guessedBall.isBallExplosive() && !curLevel.controller.ballWasAlreadyGuessed(guessedBall)){curLevel.controller.addGuessedBall(guessedBall); return true}
       }
     }
     //after iterating through all of them and none of them beign correct guesses (because correct guesses would have resulted in return true)
@@ -561,7 +563,7 @@ function ball(x, y, radius, speed, isExplosive) {
   this.isBallExplosive = function(){return this.explosive}
   this.collide = function(collisionType){
     if(collisionType == "wall" && this.explosive){
-      //curLevel.defusalMode() //COMMENT THIS TO DISABLE DEFUSAL MODE
+      curLevel.defusalMode() //COMMENT THIS TO DISABLE DEFUSAL MODE
     } else if(collisionType == "userObstacle"){
       //this.color = "#"+((1<<24)*Math.random()|0).toString(16)
     }
@@ -1036,24 +1038,25 @@ function controller(model, view,levelDuration){
 
   }
 
-  guessesRemaining = model.numExplodingBalls()
+  this.guessesRemaining = model.numExplodingBalls()
   //alert(guessesRemaining)
-  correctGuesses = 0
-  incorrectGuesses = 0
+  this.correctGuesses = 0
+  this.incorrectGuesses = 0
   this.registerDefusalGuess = function(event){
-    if(guessesRemaining > 0){
+    if(curLevel.controller.guessesRemaining > 0){
       result = model.checkDefusalGuess([event.pageX, event.pageY])
       switch(result){
         case true: //correct guess
-          correctGuesses++
-          guessesRemaining--
+          curLevel.controller.correctGuesses++ //this looks like really bad OOP style but keep in mind it's happening within curLevel.controller
+          curLevel.controller.guessesRemaining--
           alert("correct")
+          if(curLevel.controller.guessesRemaining == 0 && curLevel.controller.incorrectGuesses == 0){alert("level passed");this.endGame()}
           break;
         case false:
-          incorrectGuesses++
-          guessesRemaining-- //-- instead of set to 0 because then we can collect data about how many the got right/wrong
+          curLevel.controller.incorrectGuesses++
+          curLevel.controller.guessesRemaining-- //-- instead of set to 0 because then we can collect data about how many the got right/wrong
           alert("incorrect guess; restarting")
-          controller.endGame()
+          curLevel.controller.endGame()
           return null
           break;
         case "notABall":
@@ -1062,7 +1065,7 @@ function controller(model, view,levelDuration){
       }
 
     } else { //if there are no guesses remaining:
-      alert("level passed! ")
+      alert("no more guesses remaining")
       //remove the guessing event listeners
       document.removeEventListener("mousedown", this.registerDefusalGuess)
       document.removeEventListener("mousemove", view.highlightSelectedBalls)
@@ -1074,12 +1077,12 @@ function controller(model, view,levelDuration){
   guessedBalls = [];
   this.ballWasAlreadyGuessed = function(ball){return guessedBalls.includes(ball)}
   this.addGuessedBall = function(ball){guessedBalls.push(ball)}
+
   this.endGame = function(){
     view.timer.hide()
     alert("Game Over...Restarting")
-    curLevel = levelZero()
+    curLevel = new levelZero(); //new level(new model(5,1,0.04), 60000)
   }
-
 
 }
 
@@ -1113,7 +1116,7 @@ function level(mod, levelDuration) {
 
 
 
-function levelZero() {return new level(new model(40,40,/*0.1*/0.04), 60000)}
+function levelZero() {return new level(new model(5,2,/*0.1*/0.04), 60000)}
 
 curLevel = levelZero();
 
