@@ -275,11 +275,14 @@ function model(numBalls, numExplodingBalls, speed) {
             var radPad = 0
             if(distanceBetween(ballPoint, wallPoint) <= rad+radPad) {
               collisionPoint = wallPoint;
-              ball.color = "green"
+              //now "rotate" the normal so it collides off the wall. the new normal is basically the original wall vector starting from the non-collided wallPoint
+              //(in this case, starting from nextWallPoint) and going to the collided wallPoint (in this case, wallPoint)
+              wallNormalVector_UnNormalized = [wallPoint[0]-nextWallPoint[0], wallPoint[1]-nextWallPoint[1]]
             }
             if(distanceBetween(ballPoint, nextWallPoint) <= rad+radPad) {
               collisionPoint = nextWallPoint;
-              ball.color = "green"
+              //rotate:
+              wallNormalVector_UnNormalized = [nextWallPoint[0]-wallPoint[0], nextWallPoint[1]-wallPoint[1]]
             }
             //Check whether the collision point is actually within the wall and not just in its extension
             var obColPad = 0//collision padding - how far away a ball needs to be from an obstacle for it to collide
@@ -287,7 +290,7 @@ function model(numBalls, numExplodingBalls, speed) {
                                        (collisionPoint[0] <= Math.max(wallPoint[0], nextWallPoint[0])+obColPad) &&
                                        (collisionPoint[1] >= Math.min(wallPoint[1], nextWallPoint[1])-obColPad) &&
                                        (collisionPoint[1] <= Math.max(wallPoint[1], nextWallPoint[1])+obColPad)
-                                       if(collisionIsWithinSegment){ball.color="magenta"}
+
 
             //The ball can be touching the wall even if it doesn't intersect, so we need to find the distance to the closest point on the wall:
             //The line between this and the ball is always pi/2 radians from the ball, so we can use the sin:
@@ -304,9 +307,9 @@ function model(numBalls, numExplodingBalls, speed) {
             //console.log(angleBetweenVelocityAndWall*57.3)
             //alert(ballToWallClosestDistance + ", " + collisionIsWithinSegmentPlusBallRadius + ", " + ballWithinLineRange + ", " + collisionPoint)
             //if(!collisionIsWithinSegment && ballWithinLineRange){console.log(collisionPoint)}
-            if(ballWithinLineRange){ball.color="purple"; /*view.showPoint(collisionPoint)*/} else {ball.color = ballColor}
+
             if(collisionIsWithinSegment && ballWithinLineRange){
-              view.showPoint(collisionPoint)
+              //view.showPoint(collisionPoint)
               return {collisionHappening: true, wallVector: wallVec, ballVector: ballVec, wallNormal: wallNormalVector_UnNormalized}
             } else {
               return {collisionHappening: false, wallVector: wallVec, ballVector: ballVec, wallNormal: wallNormalVector_UnNormalized}
@@ -465,6 +468,7 @@ function model(numBalls, numExplodingBalls, speed) {
                   console.log("col?: " + collisionData.collisionHappening)
 
                   if(collisionData.collisionHappening){
+                    ball.color="purple"
                     console.log("coll")
                     //there's a collision
                     ball.collide("userObstacle")
@@ -503,7 +507,7 @@ function model(numBalls, numExplodingBalls, speed) {
                       ball.setVelocity([resultingVelXComponent, resultingVelYComponent])*/
                   }
                   else(console.log(ballToWallClosestDistance, rad))
-                  }
+                } else{ball.color = ballColor}
 
                   }
                 }
@@ -1143,7 +1147,7 @@ function level(mod, levelDuration) {
 
 
 
-function levelZero() {return new level(new model(1,1,/*0.1*/0.04), 60000)}
+function levelZero() {return new level(new model(40,40,/*0.1*/0.04), 60000)}
 
 curLevel = levelZero();
 
