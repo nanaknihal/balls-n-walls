@@ -275,14 +275,15 @@ function model(numBalls, numExplodingBalls, speed) {
             var radPad = 0
             if(distanceBetween(ballPoint, wallPoint) <= rad+radPad) {
               collisionPoint = wallPoint;
-              //now "rotate" the normal so it collides off the wall. the new normal is basically the original wall vector starting from the non-collided wallPoint
-              //(in this case, starting from nextWallPoint) and going to the collided wallPoint (in this case, wallPoint)
-              wallNormalVector_UnNormalized = [wallPoint[0]-nextWallPoint[0], wallPoint[1]-nextWallPoint[1]]
+              //treat the collision point as a small circle and collide off the tangent line. luckily, the vector normal to the tangent line
+              //has the same direction as that between the ballPoint and wallPoint(the collision point). it's magnitute doesn't matter because
+              //it will be normalized!
+              wallNormalVector_UnNormalized = [ballPoint[0]-collisionPoint[0], ballPoint[1]-collisionPoint[1]]
             }
             if(distanceBetween(ballPoint, nextWallPoint) <= rad+radPad) {
               collisionPoint = nextWallPoint;
-              //rotate:
-              wallNormalVector_UnNormalized = [nextWallPoint[0]-wallPoint[0], nextWallPoint[1]-wallPoint[1]]
+              //get the new normal
+              wallNormalVector_UnNormalized = [ballPoint[0]-collisionPoint[0], ballPoint[1]-collisionPoint[1]]
             }
             //Check whether the collision point is actually within the wall and not just in its extension
             var obColPad = 0//collision padding - how far away a ball needs to be from an obstacle for it to collide
