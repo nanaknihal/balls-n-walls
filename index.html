@@ -182,17 +182,21 @@ function model(numBalls, numExplodingBalls, speed) {
   this.getBalls = function(){return this.balls}
 
   //functions to help find intersections of balls and obstacles:
-  var equation = function(m,b){
+  var equation = function(m,b, rise, run){
     this.m = m;
     this.b = b;
+    this.rise = rise;
+    this.run = run;
     //getters and setters are probably unecessary
   }
 
   //arguments: point in form [x,y] and vec in form [xComponent, yComponent]
   function equationFromPointAnd2dVec(point, vec){
-    var slope = vec[1]/vec[0]
+    var rise = vec[1]
+    var run = vec[0]
+    var slope = rise/run
     var intercept = point[1] - slope*point[0]
-    return new equation(slope, intercept)
+    return new equation(slope, intercept, rise, run)
   }
 
   function intersectionOf2Equations(e1, e2){
@@ -231,13 +235,15 @@ function model(numBalls, numExplodingBalls, speed) {
 
             /*Now that the intersection has been found, find the angle between the velocity and the wall*/
             /*Make sure the SIGNS OF ALL THESE ANGLES ARE CORRECT:*/
-            angleBetweenVelocityAndXAxis = Math.atan2((intersection[1]-ballPoint[1]), (intersection[0]-ballPoint[0]))
-            angleBetweenWallAndYAxis = Math.PI/2-Math.atan(wallExtensionEquation.m)
-            angleBetweenVelocityAndWall = Math.PI/2 - angleBetweenVelocityAndXAxis - angleBetweenWallAndYAxis
-            angleBetweenWallAndXAxis = Math.PI/2 - angleBetweenWallAndYAxis
+            angleBetweenVelocityAndXAxis = -Math.atan2(ballTrajectoryEquation.rise, ballTrajectoryEquation.run)
+            angleBetweenWallAndYAxis = Math.PI/2 - Math.atan2(wallExtensionEquation.rise, wallExtensionEquation.run)
+            angleBetweenWallAndXAxis = -Math.atan2(wallExtensionEquation.rise, wallExtensionEquation.run)
+            angleBetweenVelocityAndWall = angleBetweenVelocityAndXAxis-angleBetweenWallAndXAxis//Math.PI/2 - angleBetweenVelocityAndXAxis - angleBetweenWallAndYAxis
+            //angleBetweenWallAndXAxis = Math.PI/2 - angleBetweenWallAndYAxis
             ballToIntersectionDistance = distanceBetween(ballPoint, intersection)
 
 
+            //console.log(angleBetweenVelocityAndWall*57.3)
              //See diagrams //NOTE: ADD DIAGRAMS
              distanceBetweenCollisionAndIntersection = ballToIntersectionDistance * Math.sin(Math.PI/2 - angleBetweenVelocityAndWall)
 
@@ -450,9 +456,9 @@ function model(numBalls, numExplodingBalls, speed) {
                     ballIsInsideWall = Math.abs(ballToWallClosestDistance) + 5 < rad //5px are given as leeway
                     if(!ballIsInsideWall){
                     //  this.color = "red"//"#"+((1<<24)*Math.random()|0).toString(16)
-                      angleBetweenResultingVelocityAndXAxis = angleBetweenWallAndXAxis + angleBetweenVelocityAndWall
-                      //alert(angleBetweenWallAndXAxis + ":" + angleBetweenVelocityAndWall)
-
+                      angleBetweenResultingVelocityAndXAxis = angleBetweenWallAndXAxis - angleBetweenVelocityAndWall
+                      alert(angleBetweenWallAndXAxis + "," + angleBetweenVelocityAndWall)
+                      console.log(angleBetweenWallAndXAxis*57.3)
                       //now, we know the angle of the velocity. we just need the magnitute:
                       velMagnitude = Math.sqrt(ballVec[0]*ballVec[0] + ballVec[1]*ballVec[1])
                       resultingVelXComponent = velMagnitude*Math.cos(angleBetweenResultingVelocityAndXAxis)
@@ -1097,7 +1103,7 @@ function level(mod, levelDuration) {
 
 
 
-function levelZero() {return new level(new model(21,3,/*0.1*/0.04), 60000)}
+function levelZero() {return new level(new model(1,1,/*0.1*/0.04), 60000)}
 
 curLevel = levelZero();
 
