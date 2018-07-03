@@ -930,8 +930,20 @@ var view = {
     setCountdownTime: function(t){this.ctdwnTime = t},
     startTime: 0, //0 means it hasn't been set
     curTime: 60,
-    updateCurTime: function(){this.curTime = this.ctdwnTime - Math.abs(this.startTime - new Date().getSeconds())}, //startDate must be set already for this to work properly. note times will reset after a minute.
-    //updateCurTime: function(){this.curTime++},
+    updateCurTime: function(){
+      //startDate must be set already for this to work properly. Note this only works with times <60sec
+      this.curTime = this.ctdwnTime - Math.abs(this.startTime - new Date().getSeconds())
+
+      //make any negative times positive:
+      this.curTime = Math.abs(this.curTime)
+        //reset any -1 values which sometimes happen right after timer runs out to 0, just to look less weird for the user
+      if(Math.round(this.curTime == 0)){
+        //display it first because the curLevel.timeHasRunOut() will end the game before displaying the timer
+        this.displayTimer();
+        curLevel.timeHasRunOut()
+      }
+
+    },
     reset: function(countdownTime, color, countdown) {
       this.setCountdownTime(countdownTime);
       this.startTime = new Date().getSeconds(); //0
@@ -1100,11 +1112,16 @@ function level(mod, levelDuration) {
   this.beginGame = function(){
     this.controller.beginGame()
   }
+
+  //begins defusal mode:
   this.defusalMode = function(){
     this.model.freeze()
     this.controller.defusalMode()
   }
-  this.isDefusalModeOn = function(){ return controller.defusalModeOn; alert("im beign called")}
+  this.isDefusalModeOn = function(){return this.controller.defusalModeOn}
+  this.timeHasRunOut = function(){
+    if(curLevel.isDefusalModeOn()){curLevel.controller.endGame()}else{curLevel.controller.endGame("defusalModeNeverHappened")}
+  }
 
   this.resetAllBalldesigns = function(model){
     balls = model.getBalls()
@@ -1116,7 +1133,7 @@ function level(mod, levelDuration) {
 
 
 
-function levelZero() {return new level(new model(5,2,/*0.1*/0.04), 60000)}
+function levelZero() {return new level(new model(5,2,/*0.1*/0.04), 30000)}
 
 curLevel = levelZero();
 
