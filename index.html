@@ -208,16 +208,20 @@ function model(numBalls, numExplodingBalls, speed) {
                                                               //just checking whether both equations give the same y value for the x value
       return [x,y]
   }
-  this.ballAndObstacleAreColliding = function(ball,ob){
+  this.ballAndObstacleCollisionStatus = function(ball,ob){
+    var ballAndObSegmentCollision = {collisionHappening: false} //default value, if there's no collision just return this
     for(var r = 0, pix = ob.getPixels(), numPix = pix.length; r<numPix-1; r++){
       var wallPoint = pix[r]
       var nextWallPoint = pix[r+1]
-      if(this.ballAndObstacleSegmentAreColliding(ball, wallPoint, nextWallPoint)){return true}
-    }
+      ballAndObSegmentCollision = this.ballAndObstacleSegmentCollisionStatus(ball, wallPoint, nextWallPoint)
 
-    return false
+      if(ballAndObSegmentCollision.collisionHappening){return ballAndObSegmentCollision} //if there's a collision, just pass the collision data
   }
-  this.ballAndObstacleSegmentAreColliding = function(ball, wallPoint, nextWallPoint){
+  return ballAndObSegmentCollision //if none of the segment collisions happened, this returns the most recent segment's "collision" data, which,
+                                   //like all of the other segments' "collision" data, contains a false value for collisionHappening. it's just
+                                   //an arbitrary return value that has a similar format as the other return value this function gives but false
+  }
+  this.ballAndObstacleSegmentCollisionStatus = function(ball, wallPoint, nextWallPoint){
     this.closestDistanceToObstacle = null
 
     var ballPoint = [ball.getX(), ball.getY()]
@@ -303,9 +307,9 @@ function model(numBalls, numExplodingBalls, speed) {
             if(ballWithinLineRange){ball.color="purple"; /*view.showPoint(collisionPoint)*/} else {ball.color = ballColor}
             if(collisionIsWithinSegment && ballWithinLineRange){
               view.showPoint(collisionPoint)
-              return {collisionHappening: false, wallVector: wallVec, ballVector: ballVec, WallNormal: wallNormalVector_UnNormalized}
+              return {collisionHappening: true, wallVector: wallVec, ballVector: ballVec, wallNormal: wallNormalVector_UnNormalized}
             } else {
-              return {collisionHappening: false, wallVector: wallVec, ballVector: ballVec, WallNormal: wallNormalVector_UnNormalized}
+              return {collisionHappening: false, wallVector: wallVec, ballVector: ballVec, wallNormal: wallNormalVector_UnNormalized}
             }
 
 
@@ -457,14 +461,16 @@ function model(numBalls, numExplodingBalls, speed) {
 
                   intersection = intersectionOf2Equations(ballTrajectoryEquation,wallExtensionEquation)
 */
-                  collisionData = this.ballAndObstacleAreColliding(ball,ob)
-                  console.log("col?: " + collisionData)
+                  collisionData = this.ballAndObstacleCollisionStatus(ball,ob)
+                  console.log("col?: " + collisionData.collisionHappening)
+
                   if(collisionData.collisionHappening){
                     console.log("coll")
                     //there's a collision
                     ball.collide("userObstacle")
 
                     //the wallNormalVector_UnNormalized vector's magnitude will need to be calculated
+                    var wallNormalVector_UnNormalized = collisionData.wallNormal
                     var wallNormalVectorUnNormalizedMagnitude = Math.sqrt(wallNormalVector_UnNormalized[0]*wallNormalVector_UnNormalized[0] + wallNormalVector_UnNormalized[1]*wallNormalVector_UnNormalized[1])
                     var ballToWallClosestDistance = wallNormalVectorUnNormalizedMagnitude
 
@@ -478,7 +484,7 @@ function model(numBalls, numExplodingBalls, speed) {
                     //perform collision bounceback:
                     //According to https://www.3dkingdoms.com/weekly/weekly.php?a=2, resulting velocity vector = -2*(V dot N)*N + V, where V is the velocity and N is the normalized normal vector
                     var wallNormalVector_Normalized = [wallNormalVector_UnNormalized[0]/wallNormalVectorUnNormalizedMagnitude, wallNormalVector_UnNormalized[1]/wallNormalVectorUnNormalizedMagnitude]
-                    var velocityVector = collisionData.ballVec
+                    var velocityVector = collisionData.ballVector
                     var VelocityAndWallNormalNormalizedDotProduct = velocityVector[0]*wallNormalVector_Normalized[0] + velocityVector[1]*wallNormalVector_Normalized[1]
                     var negativeTwoTimesDotP = -2*VelocityAndWallNormalNormalizedDotProduct
                     var resultingVelocity = [wallNormalVector_Normalized[0]*negativeTwoTimesDotP+velocityVector[0], wallNormalVector_Normalized[1]*negativeTwoTimesDotP+velocityVector[1]]
@@ -541,8 +547,8 @@ function ball(x, y, radius, speed, isExplosive) {
     console.log(dist < this.radius - padding)
     return dist < this.radius - padding
     */
-    console.log(curLevel.model.ballAndObstacleAreColliding(this,obstacle))
-    return curLevel.model.ballAndObstacleAreColliding(this,obstacle)
+    return curLevel.model.ballAndObstacleCollisionStatus(this,obstacle).collisionHappening //if it's colliding, it's "inside" for all practical purposes -
+                                                                                           //if it's colliding during obstacle creation, it should pass through
   }
 
   //Only say the ball is inside an obstacle if it is inside when the obstacle is created! Otherwise, there's no reason for the ball to be inside:
@@ -619,7 +625,7 @@ function ball(x, y, radius, speed, isExplosive) {
       //now, set the velocity iff it's not within any obstacles (it should smoothly pass through obsacles it's already within, and it should only be
       //within them if they were created on top of it), and if collisions are enabled:
       console.log(this.collisionsEnabled)
-      if(this.obstaclesIAmInsideOf.length < 1 && this.collisionsEnabled){this.velocity = v; console.log("setting velocity")} else{console.log("setting velocity blocked")}
+      if(this.obstaclesIAmInsideOf.length < 1 && this.collisionsEnabled){this.velocity = v; console.log("setting velocity")} else{console.log("setting velocity blocked" + this.obstaclesIAmInsideOf.length)}
 
   }
 
@@ -696,7 +702,9 @@ function userObstacle() {
     for(var l=0; l<numPix; l++){
       dist = distanceBetween([event.pageX, event.pageY], this.pixels[l])
 
-      if(dist < this.minDistanceBetweenPixels || dist > this.maxDistaneBetweenPixels || /*the slope also cannot be perfectly vertical/undefined!: */this.pixels[l][0] == event.pageX){
+      if(dist < this.minDistanceBetweenPixels || dist > this.maxDistaneBetweenPixels ||
+        /*the slope also cannot be perfectly vertical/undefined! nor perfectly horizontal!: */
+        this.pixels[l][0] == event.pageX || this.pixels[l][1] == event.pageY){
         //console.log(pixels[l][0], event.pageX)
          validPosition = false;
          break;
