@@ -676,10 +676,9 @@ function userObstacleCollisionAnimation(){
     var img = "obstacoll.png"
     duration = 2000
     this.collide = function(x,y) {
-      alert("im being called")
-      //if(!this.animationAlreadyDisplayed){
+      if(!this.animationAlreadyDisplayed){
         view.showImgAtFor(img, x, y, duration, this)
-      //}
+      }
     }
     this.respondToImageBeingCleared = function(){this.animationAlreadyDisplayed=false}
 }
@@ -884,11 +883,12 @@ var view = {
     var imgElement = new Image();
     imgElement.src = image;
 
-    var width = imgElement.width, height = imgElement.height;
-    alert('width ' + width + ' height ' + height)
-    alert(imgElement.src)
-    octx.drawImage(imgElement, x-width/2, y-height/2)
-
+    imgElement.onload = function(){
+      var width = imgElement.width, height = imgElement.height;
+      alert('width ' + width + ' height ' + height)
+      alert(imgElement.src)
+      octx.drawImage(imgElement, x-width/2, y-height/2)
+    }
     //clear it after the duration's up:
     setTimeout(function(){
 
