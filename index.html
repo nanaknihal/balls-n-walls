@@ -12,7 +12,6 @@
 
 </body>
 <script>
-var easterEggOn = false
 var timeline = []
 
 var welcome = {
@@ -364,7 +363,7 @@ function model(numBalls, numExplodingBalls, speed) {
 
       for(var k = 0, numWalls = this.walls.length; k < numWalls; k++){
 
-        wall = this.walls[k]
+        var wall = this.walls[k]
 
 
         wallX = wall.getX()
@@ -411,7 +410,7 @@ function model(numBalls, numExplodingBalls, speed) {
           //multiply the velocity by -1 on appropriate axis. but how do we find the appropriate axis?:
           //by looking for the side of the wall the ball is closest to
 
-            closestWall = "both" //default value. this is usefeul when the ball collides with both at the same time (which is very rare)
+            var closestWall = "both" //default value. this is usefeul when the ball collides with both at the same time (which is very rare)
 
             if(closestVertDistance < closestHoriDistance){
               closestWall = "vert"
@@ -523,12 +522,12 @@ function model(numBalls, numExplodingBalls, speed) {
 
  this.checkDefusalGuess = function(clickPoint){
    //alert("Checkin'")
-    clickIsInABall = false
-    balls = curLevel.model.getBalls()
+    var clickIsInABall = false
+    var balls = curLevel.model.getBalls()
     for(var k = 0, numBalls = balls.length; k < numBalls; k++){
       if(distanceBetween(clickPoint, [balls[k].getX(), balls[k].getY()] ) <= balls[k].getRadius()){
-        guessedBall = balls[k]
-        clickIsInABall = true
+        var guessedBall = balls[k]
+        var clickIsInABall = true
         console.log(guessedBall.getX(), guessedBall.getY())
         if(guessedBall.isBallExplosive() && !curLevel.controller.ballWasAlreadyGuessed(guessedBall)){curLevel.controller.addGuessedBall(guessedBall); return true}
       }
@@ -569,7 +568,8 @@ function ball(x, y, radius, speed, isExplosive) {
     if(!this.collisionsEnabled){
 
     } else if(collisionType == "wall" && this.explosive){
-      curLevel.defusalMode() //COMMENT THIS TO DISABLE DEFUSAL MODE
+      alert(curLevel.model.frozen + "this is the root cause")
+      curLevel.defusalMode(); //COMMENT THIS TO DISABLE DEFUSAL MODE
     } else if(collisionType == "userObstacle"){
 
     }
@@ -792,7 +792,7 @@ var view = {
 
     //change the exploding balls' colors:
     for(var j = 0, balls = model.getBalls(), numBalls = balls.length; j < numBalls; j++){
-      ball = balls[j];
+      var ball = balls[j];
         if(ball.isBallExplosive()){
 
         ball.setColor("orange")
@@ -804,6 +804,7 @@ var view = {
   },
 
   update: function(model){
+    console.log(model)
     //var can = this.can;
     var ctx = this.ctx; //easier to work with than having to write this.ctx each time
     //clear the context:
@@ -812,24 +813,22 @@ var view = {
 
     //Iterate through the balls and display their current attributes:
     for(var j = 0, numBalls = balls.length; j < numBalls; j++){
-      ball = balls[j];
+      var ball = balls[j];
       color = ball.getColor()
       ctx.beginPath();
       ctx.fillStyle = color
       ctx.arc(ball.getX(), ball.getY(), ball.getRadius(), 0, 2*Math.PI);
       ctx.fill();
-      //I couldn't help but do this; I needed a quick break from the rest of this :P
-      if(easterEggOn){
+/*    uncomment for displaying an image for a ball
         var imgElement = new Image();
         imgElement.src = "ball.png";
         ctx.drawImage(imgElement, ball.getX(), ball.getY());
-      }
-
+*/
       ctx.closePath();
     }
 
     for(var j = 0, numWalls = model.walls.length; j < numWalls; j++){
-      wall = model.walls[j];
+      var wall = model.walls[j];
       color = "green"
       ctx.beginPath();
       ctx.fillStyle = color
@@ -914,9 +913,8 @@ var view = {
   message: function(msg){alert(msg)},
 
   displayDefusalMessage: function(defusalTimeLimit){
-
-    ocan = document.getElementById("overlay")
-    octx = ocan.getContext('2d')
+    var ocan = document.getElementById("overlay")
+    var octx = ocan.getContext('2d')
     octx.textAlign = "center"
     octx.font = "30px Helvetica"
     octx.strokeText("Defusal Mode", w/2, h/3)
@@ -930,7 +928,7 @@ var view = {
     //iterate through the balls to check whether the mouth is within them:
     balls = curLevel.model.getBalls()
     for(var n = 0, numBalls = balls.length; n < numBalls; n++){
-      ball = balls[n]
+      var ball = balls[n]
       var selectionRadiusAddOn = 1
       var totalRadius = ball.getRadius()+selectionRadiusAddOn
 
@@ -954,6 +952,19 @@ var view = {
     }
 
 
+  },
+  //clears all displays:
+  clearView : function(){
+    "views being cleared"
+    var canvii = document.getElementsByTagName("CANVAS")
+    var ctxes = [];
+    for(var canCounter = 0; canCounter < canvii.length; canCounter++){ctxes.push(canvii[canCounter].getContext('2d'))}
+    for(var conCounter = 0; conCounter < ctxes.length; conCounter++){
+      var ctx = ctxes[conCounter]
+      var canWidth = canvii[conCounter].width
+      var canHeight = canvii[conCounter].height
+      ctx.clearRect(0,0,canWidth,canHeight);
+    }
   },
   //timer displaying:
   timer : {
@@ -1022,6 +1033,8 @@ function controller(model, view,levelDuration){
 
   this.gameOver = false
   this.defusalModeOn = false
+  this.setDefusalModeOn = function(){this.defusalModeOn = true; alert('setting defusalModeOn true')}
+  this.setDefusalModeOff = function(){this.defusalModeOn = false; alert('setting defusalModeOn false')}
   this.isGameOver = function(){return this.gameOver} //overdoing it on the getters, setters, and LoD? maybe
   this.beginGame = function(){
 
@@ -1060,11 +1073,12 @@ function controller(model, view,levelDuration){
   }
 
   this.defusalMode = function(){
-
+    alert("defusalMode is being called")
     //only start defusalMode if it's not on already - this prevents it being triggered multiple times by collisions:
-    if(!this.defusalModeOn){
-      this.defusalModeOn = true
-      defusalTimeLimit = 10000
+    if(!curLevel.controller.defusalModeOn){
+      alert("its being called again for real")
+      curLevel.controller.setDefusalModeOn()
+      var defusalTimeLimit = 10000
       view.displayDefusalMessage(defusalTimeLimit)
       //remove the wall drawing listeners
       document.removeEventListener("mousedown", this.findWallDrawingPath)
@@ -1080,13 +1094,19 @@ function controller(model, view,levelDuration){
 
 
 
-      setTimeout(function(){
+      /*setTimeout(function(){
         if(curLevel.controller.defusalModeOn){ //if the level hasn't been changed yet, the game's over after the timer's up //violation of LoD, maybe fix
           curLevel.controller.endGame()
         }},
-      defusalTimeLimit)
+      defusalTimeLimit)*/
     }
 
+  }
+
+  this.endDefusalMode = function(){
+    document.removeEventListener("mousemove", view.highlightSelectedBalls)
+    document.removeEventListener("mousedown", this.registerDefusalGuess)
+    view.clearView()
   }
 
   this.guessesRemaining = model.numExplodingBalls()
@@ -1095,19 +1115,18 @@ function controller(model, view,levelDuration){
   this.incorrectGuesses = 0
   this.registerDefusalGuess = function(event){
     if(curLevel.controller.guessesRemaining > 0){
-      result = model.checkDefusalGuess([event.pageX, event.pageY])
+      var result = model.checkDefusalGuess([event.pageX, event.pageY])
       switch(result){
         case true: //correct guess
           curLevel.controller.correctGuesses++ //this looks like really bad OOP style but keep in mind it's happening within curLevel.controller
           curLevel.controller.guessesRemaining--
           view.showImgAtFor("correct.png", event.pageX, event.pageY, 120)
-          if(curLevel.controller.guessesRemaining == 0 && curLevel.controller.incorrectGuesses == 0){alert("level passed");this.endGame()}
+          if(curLevel.controller.guessesRemaining == 0 && curLevel.controller.incorrectGuesses == 0){curLevel.controller.endGame("defusalModeSuccess")}
           break;
         case false:
           curLevel.controller.incorrectGuesses++
           curLevel.controller.guessesRemaining-- //-- instead of set to 0 because then we can collect data about how many the got right/wrong
-          alert("incorrect guess; restarting")
-          curLevel.controller.endGame()
+          curLevel.controller.endGame("incorrectGuess")
           return null
           break;
         case "notABall":
@@ -1125,7 +1144,7 @@ function controller(model, view,levelDuration){
 
   }
 
-  guessedBalls = [];
+  var guessedBalls = [];
   this.ballWasAlreadyGuessed = function(ball){return guessedBalls.includes(ball)}
   this.addGuessedBall = function(ball){guessedBalls.push(ball)}
 
@@ -1147,10 +1166,15 @@ function controller(model, view,levelDuration){
         alert("Level Passed!");
         break;
     }
+    curLevel.controller.endDefusalMode()
+    alert('test')
+    curLevel = levelZero()
+    alert('tes')
+    curLevel.beginGame()
   }
 
 
-    //curLevel = new levelZero(); //new level(new model(5,1,0.04), 60000)
+
 }
 
 //takes a model as an argument. It may be good to make view and controller as arguments, but I don't foresee a realy use in doing so
@@ -1161,6 +1185,7 @@ function level(mod, levelDuration) {
   this.controller = new controller(this.model, this.view, levelDuration),
   this.gameOver = function(){return this.controller.isGameOver()}
   this.update = function(currentTime){
+     console.log('updating')
      this.model.update(currentTime)
      this.view.update(this.model)
   }
@@ -1170,16 +1195,17 @@ function level(mod, levelDuration) {
 
   //begins defusal mode:
   this.defusalMode = function(){
+    alert("this is starting dm")
     this.model.freeze()
     this.controller.defusalMode()
   }
   this.isDefusalModeOn = function(){return this.controller.defusalModeOn}
   this.timeHasRunOut = function(){
-    if(curLevel.isDefusalModeOn()){curLevel.controller.endGame()}else{curLevel.controller.endGame("defusalModeNeverHappened")}
+    if(curLevel.isDefusalModeOn()){curLevel.controller.endGame("defusalModeTimeRanOut")}else{curLevel.controller.endGame("defusalModeNeverHappened")}
   }
 
   this.resetAllBalldesigns = function(model){
-    balls = model.getBalls()
+    var balls = model.getBalls()
     for(var m=0, numBalls = balls.length; m<numBalls; m++){
       balls[m].setColor(ballColor);
     }
@@ -1189,15 +1215,13 @@ function level(mod, levelDuration) {
 
 
 function levelZero() {return new level(new model(1,1,/*0.1*/0.04), 15000)}
-
-curLevel = levelZero();
+function levelOne() {return new level(new model(1,2,0.04,), 15000)}
+var curLevel = levelZero();
 
 function updateGame(currentTime){
   window.requestAnimationFrame(function(){
-    if(!curLevel.gameOver()){
       curLevel.update(currentTime);
       window.requestAnimationFrame(updateGame)
-    }
   })
 }
 
@@ -1211,7 +1235,7 @@ function getPixelPositionRelativeToObject(pix, object) {
   if(posy >= object.height){posy = object.height-1}
   if(posy <= 0){posy = 1}
   return [posx, posy]
-}
+}//NOTE CHANGE Z INDEX OF TIMER
 
 </script>
 </html>
