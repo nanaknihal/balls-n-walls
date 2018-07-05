@@ -574,15 +574,15 @@ function ball(x, y, radius, speed, isExplosive) {
 
     }
     console.log(this.collisionsEnabled)
-    if(this.collisionsEnabled){ //it seems unecessary to have this type of if statement with collisionsEnabled
-                                //twice but I couldn't exit the function in the previous if statement to prevent this line from happening:
-                                //(returning in that conditional didn't actually exit the overall function)
+                                 //obstaclesIAmInsideOf must be empty so it doesn't register a collision when it's inside
+    if(this.collisionsEnabled && this. obstaclesIAmInsideOf.length < 1){ //it seems unecessary to have this type of if statement with
+                                //collisionsEnabled twice but I couldn't exit the function in the previous if statement to prevent
+                                //this line from happening: (returning in that earlier conditional didn't actually exit the overall function)
+
       this.onCollide(collisionType);
     }
   }
   this.onCollide = function(collisionType){
-    //disable collisions for a short time period to prevent getting trapped inside walls and obstacles
-    var b = this
     //setTimeout(function(){b.collisionsEnabled = false}, 10)
     //setTimeout(function(){b.collisionsEnabled = true}, 100)
     //this.color = "#FF0000"
@@ -669,6 +669,7 @@ function standardWallCollideAnimation(){
     this.collide = function(x,y){ };
 }
 
+/*TODO: make an animation class and subclass these. I don't know enough about JS classes to do that easily*/
 function wallExplodeAnimation(){
     var img = "explosion.png"
     duration = 2000
@@ -676,7 +677,7 @@ function wallExplodeAnimation(){
 }
 
 function userObstacleCollisionAnimation(){
-    this.animationAlreadyDisplayed = false
+    this.animationCoolDownTime = 100;
     var img = "obstacoll.png"
     duration = 200
     this.collide = function(x,y) {
