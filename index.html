@@ -718,20 +718,21 @@ function userObstacle() {
   this.pixelLimitExceeded = false,
 
   this.addPixels = function(event){
+    var pos = getPixelPositionRelativeToObject([event.pageX, event.pageY], view.can)
     //if there are no existing pixels/points, just add it without the for loop
     numPix = this.pixels.length;
     if(numPix == 0){
-      this.pixels.push([event.pageX, event.pageY])
+      this.pixels.push(pos)
       return; //break it so the function doesn't try to add the value again
     }
     var validPosition = true
     //add them if they're far enough from the previous pixels.
     for(var l=0; l<numPix; l++){
-      dist = distanceBetween([event.pageX, event.pageY], this.pixels[l])
+      dist = distanceBetween(pos, this.pixels[l])
 
       if(dist < this.minDistanceBetweenPixels || dist > this.maxDistaneBetweenPixels ||
         /*the slope also cannot be perfectly vertical/undefined! nor perfectly horizontal!: */
-        this.pixels[l][0] == event.pageX || this.pixels[l][1] == event.pageY){
+        this.pixels[l][0] == pos[0] || this.pixels[l][1] == pos[1]){
         //console.log(pixels[l][0], event.pageX)
          validPosition = false;
          break;
@@ -739,7 +740,7 @@ function userObstacle() {
     }
 
     if(validPosition){
-        this.pixels.push([event.pageX, event.pageY])
+        this.pixels.push(pos)
         //alert the balls of the new user obstacle, now that it has changed (it doesn't matter that excess wall's haven't been removed yet -
         //they are being alerted so they don't collide if inside the new segment and existing obstacle if they're already inside. if they don't
         //collide with the old segment either that's fine)
@@ -1200,6 +1201,17 @@ function updateGame(currentTime){
   })
 }
 
+//pix has format [x,y]
+function getPixelPositionRelativeToObject(pix, object) {
+  var posx = pix[0]-object.offsetLeft
+  var posy = pix[1]-object.offsetTop
+  //this resets any out-of-bounds pixels to within-bounds
+  if(posx >= object.width){posx = object.width-1}
+  if(posx <= 0){posx = 1}
+  if(posy >= object.height){posy = object.height-1}
+  if(posy <= 0){posy = 1}
+  return [posx, posy]
+}
 
 </script>
 </html>
