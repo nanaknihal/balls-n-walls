@@ -466,10 +466,8 @@ function model(numBalls, numExplodingBalls, speed) {
                   intersection = intersectionOf2Equations(ballTrajectoryEquation,wallExtensionEquation)
 */
                   collisionData = this.ballAndObstacleCollisionStatus(ball,ob)
-                  console.log("col?: " + collisionData.collisionHappening)
 
                   if(collisionData.collisionHappening){
-                    console.log("coll")
                     //there's a collision
                     ball.collide("userObstacle")
 
@@ -567,19 +565,26 @@ function ball(x, y, radius, speed, isExplosive) {
   this.explosive = (isExplosive == "e")
   this.isBallExplosive = function(){return this.explosive}
   this.collide = function(collisionType){
-    if(collisionType == "wall" && this.explosive){
+
+    if(!this.collisionsEnabled){
+
+    } else if(collisionType == "wall" && this.explosive){
       curLevel.defusalMode() //COMMENT THIS TO DISABLE DEFUSAL MODE
     } else if(collisionType == "userObstacle"){
-      //this.color = "#"+((1<<24)*Math.random()|0).toString(16)
-    }
-    this.onCollide(collisionType)
 
+    }
+    console.log(this.collisionsEnabled)
+    if(this.collisionsEnabled){ //it seems unecessary to have this type of if statement with collisionsEnabled
+                                //twice but I couldn't exit the function in the previous if statement to prevent this line from happening:
+                                //(returning in that conditional didn't actually exit the overall function)
+      this.onCollide(collisionType);
+    }
   }
   this.onCollide = function(collisionType){
     //disable collisions for a short time period to prevent getting trapped inside walls and obstacles
     var b = this
-    setTimeout(function(){b.collisionsEnabled = false}, 10)
-    setTimeout(function(){b.collisionsEnabled = true}, 100)
+    //setTimeout(function(){b.collisionsEnabled = false}, 10)
+    //setTimeout(function(){b.collisionsEnabled = true}, 100)
     //this.color = "#FF0000"
     if(collisionType == "wall") {
       this.wallCollider.collide(this.x, this.y)
@@ -631,8 +636,7 @@ function ball(x, y, radius, speed, isExplosive) {
       }
 
       //now, set the velocity iff it's not within any obstacles (it should smoothly pass through obsacles it's already within, and it should only be
-      //within them if they were created on top of it), and if collisions are enabled:
-      console.log(this.collisionsEnabled)
+      //within them if they were created on top of it), and if collisions are enabled:\
       if(this.obstaclesIAmInsideOf.length < 1 && this.collisionsEnabled){this.velocity = v; console.log("setting velocity")} else{console.log("setting velocity blocked" + this.obstaclesIAmInsideOf.length)}
 
   }
@@ -674,9 +678,11 @@ function wallExplodeAnimation(){
 function userObstacleCollisionAnimation(){
     this.animationAlreadyDisplayed = false
     var img = "obstacoll.png"
-    duration = 2000
+    duration = 200
     this.collide = function(x,y) {
       if(!this.animationAlreadyDisplayed){
+        //don't allow for simultaneous animations for the same userObstacleCollisionAnimation object
+        this.animationAlreadyDisplayed = true
         view.showImgAtFor(img, x, y, duration, this)
       }
     }
@@ -877,22 +883,20 @@ var view = {
 
   //img is a link to the image file
   showImgAtFor: function(image, x, y, duration, objectToNotifyWhenDoneDisplaying){
-    alert('showing image')
     ocan = document.getElementById("overlay")
     octx = ocan.getContext('2d')
     var imgElement = new Image();
     imgElement.src = image;
 
+    var width = null, height = null;
     imgElement.onload = function(){
-      var width = imgElement.width, height = imgElement.height;
-      alert('width ' + width + ' height ' + height)
-      alert(imgElement.src)
+      width = imgElement.width, height = imgElement.height;
       octx.drawImage(imgElement, x-width/2, y-height/2)
     }
+
     //clear it after the duration's up:
     setTimeout(function(){
-
-      //octx.clearRect(x-width/2,y-height/2,width, height)
+      octx.clearRect(x-width/2,y-height/2,width, height)
       if(objectToNotifyWhenDoneDisplaying !== undefined){
         objectToNotifyWhenDoneDisplaying.respondToImageBeingCleared()
       }
