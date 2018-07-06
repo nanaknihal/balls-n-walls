@@ -245,7 +245,7 @@ function model(numBalls, numExplodingBalls, speed) {
       var wallPoint = pix[r]
       var nextWallPoint = pix[r+1]
       var segment = [wallPoint, nextWallPoint]
-      ballAndObSegmentCollision = this.ballAndObstacleSegmentCollisionStatus(ball, segment)
+      var ballAndObSegmentCollision = this.ballAndObstacleSegmentCollisionStatus(ball, segment)
 
       if(ballAndObSegmentCollision.collisionHappening){return ballAndObSegmentCollision} //if there's a collision, just pass the collision data
   }
@@ -346,9 +346,9 @@ function model(numBalls, numExplodingBalls, speed) {
 
             if(collisionIsWithinSegment && ballWithinLineRange){
               //view.showPoint(collisionPoint)
-              return {collisionHappening: true, wallVector: wallVec, ballVector: ballVec, wallNormal: wallNormalVector_UnNormalized}
+              return {collisionHappening: true, wallVector: wallVec, ballVector: ballVec, wallNormal: wallNormalVector_UnNormalized, wallSegment:segment}
             } else {
-              return {collisionHappening: false, wallVector: wallVec, ballVector: ballVec, wallNormal: wallNormalVector_UnNormalized}
+              return {collisionHappening: false, wallVector: wallVec, ballVector: ballVec, wallNormal: wallNormalVector_UnNormalized, wallSegment:segment}
             }
 
 
@@ -507,7 +507,7 @@ function model(numBalls, numExplodingBalls, speed) {
                     var negativeTwoTimesDotP = -2*VelocityAndWallNormalNormalizedDotProduct
                     var resultingVelocity = [wallNormalVector_Normalized[0]*negativeTwoTimesDotP+velocityVector[0], wallNormalVector_Normalized[1]*negativeTwoTimesDotP+velocityVector[1]]
 
-                    ball.setVelocity(resultingVelocity)
+                    ball.setVelocity(resultingVelocity, collisionData.wallSegment)
                     console.log(resultingVelocity)
                     //  this.color = "red"//"#"+((1<<24)*Math.random()|0).toString(16)
 /*not using:
@@ -588,7 +588,7 @@ function ball(x, y, radius, speed, isExplosive) {
     }
     console.log(this.collisionsEnabled)
                                  //obstaclesSegmentsIAmInsideOf must be empty so it doesn't register a collision when it's inside
-    if(this.collisionsEnabled && this. obstacleSegmentsIAmInsideOf.length < 1){ //it seems unecessary to have this type of if statement with
+    if(this.collisionsEnabled && this.obstacleSegmentsIAmInsideOf.length < 1){ //it seems unecessary to have this type of if statement with
                                 //collisionsEnabled twice but I couldn't exit the function in the previous if statement to prevent
                                 //this line from happening: (returning in that earlier conditional didn't actually exit the overall function)
 
@@ -635,7 +635,9 @@ function ball(x, y, radius, speed, isExplosive) {
 
   this.getVelocity = function(){return this.velocity};
 
-  this.setVelocity = function(v){
+  //segmentCollidedWith is an optional argument for when the ball collides with a user obstacle. when the ball collides with a user obstacle's segment,
+  //it must make sure that it's not inside of segment
+  this.setVelocity = function(v, segmentCollidedWith){
       //don't allow setting velocity if ball is inside an obstacle.
       //let the velocity stay the same until it exits the obstacle. it should only be in an obstacle if the obstacle was created over the ball
       for(var p=0; p<this.obstacleSegmentsIAmInsideOf.length; p++){
@@ -648,9 +650,13 @@ function ball(x, y, radius, speed, isExplosive) {
         }
       }
 
-      //now, set the velocity iff it's not within any obstacles (it should smoothly pass through obsacles it's already within, and it should only be
-      //within them if they were created on top of it), and if collisions are enabled:\
-      if(this.obstacleSegmentsIAmInsideOf.length < 1 && this.collisionsEnabled){this.velocity = v; console.log("setting velocity")} else{console.log("setting velocity blocked" + this.obstacleSegmentsIAmInsideOf.length)}
+      //now, set the velocity iff it's not within the segment it's colliding with
+
+      if(!this.obstacleSegmentsIAmInsideOf.includes(segmentCollidedWith) && this.collisionsEnabled){
+        this.velocity = v
+      } else{
+        console.log("setting velocity blocked" + this.obstacleSegmentsIAmInsideOf.length)
+      }
 
   }
 
