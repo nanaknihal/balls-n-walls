@@ -10,13 +10,17 @@ jsPsych.plugins['mot-game'] = (function(){
       num_exploding_balls: 2
       max_user_defined_obstacles: 1
       max_user_defined_obstacle_segments: 3 //max_pixels: max_segments + 1
-      max_user_defined_obstacle_segment_length:300
-      min_user_defined_obstacle_segment_length: 66
+      max_distance_between_obstacle_pixels:300
+      min_distance_between_obstacle_pixels: 66
+      gameWidth: 650
+      gameHeight: 650
     }
   }
 
   plugin.trial = function(display_element, trial) {
-    var w=650, h=650; //width and height of game
+    var par = plugin.info.parameters
+    
+    var w=par.gameWidth, h=par.gameHeight;
     display_element.innerHTML = "<!--main canvas where game happens:-->" +
     "<canvas id='mainCanvas' height='" + h + "' width = '" + w + "'></canvas>" + "<button onclick='curLevel.beginGame()'>S T A R T</button>"
     +
@@ -27,7 +31,7 @@ jsPsych.plugins['mot-game'] = (function(){
     "<!--selection canvas for ball selection in defusal mode:-->" +
     //it may be good to not hard-code the top and left value but rather use variables...this will be decided later when we do more styling
     "<canvas id='selectionCanvas' style='position:absolute; left: 0; top: 0; z-index:1' height='" + h + "' width = '" + w + "'></canvas>";
-    var par = plugin.info.parameters
+
     var data = {
       levelDuration: duration
       timeFinished: 0
@@ -659,10 +663,10 @@ jsPsych.plugins['mot-game'] = (function(){
 
     function userObstacle() {
       this.pixels = new Array(),
-      this.maxPixels = 4,
+      this.maxPixels = par.max_user_defined_obstacle_segments+1,
       this.radius = 4,
-      this.minDistanceBetweenPixels = 66,
-      this.maxDistaneBetweenPixels = 300,
+      this.minDistanceBetweenPixels = par.min_distance_between_obstacle_pixels,
+      this.maxDistanceBetweenPixels = par.max_distance_between_obstacle_pixels,
       //minDistanceToCallItSamePixelSquared: 300,
       this.pixelLimitExceeded = false,
 
@@ -679,7 +683,7 @@ jsPsych.plugins['mot-game'] = (function(){
         for(var l=0; l<numPix; l++){
           var dist = distanceBetween(pos, this.pixels[l])
 
-          if(dist < this.minDistanceBetweenPixels || dist > this.maxDistaneBetweenPixels ||
+          if(dist < this.minDistanceBetweenPixels || dist > this.maxDistanceBetweenPixels ||
             /*the slope also cannot be perfectly vertical/undefined! nor perfectly horizontal!: */
             this.pixels[l][0] == pos[0] || this.pixels[l][1] == pos[1]){
             //console.log(pixels[l][0], event.pageX)
