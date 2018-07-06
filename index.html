@@ -164,13 +164,19 @@ function model(numBalls, numExplodingBalls, speed) {
     this.explodingBalls.push(bal)
   }
 
-
+  /*Not using this inefficient wall type anymore:
   /*MAKE SURE TO NOT MAKE THE WIDTHS NEGATIVE - THE wall.highestPoint, leftestPoint, etc. methods will not work if they
    *are negative. It may be a good idea to make those methods work with negative values, but it seems that would be less
    *efficient because more steps would be involved in those methods, which are called a lot. It also may be good to have
    *the highestPoint, lowestPoint, etc. methods of the four walls at the edges of the canvas only be called once instead
-   *of for every ball in every update. Also make sure the balls are not already touching the walls upon initialization*/
+   *of for every ball in every update. Also make sure the balls are not already touching the walls upon initialization
    this.walls = [new wall(0,0,w,1), new wall(0,0,1,h), new wall(0,h-2,w,1), new wall(w-2,0,1,h)], //default border walls of 0px
+   */
+
+   /*USING THIS INSTEAD:*/
+   this.wallThickness = 1 //each wall is 1px thick and at an edge of the screen.
+
+
 
   /*USER OBSTACLE: a set of pixels that the user selected to be included in the "obstacle." The user probably sees this as
    *"obstacle" as multiple obstacles, but the program treats them all as one. It doesn't care how the pixels are grouped,
@@ -357,13 +363,30 @@ function model(numBalls, numExplodingBalls, speed) {
 
     //Checks for collision with the four walls surrounding the game, NOT user-defined obstacles/walls
     this.executeWallCollisions = function(){
-    /*update the balls*/
 
     for(var i = 0, numBalls = this.balls.length; i < numBalls; i++){
 
       var ball = this.balls[i];
       var ballPoint = [ball.getX(), ball.getY()]
 
+      var collisionRadius = ball.getRadius() + this.wallThickness //greatest distance that can trigger a collision
+
+      var collisionLeftWall = ballPoint[0]-collisionRadius <= 0
+      var collisionRightWall = ballPoint[0]+collisionRadius >= w
+      var collisionTopWall = ballPoint[1]-collisionRadius <= 0
+      var collisionBottomWall = ballPoint[1]+collisionRadius >= h
+
+      var vel = ball.getVelocity()
+      if(collisionLeftWall || collisionRightWall){
+        //flip motion in x-direction
+        ball.setVelocity([-vel[0], vel[1]])
+      } //IF MULTIPLE COLLISIONS IN ONE UPDATE ARE A PROBLEM, PUT AN ELSE HERE
+      if(collisionTopWall || collisionBottomWall) {
+        //flip motion in y-direction
+        ball.setVelocity([vel[0], -vel[1]])
+      }
+
+      /*NOT USING THIS INEFFICIENT WALL-COLLISION DETECTION ALGORITHM:
       for(var k = 0, numWalls = this.walls.length; k < numWalls; k++){
 
         var wall = this.walls[k]
@@ -387,15 +410,6 @@ function model(numBalls, numExplodingBalls, speed) {
         var we = wall.leftestSide()
         var wr = wall.rightestSide()
 
-        /*WHEN A BALL INTERSECTS WITH A WALL:
-          one of the rectangle's four edges is within the circle's area (closer to the center than the circle).
-          When this happens, the circle's center will be closer to a vertical wall's x coordinate than it's radius is
-          AND the circle's highest or lowest point will be within the wall's highest and lowest points
-
-          OR
-
-          vice versa with horizontal walls and y coordinates vs. x coordinates
-        */
 
         //NOTE: you can increase the padding for better performance withhigher velocities
         var padding = 0
@@ -437,8 +451,8 @@ function model(numBalls, numExplodingBalls, speed) {
             }
 
           //move the ball one increment after setting its velocity (or leaving it):
-          }
         }
+      }*/
       }
     }
 
@@ -647,12 +661,12 @@ function ball(x, y, radius, speed, isExplosive) {
 
   //move the ball one increment accorsing to its current velocity and position:
   this.move = function(timestepDuration){
-    console.log("i like to move it move it")
     var td = timestepDuration
     //account for strange timestepDuration values like 0 or very high values:
     if(td == 0 | td > 100){
       td = 30
     }
+    var stuckInWall = this.x-this.radius < 0 || this.x+radius > w || this.y-this.radius < 0 || this.y-this.radius > h
     /*update x-axis position using differential equation dx/dt = v_x*/
     var dx = this.getVelocity()[0] * td
     var newX = this.getX() + dx;
@@ -836,16 +850,21 @@ function view() {
         ctx.closePath();
       }
 
-      for(var j = 0, numWalls = model.walls.length; j < numWalls; j++){
-        var wall = model.walls[j];
+      //not using commented parts anymore:
+      //for(var j = 0, numWalls = 4; j < numWalls; j++){
+        //var wall = model.walls[j];
         var color = "green"
         ctx.beginPath();
         ctx.fillStyle = color
-        //alert(wall.getX() + " " + wall.getY() + ", " + wall.getW() + " " + wall.getL())
-        ctx.rect(wall.getX(), wall.getY(), wall.getW(), wall.getL())
+        //ctx.rect(wall.getX(), wall.getY(), wall.getW(), wall.getL())
+        var wallThickness = curLevel.model.wallThickness
+        ctx.rect(0,0,wallThickness, h)
+        ctx.rect(0,0,w,wallThickness)
+        ctx.rect(w-wallThickness,0,wallThickness,h)
+        ctx.rect(0,h-wallThickness,w,wallThickness)
         ctx.fill();
         ctx.closePath();
-      }
+      //}
 
       //display the points/pixels in the user-defined wall as circles and draw line segments between them (except for before the first and after the last pixel)
       for(var j = 0, obs = model.userObstacles, numObs = obs.length; j<numObs; j++){
