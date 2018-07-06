@@ -238,7 +238,8 @@ function model(numBalls, numExplodingBalls, speed) {
     for(var r = 0, pix = ob.getPixels(), numPix = pix.length; r<numPix-1; r++){
       var wallPoint = pix[r]
       var nextWallPoint = pix[r+1]
-      ballAndObSegmentCollision = this.ballAndObstacleSegmentCollisionStatus(ball, wallPoint, nextWallPoint)
+      var segment = [wallPoint, nextWallPoint]
+      ballAndObSegmentCollision = this.ballAndObstacleSegmentCollisionStatus(ball, segment)
 
       if(ballAndObSegmentCollision.collisionHappening){return ballAndObSegmentCollision} //if there's a collision, just pass the collision data
   }
@@ -246,7 +247,10 @@ function model(numBalls, numExplodingBalls, speed) {
                                    //like all of the other segments' "collision" data, contains a false value for collisionHappening. it's just
                                    //an arbitrary return value that has a similar format as the other return value this function gives but false
   }
-  this.ballAndObstacleSegmentCollisionStatus = function(ball, wallPoint, nextWallPoint){
+  this.ballAndObstacleSegmentCollisionStatus = function(ball, segment){
+    var wallPoint = segment[0]
+    var nextWallPoint = segment[1]
+
     this.closestDistanceToObstacle = null
 
     var ballPoint = [ball.getX(), ball.getY()]
@@ -542,20 +546,17 @@ function model(numBalls, numExplodingBalls, speed) {
 //constructor for balls: (x and y are initial position)
 function ball(x, y, radius, speed, isExplosive) {
   this.collisionsEnabled = true //collisions allowed
-  this.obstaclesIAmInsideOf = []
-  this.isWithinObstacle = function(obstacle){
-    /*dist = curLevel.model.getBallObstacleDistance(this,obstacle)
-    var padding = 1
-    console.log(dist < this.radius - padding)
-    return dist < this.radius - padding
-    */
-    return curLevel.model.ballAndObstacleCollisionStatus(this,obstacle).collisionHappening //if it's colliding, it's "inside" for all practical purposes -
-                                                                                           //if it's colliding during obstacle creation, it should pass through
+  this.obstacleSegmentsIAmInsideOf = []
+  //segment is of form [segmentStart, segmentEnd]
+  this.isWithinObstacleSegment = function(segment){
+    //if it's colliding, it's "inside" for all practical purposes -
+    //if it's colliding during obstacle creation, it should pass through the obstacle segment it's inside of
+    return curLevel.model.ballAndObstacleSegmentCollisionStatus(this,segment).collisionHappening
   }
 
-  //Only say the ball is inside an obstacle if it is inside when the obstacle is created! Otherwise, there's no reason for the ball to be inside:
-  this.respondToObstacleCreation = function(obstacle) {
-    if(this.isWithinObstacle(obstacle) && !this.obstaclesIAmInsideOf.includes(obstacle)){this.obstaclesIAmInsideOf.push(obstacle)}
+  this.respondToObstacleSegmentCreation = function(segment) {
+    //Only say the ball is inside an obstacle if it is inside when the obstacle is created! Otherwise, there's no reason for the ball to be inside:
+    if(this.isWithinObstacleSegment(segment) && !this.obstacleSegmentsIAmInsideOf.includes(segment)){this.obstacleSegmentsIAmInsideOf.push(segment)}
   }
   this.color = ballColor
   this.getColor = function() {return this.color}
@@ -572,8 +573,8 @@ function ball(x, y, radius, speed, isExplosive) {
 
     }
     console.log(this.collisionsEnabled)
-                                 //obstaclesIAmInsideOf must be empty so it doesn't register a collision when it's inside
-    if(this.collisionsEnabled && this. obstaclesIAmInsideOf.length < 1){ //it seems unecessary to have this type of if statement with
+                                 //obstaclesSegmentsIAmInsideOf must be empty so it doesn't register a collision when it's inside
+    if(this.collisionsEnabled && this. obstacleSegmentsIAmInsideOf.length < 1){ //it seems unecessary to have this type of if statement with
                                 //collisionsEnabled twice but I couldn't exit the function in the previous if statement to prevent
                                 //this line from happening: (returning in that earlier conditional didn't actually exit the overall function)
 
@@ -623,19 +624,19 @@ function ball(x, y, radius, speed, isExplosive) {
   this.setVelocity = function(v){
       //don't allow setting velocity if ball is inside an obstacle.
       //let the velocity stay the same until it exits the obstacle. it should only be in an obstacle if the obstacle was created over the ball
-      for(var p=0; p<this.obstaclesIAmInsideOf.length; p++){
-        var obstacle = this.obstaclesIAmInsideOf[p]
+      for(var p=0; p<this.obstacleSegmentsIAmInsideOf.length; p++){
+        var segment = this.obstacleSegmentsIAmInsideOf[p]
         //if it's no longer within the obstacle:
-        if(!this.isWithinObstacle(obstacle)){
+        if(!this.isWithinObstacleSegment(segment)){
           //remove the obstacle from the array:
-          var idx = this.obstaclesIAmInsideOf.indexOf(obstacle)
-          this.obstaclesIAmInsideOf.splice(idx,1)
+          var idx = this.obstacleSegmentsIAmInsideOf.indexOf(segment)
+          this.obstacleSegmentsIAmInsideOf.splice(idx,1)
         }
       }
 
       //now, set the velocity iff it's not within any obstacles (it should smoothly pass through obsacles it's already within, and it should only be
       //within them if they were created on top of it), and if collisions are enabled:\
-      if(this.obstaclesIAmInsideOf.length < 1 && this.collisionsEnabled){this.velocity = v; console.log("setting velocity")} else{console.log("setting velocity blocked" + this.obstaclesIAmInsideOf.length)}
+      if(this.obstacleSegmentsIAmInsideOf.length < 1 && this.collisionsEnabled){this.velocity = v; console.log("setting velocity")} else{console.log("setting velocity blocked" + this.obstacleSegmentsIAmInsideOf.length)}
 
   }
 
@@ -745,7 +746,12 @@ function userObstacle() {
         //they are being alerted so they don't collide if inside the new segment and existing obstacle if they're already inside. if they don't
         //collide with the old segment either that's fine)
         var balls = curLevel.model.getBalls()
-        for(var q = 0, numOfBalls = balls.length; q < numOfBalls; q++){balls[q].respondToObstacleCreation(this)}
+        for(var q = 0, numOfBalls = balls.length; q < numOfBalls; q++){
+          var numPix = this.pixels.length
+          lastPixel = this.pixels[numPix - 1]
+          secondToLastPixel = (numPix > 1) ? this.pixels[numPix -2] : this.pixels[numPix - 1]
+          balls[q].respondToObstacleSegmentCreation([lastPixel, secondToLastPixel])
+        }
       }
     while(this.pixels.length > this.maxPixels){
         //console.log(this.pixels)
