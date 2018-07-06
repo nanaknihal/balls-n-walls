@@ -98,13 +98,19 @@ jsPsych.plugins['mot-game'] = (function(){
         this.explodingBalls.push(bal)
       }
 
-
+      /*Not using this inefficient wall type anymore:
       /*MAKE SURE TO NOT MAKE THE WIDTHS NEGATIVE - THE wall.highestPoint, leftestPoint, etc. methods will not work if they
        *are negative. It may be a good idea to make those methods work with negative values, but it seems that would be less
        *efficient because more steps would be involved in those methods, which are called a lot. It also may be good to have
        *the highestPoint, lowestPoint, etc. methods of the four walls at the edges of the canvas only be called once instead
-       *of for every ball in every update. Also make sure the balls are not already touching the walls upon initialization*/
+       *of for every ball in every update. Also make sure the balls are not already touching the walls upon initialization
        this.walls = [new wall(0,0,w,1), new wall(0,0,1,h), new wall(0,h-2,w,1), new wall(w-2,0,1,h)], //default border walls of 0px
+       */
+
+       /*USING THIS INSTEAD:*/
+       this.wallThickness = 1 //each wall is 1px thick and at an edge of the screen.
+
+
 
       /*USER OBSTACLE: a set of pixels that the user selected to be included in the "obstacle." The user probably sees this as
        *"obstacle" as multiple obstacles, but the program treats them all as one. It doesn't care how the pixels are grouped,
@@ -172,7 +178,8 @@ jsPsych.plugins['mot-game'] = (function(){
         for(var r = 0, pix = ob.getPixels(), numPix = pix.length; r<numPix-1; r++){
           var wallPoint = pix[r]
           var nextWallPoint = pix[r+1]
-          ballAndObSegmentCollision = this.ballAndObstacleSegmentCollisionStatus(ball, wallPoint, nextWallPoint)
+          var segment = [wallPoint, nextWallPoint]
+          ballAndObSegmentCollision = this.ballAndObstacleSegmentCollisionStatus(ball, segment)
 
           if(ballAndObSegmentCollision.collisionHappening){return ballAndObSegmentCollision} //if there's a collision, just pass the collision data
       }
@@ -180,7 +187,10 @@ jsPsych.plugins['mot-game'] = (function(){
                                        //like all of the other segments' "collision" data, contains a false value for collisionHappening. it's just
                                        //an arbitrary return value that has a similar format as the other return value this function gives but false
       }
-      this.ballAndObstacleSegmentCollisionStatus = function(ball, wallPoint, nextWallPoint){
+      this.ballAndObstacleSegmentCollisionStatus = function(ball, segment){
+        var wallPoint = segment[0]
+        var nextWallPoint = segment[1]
+
         this.closestDistanceToObstacle = null
 
         var ballPoint = [ball.getX(), ball.getY()]
@@ -287,13 +297,30 @@ jsPsych.plugins['mot-game'] = (function(){
 
         //Checks for collision with the four walls surrounding the game, NOT user-defined obstacles/walls
         this.executeWallCollisions = function(){
-        /*update the balls*/
 
         for(var i = 0, numBalls = this.balls.length; i < numBalls; i++){
 
           var ball = this.balls[i];
           var ballPoint = [ball.getX(), ball.getY()]
 
+          var collisionRadius = ball.getRadius() + this.wallThickness //greatest distance that can trigger a collision
+
+          var collisionLeftWall = ballPoint[0]-collisionRadius <= 0
+          var collisionRightWall = ballPoint[0]+collisionRadius >= w
+          var collisionTopWall = ballPoint[1]-collisionRadius <= 0
+          var collisionBottomWall = ballPoint[1]+collisionRadius >= h
+
+          var vel = ball.getVelocity()
+          if(collisionLeftWall || collisionRightWall){
+            //flip motion in x-direction
+            ball.setVelocity([-vel[0], vel[1]])
+          } //IF MULTIPLE COLLISIONS IN ONE UPDATE ARE A PROBLEM, PUT AN ELSE HERE
+          if(collisionTopWall || collisionBottomWall) {
+            //flip motion in y-direction
+            ball.setVelocity([vel[0], -vel[1]])
+          }
+
+          /*NOT USING THIS INEFFICIENT WALL-COLLISION DETECTION ALGORITHM:
           for(var k = 0, numWalls = this.walls.length; k < numWalls; k++){
 
             var wall = this.walls[k]
@@ -317,15 +344,6 @@ jsPsych.plugins['mot-game'] = (function(){
             var we = wall.leftestSide()
             var wr = wall.rightestSide()
 
-            /*WHEN A BALL INTERSECTS WITH A WALL:
-              one of the rectangle's four edges is within the circle's area (closer to the center than the circle).
-              When this happens, the circle's center will be closer to a vertical wall's x coordinate than it's radius is
-              AND the circle's highest or lowest point will be within the wall's highest and lowest points
-
-              OR
-
-              vice versa with horizontal walls and y coordinates vs. x coordinates
-            */
 
             //NOTE: you can increase the padding for better performance withhigher velocities
             var padding = 0
@@ -367,8 +385,8 @@ jsPsych.plugins['mot-game'] = (function(){
                 }
 
               //move the ball one increment after setting its velocity (or leaving it):
-              }
             }
+          }*/
           }
         }
 
@@ -476,20 +494,17 @@ jsPsych.plugins['mot-game'] = (function(){
     //constructor for balls: (x and y are initial position)
     function ball(x, y, radius, speed, isExplosive) {
       this.collisionsEnabled = true //collisions allowed
-      this.obstaclesIAmInsideOf = []
-      this.isWithinObstacle = function(obstacle){
-        /*dist = curLevel.model.getBallObstacleDistance(this,obstacle)
-        var padding = 1
-        console.log(dist < this.radius - padding)
-        return dist < this.radius - padding
-        */
-        return curLevel.model.ballAndObstacleCollisionStatus(this,obstacle).collisionHappening //if it's colliding, it's "inside" for all practical purposes -
-                                                                                               //if it's colliding during obstacle creation, it should pass through
+      this.obstacleSegmentsIAmInsideOf = []
+      //segment is of form [segmentStart, segmentEnd]
+      this.isWithinObstacleSegment = function(segment){
+        //if it's colliding, it's "inside" for all practical purposes -
+        //if it's colliding during obstacle creation, it should pass through the obstacle segment it's inside of
+        return curLevel.model.ballAndObstacleSegmentCollisionStatus(this,segment).collisionHappening
       }
 
-      //Only say the ball is inside an obstacle if it is inside when the obstacle is created! Otherwise, there's no reason for the ball to be inside:
-      this.respondToObstacleCreation = function(obstacle) {
-        if(this.isWithinObstacle(obstacle) && !this.obstaclesIAmInsideOf.includes(obstacle)){this.obstaclesIAmInsideOf.push(obstacle)}
+      this.respondToObstacleSegmentCreation = function(segment) {
+        //Only say the ball is inside an obstacle if it is inside when the obstacle is created! Otherwise, there's no reason for the ball to be inside:
+        if(this.isWithinObstacleSegment(segment) && !this.obstacleSegmentsIAmInsideOf.includes(segment)){this.obstacleSegmentsIAmInsideOf.push(segment)}
       }
       this.color = ballColor
       this.getColor = function() {return this.color}
@@ -506,8 +521,8 @@ jsPsych.plugins['mot-game'] = (function(){
 
         }
         console.log(this.collisionsEnabled)
-                                     //obstaclesIAmInsideOf must be empty so it doesn't register a collision when it's inside
-        if(this.collisionsEnabled && this. obstaclesIAmInsideOf.length < 1){ //it seems unecessary to have this type of if statement with
+                                     //obstaclesSegmentsIAmInsideOf must be empty so it doesn't register a collision when it's inside
+        if(this.collisionsEnabled && this. obstacleSegmentsIAmInsideOf.length < 1){ //it seems unecessary to have this type of if statement with
                                     //collisionsEnabled twice but I couldn't exit the function in the previous if statement to prevent
                                     //this line from happening: (returning in that earlier conditional didn't actually exit the overall function)
 
@@ -557,19 +572,19 @@ jsPsych.plugins['mot-game'] = (function(){
       this.setVelocity = function(v){
           //don't allow setting velocity if ball is inside an obstacle.
           //let the velocity stay the same until it exits the obstacle. it should only be in an obstacle if the obstacle was created over the ball
-          for(var p=0; p<this.obstaclesIAmInsideOf.length; p++){
-            var obstacle = this.obstaclesIAmInsideOf[p]
+          for(var p=0; p<this.obstacleSegmentsIAmInsideOf.length; p++){
+            var segment = this.obstacleSegmentsIAmInsideOf[p]
             //if it's no longer within the obstacle:
-            if(!this.isWithinObstacle(obstacle)){
+            if(!this.isWithinObstacleSegment(segment)){
               //remove the obstacle from the array:
-              var idx = this.obstaclesIAmInsideOf.indexOf(obstacle)
-              this.obstaclesIAmInsideOf.splice(idx,1)
+              var idx = this.obstacleSegmentsIAmInsideOf.indexOf(segment)
+              this.obstacleSegmentsIAmInsideOf.splice(idx,1)
             }
           }
 
           //now, set the velocity iff it's not within any obstacles (it should smoothly pass through obsacles it's already within, and it should only be
           //within them if they were created on top of it), and if collisions are enabled:\
-          if(this.obstaclesIAmInsideOf.length < 1 && this.collisionsEnabled){this.velocity = v; console.log("setting velocity")} else{console.log("setting velocity blocked" + this.obstaclesIAmInsideOf.length)}
+          if(this.obstacleSegmentsIAmInsideOf.length < 1 && this.collisionsEnabled){this.velocity = v; console.log("setting velocity")} else{console.log("setting velocity blocked" + this.obstacleSegmentsIAmInsideOf.length)}
 
       }
 
@@ -580,12 +595,12 @@ jsPsych.plugins['mot-game'] = (function(){
 
       //move the ball one increment accorsing to its current velocity and position:
       this.move = function(timestepDuration){
-        console.log("i like to move it move it")
         var td = timestepDuration
         //account for strange timestepDuration values like 0 or very high values:
         if(td == 0 | td > 100){
           td = 30
         }
+        var stuckInWall = this.x-this.radius < 0 || this.x+radius > w || this.y-this.radius < 0 || this.y-this.radius > h
         /*update x-axis position using differential equation dx/dt = v_x*/
         var dx = this.getVelocity()[0] * td
         var newX = this.getX() + dx;
@@ -679,7 +694,12 @@ jsPsych.plugins['mot-game'] = (function(){
             //they are being alerted so they don't collide if inside the new segment and existing obstacle if they're already inside. if they don't
             //collide with the old segment either that's fine)
             var balls = curLevel.model.getBalls()
-            for(var q = 0, numOfBalls = balls.length; q < numOfBalls; q++){balls[q].respondToObstacleCreation(this)}
+            for(var q = 0, numOfBalls = balls.length; q < numOfBalls; q++){
+              var numPix = this.pixels.length
+              lastPixel = this.pixels[numPix - 1]
+              secondToLastPixel = (numPix > 1) ? this.pixels[numPix -2] : this.pixels[numPix - 1]
+              balls[q].respondToObstacleSegmentCreation([lastPixel, secondToLastPixel])
+            }
           }
         while(this.pixels.length > this.maxPixels){
             //console.log(this.pixels)
@@ -764,16 +784,21 @@ jsPsych.plugins['mot-game'] = (function(){
             ctx.closePath();
           }
 
-          for(var j = 0, numWalls = model.walls.length; j < numWalls; j++){
-            var wall = model.walls[j];
+          //not using commented parts anymore:
+          //for(var j = 0, numWalls = 4; j < numWalls; j++){
+            //var wall = model.walls[j];
             var color = "green"
             ctx.beginPath();
             ctx.fillStyle = color
-            //alert(wall.getX() + " " + wall.getY() + ", " + wall.getW() + " " + wall.getL())
-            ctx.rect(wall.getX(), wall.getY(), wall.getW(), wall.getL())
+            //ctx.rect(wall.getX(), wall.getY(), wall.getW(), wall.getL())
+            var wallThickness = curLevel.model.wallThickness
+            ctx.rect(0,0,wallThickness, h)
+            ctx.rect(0,0,w,wallThickness)
+            ctx.rect(w-wallThickness,0,wallThickness,h)
+            ctx.rect(0,h-wallThickness,w,wallThickness)
             ctx.fill();
             ctx.closePath();
-          }
+          //}
 
           //display the points/pixels in the user-defined wall as circles and draw line segments between them (except for before the first and after the last pixel)
           for(var j = 0, obs = model.userObstacles, numObs = obs.length; j<numObs; j++){
@@ -917,22 +942,21 @@ jsPsych.plugins['mot-game'] = (function(){
         startTime: 0, //0 means it hasn't been set
         curTime: 60,
         updateCurTime: function(){
-          //startDate must be set already for this to work properly. Note this only works with times <60sec
-          this.curTime = this.ctdwnTime - Math.abs(this.startTime - new Date().getSeconds())
+          //startDate must be set already for this to work properly.
+          this.curTime = this.ctdwnTime*1000 - (new Date().valueOf() - this.startTime)
+          this.curTimeInSeconds = Math.round(this.curTime % 60000/1000)
+              //reset any -1 values which sometimes happen right after timer runs out to 0, just to look less weird for the user
+              if(this.curTimeInSeconds == 0){
+                //display it first because the curLevel.timeHasRunOut() will end the game before displaying the timer
+                curLevel.view.timer.displayTimer();
+                setTimeout(curLevel.timeHasRunOut, 150)
 
-          //make any negative times positive:
-          this.curTime = Math.abs(this.curTime)
-            //reset any -1 values which sometimes happen right after timer runs out to 0, just to look less weird for the user
-          if(Math.round(this.curTime == 0)){
-            //display it first because the curLevel.timeHasRunOut() will end the game before displaying the timer
-            this.displayTimer();
-            curLevel.timeHasRunOut()
-          }
+              }
 
         },
         reset : function(countdownTime, color, countdown) {
           this.setCountdownTime(countdownTime);
-          this.startTime = new Date().getSeconds(); //0
+          this.startTime = new Date().valueOf(); //0
           this.color = color
           this.updateCurTime()
         },
@@ -948,7 +972,7 @@ jsPsych.plugins['mot-game'] = (function(){
             octx.clearRect(this.x-this.fontSize,this.y-this.fontSize, this.fontSize*2, this.fontSize*2)
             octx.font = this.fontSize + "px Arial"
             //time = Math.round((this.curTime % 60000)/1000)
-            var time = this.curTime == null ? 0:this.curTime
+            var time = this.curTimeInSeconds == null ? 0:this.curTimeInSeconds
             octx.fillStyle = this.getColor()
             octx.textAlign = "center"
             octx.fillText(time, this.x, this.y) //NOTE: assuming time counter should always be under a minute
