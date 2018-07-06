@@ -35,7 +35,7 @@ var instructionsPt2 = {
 timeline.push(instructionsPt2);
 
 /*width and height: */
-w=650; h=650;
+var w=650, h=650;
 var game = {
   type:"html-keyboard-response",
   stimulus: "<!--main canvas where game happens:-->" +
@@ -97,7 +97,7 @@ var test_procedure = {
 }
 timeline.push(test_procedure);
 */
-ballColor = "grey"
+var ballColor = "grey"
 jsPsych.init({
   timeline: timeline,
   on_finish: function(){
@@ -124,18 +124,19 @@ function model(numBalls, numExplodingBalls, speed) {
   this.explodingBalls = [];
   this.numExplodingBalls = function(){return this.explodingBalls.length}
 
+  //initialize the balls:
+  var ballRadius = 20
   for(var i = 0; i<numBalls; i++){
-    var ballRadius = 20
     //random x-y coordinates of a new ball:
-    x = Math.round(1.5*ballRadius + Math.random()*(w-3*ballRadius));
-    y = Math.round(1.5*ballRadius + Math.random()*(h-3*ballRadius)); //.5*ballradius minimum disrance from wall
+    var x = Math.round(1.5*ballRadius + Math.random()*(w-3*ballRadius));
+    var y = Math.round(1.5*ballRadius + Math.random()*(h-3*ballRadius)); //.5*ballradius minimum disrance from wall
     this.balls.push(new ball(x,y,ballRadius, speed))
   }
-
+  //initialize the exploding balls:
   for(var i = 0; i<numExplodingBalls; i++){  //exploding balls can't be too close to the edges; that isn't fair
-    x = Math.round(10*ballRadius + Math.random()*(w-20*ballRadius));
-    y = Math.round(10*ballRadius + Math.random()*(h-20*ballRadius));
-    bal = new ball(x,y,ballRadius,speed, "e") //e for explosive
+    var x = Math.round(10*ballRadius + Math.random()*(w-20*ballRadius));
+    var y = Math.round(10*ballRadius + Math.random()*(h-20*ballRadius));
+    var bal = new ball(x,y,ballRadius,speed, "e") //e for explosive
     this.balls.push(bal)
     this.explodingBalls.push(bal)
   }
@@ -171,6 +172,8 @@ function model(numBalls, numExplodingBalls, speed) {
       if(event.type == "mousedown"){this.addNewObstacle()}//make a new user obstacle if it was a mousedown not a mousemove
 
       //if(userObstacle.atMaxLength()){this.addNewObstacle()}     //make a new user obstacle if the current one has the maximum number of points
+
+      //if(curLevel.model.mostRecentObstacle() === undefined){curLevel.model.addNewObstacle()}
       curLevel.model.mostRecentObstacle().addPixels(event)
       curLevel.model.removeExcessObstacles() //remove any excess obstaclds if there are any real-time, while pixels are being added
     }
@@ -201,8 +204,8 @@ function model(numBalls, numExplodingBalls, speed) {
   }
 
   function intersectionOf2Equations(e1, e2){
-      x = (e2.b-e1.b)/(e1.m-e2.m)
-      y = e1.m*x+e1.b
+      var x = (e2.b-e1.b)/(e1.m-e2.m)
+      var y = e1.m*x+e1.b
       console.assert(Math.round(y) == Math.round(e2.m*x+e2.b))//remove this for production if we reeally need an insignificant efficiency boost -
                                                               //just checking whether both equations give the same y value for the x value
       return [x,y]
@@ -298,7 +301,7 @@ function model(numBalls, numExplodingBalls, speed) {
             var ballToWallClosestDistance = distanceBetween(collisionPoint, ballPoint)
 
 
-            ballWithinLineRange = false
+            var ballWithinLineRange = false
             if(Math.abs(ballToWallClosestDistance) < rad){
               ballWithinLineRange = true
             }
@@ -326,7 +329,7 @@ function model(numBalls, numExplodingBalls, speed) {
   }
   this.update = function(newTime){
    if(!this.frozen){ //don't update if it's frozen
-    timestepDuration = newTime - this.currentTime
+    var timestepDuration = newTime - this.currentTime
     this.currentTime = newTime
 
 
@@ -359,20 +362,20 @@ function model(numBalls, numExplodingBalls, speed) {
     for(var i = 0, numBalls = this.balls.length; i < numBalls; i++){
 
       var ball = this.balls[i];
-      ballPoint = [ball.getX(), ball.getY()]
+      var ballPoint = [ball.getX(), ball.getY()]
 
       for(var k = 0, numWalls = this.walls.length; k < numWalls; k++){
 
         var wall = this.walls[k]
 
 
-        wallX = wall.getX()
-        wallY = wall.getY()
-        wallL = wall.getL()
-        wallW = wall.getW()
+        var wallX = wall.getX()
+        var wallY = wall.getY()
+        var wallL = wall.getL()
+        var wallW = wall.getW()
 
 
-        rad = ball.getRadius()
+        var rad = ball.getRadius()
 
         //var bh = ball.highestPoint()
         //var bl = ball.lowestPoint()
@@ -398,12 +401,12 @@ function model(numBalls, numExplodingBalls, speed) {
         var padding = 0
         function oneDimDistance(a,b) {return Math.abs(a-b)} //his is just encapsulation of a simple but soon-to-be frequently used procedure
 
-        closestSideOfWallVertically = (oneDimDistance(ballPoint[1], wh) < oneDimDistance(ballPoint[1], wl)) ? wh : wl
+        var closestSideOfWallVertically = (oneDimDistance(ballPoint[1], wh) < oneDimDistance(ballPoint[1], wl)) ? wh : wl
 
-        closestSideOfWallHorizontally = (oneDimDistance(ballPoint[0], we) < oneDimDistance(ballPoint[0], wr)) ? we : wr
+        var closestSideOfWallHorizontally = (oneDimDistance(ballPoint[0], we) < oneDimDistance(ballPoint[0], wr)) ? we : wr
 
-        closestVertDistance = oneDimDistance(ballPoint[1], closestSideOfWallVertically)
-        closestHoriDistance = oneDimDistance(ballPoint[0], closestSideOfWallHorizontally)
+        var closestVertDistance = oneDimDistance(ballPoint[1], closestSideOfWallVertically)
+        var closestHoriDistance = oneDimDistance(ballPoint[0], closestSideOfWallHorizontally)
 
         if(closestVertDistance <= rad+padding || closestHoriDistance <= rad+padding){
           ball.collide("wall");
@@ -419,7 +422,7 @@ function model(numBalls, numExplodingBalls, speed) {
             }
 
             //now, find and set the ball's velocity
-            vel = ball.getVelocity()
+            var vel = ball.getVelocity()
             switch(closestWall){
             case "vert":
               ball.setVelocity([vel[0], -vel[1]])
@@ -464,7 +467,7 @@ function model(numBalls, numExplodingBalls, speed) {
 
                   intersection = intersectionOf2Equations(ballTrajectoryEquation,wallExtensionEquation)
 */
-                  collisionData = this.ballAndObstacleCollisionStatus(ball,ob)
+                  var collisionData = this.ballAndObstacleCollisionStatus(ball,ob)
 
                   if(collisionData.collisionHappening){
                     //there's a collision
@@ -514,7 +517,7 @@ function model(numBalls, numExplodingBalls, speed) {
     this.executeObstacleCollisions()
     //move the balls
     for(var i = 0, numBalls = this.balls.length; i < numBalls; i++){
-      this.balls[i].move()
+      this.balls[i].move(timestepDuration)
     }
 
   }
@@ -568,7 +571,6 @@ function ball(x, y, radius, speed, isExplosive) {
     if(!this.collisionsEnabled){
 
     } else if(collisionType == "wall" && this.explosive){
-      alert(curLevel.model.frozen + "this is the root cause")
       curLevel.defusalMode(); //COMMENT THIS TO DISABLE DEFUSAL MODE
     } else if(collisionType == "userObstacle"){
 
@@ -630,7 +632,7 @@ function ball(x, y, radius, speed, isExplosive) {
         //if it's no longer within the obstacle:
         if(!this.isWithinObstacle(obstacle)){
           //remove the obstacle from the array:
-          idx = this.obstaclesIAmInsideOf.indexOf(obstacle)
+          var idx = this.obstaclesIAmInsideOf.indexOf(obstacle)
           this.obstaclesIAmInsideOf.splice(idx,1)
         }
       }
@@ -647,16 +649,18 @@ function ball(x, y, radius, speed, isExplosive) {
   this.rightestColumn = function() {return this.x + this.radius}
 
   //move the ball one increment accorsing to its current velocity and position:
-  this.move = function(){
+  this.move = function(timestepDuration){
+    console.log("i like to move it move it")
+    var td = timestepDuration
     //account for strange timestepDuration values like 0 or very high values:
-    if(timestepDuration == 0 | timestepDuration > 400){
-      timestepDuration = 30
+    if(td == 0 | td > 100){
+      td = 30
     }
     /*update x-axis position using differential equation dx/dt = v_x*/
-    var dx = this.getVelocity()[0] * timestepDuration
+    var dx = this.getVelocity()[0] * td
     var newX = this.getX() + dx;
     this.setX(newX)
-    var dy = this.getVelocity()[1] * timestepDuration
+    var dy = this.getVelocity()[1] * td
     //console.log(timestepDuration)
     var newY = this.getY() + dy
     this.setY(newY);
@@ -672,19 +676,19 @@ function standardWallCollideAnimation(){
 /*TODO: make an animation class and subclass these. I don't know enough about JS classes to do that easily*/
 function wallExplodeAnimation(){
     var img = "explosion.png"
-    duration = 2000
-    this.collide = function(x,y) {view.showImgAtFor(img, x, y, duration)}
+    var duration = 2000
+    this.collide = function(x,y) {curLevel.view.showImgAtFor(img, x, y, duration)}
 }
 
 function userObstacleCollisionAnimation(){
     this.animationCoolDownTime = 100;
     var img = "obstacoll.png"
-    duration = 200
+    var duration = 200
     this.collide = function(x,y) {
       if(!this.animationAlreadyDisplayed){
         //don't allow for simultaneous animations for the same userObstacleCollisionAnimation object
         this.animationAlreadyDisplayed = true
-        view.showImgAtFor(img, x, y, duration, this)
+        curLevel.view.showImgAtFor(img, x, y, duration, this)
       }
     }
     this.respondToImageBeingCleared = function(){this.animationAlreadyDisplayed=false}
@@ -718,9 +722,9 @@ function userObstacle() {
   this.pixelLimitExceeded = false,
 
   this.addPixels = function(event){
-    var pos = getPixelPositionRelativeToObject([event.pageX, event.pageY], view.can)
+    var pos = getPixelPositionRelativeToObject([event.pageX, event.pageY], curLevel.view.can)
     //if there are no existing pixels/points, just add it without the for loop
-    numPix = this.pixels.length;
+    var numPix = this.pixels.length;
     if(numPix == 0){
       this.pixels.push(pos)
       return; //break it so the function doesn't try to add the value again
@@ -728,14 +732,14 @@ function userObstacle() {
     var validPosition = true
     //add them if they're far enough from the previous pixels.
     for(var l=0; l<numPix; l++){
-      dist = distanceBetween(pos, this.pixels[l])
+      var dist = distanceBetween(pos, this.pixels[l])
 
       if(dist < this.minDistanceBetweenPixels || dist > this.maxDistaneBetweenPixels ||
         /*the slope also cannot be perfectly vertical/undefined! nor perfectly horizontal!: */
         this.pixels[l][0] == pos[0] || this.pixels[l][1] == pos[1]){
         //console.log(pixels[l][0], event.pageX)
-         validPosition = false;
-         break;
+        validPosition = false;
+        break;
       }
     }
 
@@ -744,7 +748,7 @@ function userObstacle() {
         //alert the balls of the new user obstacle, now that it has changed (it doesn't matter that excess wall's haven't been removed yet -
         //they are being alerted so they don't collide if inside the new segment and existing obstacle if they're already inside. if they don't
         //collide with the old segment either that's fine)
-        balls = curLevel.model.getBalls()
+        var balls = curLevel.model.getBalls()
         for(var q = 0, numOfBalls = balls.length; q < numOfBalls; q++){balls[q].respondToObstacleCreation(this)}
       }
     while(this.pixels.length > this.maxPixels){
@@ -774,20 +778,20 @@ function userObstacle() {
   //this.atMaxLength() = function(){return this.pixels.length == this.maxPointsInWall}
 }
 
-var view = {
+function view() {
   //get canvas, context
-  can: null,
-  ctx: null,
-  highlightingSelectedBalls: false,
-  pointsToShow: new Array(),
-  showPoint: function(pt) {this.pointsToShow.push(pt)},
+  this.can = null
+  this.ctx = null
+  this.highlightingSelectedBalls = false
+  this.pointsToShow = new Array(),
+  this.showPoint = function(pt) {this.pointsToShow.push(pt)}
 
-  init: function(){
+  this.init = function(){
     this.can = document.getElementById('mainCanvas')
     this.ctx = this.can.getContext("2d")
-  },
+  }
 
-  showInitialFrame(model, duration){
+  this.showInitialFrame = function(model, duration){
     //just call view's update function once. However, the exploding balls' colors must be changed. TODO: add a nice countdown animation on top, on the overlay canvas maybe
 
     //change the exploding balls' colors:
@@ -801,10 +805,10 @@ var view = {
 
     }
     this.update(model)
-  },
+  }
 
-  update: function(model){
-    console.log(model)
+  this.update = function(model){
+    console.log(model.getBalls())
     //var can = this.can;
     var ctx = this.ctx; //easier to work with than having to write this.ctx each time
     //clear the context:
@@ -814,7 +818,7 @@ var view = {
     //Iterate through the balls and display their current attributes:
     for(var j = 0, numBalls = balls.length; j < numBalls; j++){
       var ball = balls[j];
-      color = ball.getColor()
+      var color = ball.getColor()
       ctx.beginPath();
       ctx.fillStyle = color
       ctx.arc(ball.getX(), ball.getY(), ball.getRadius(), 0, 2*Math.PI);
@@ -829,7 +833,7 @@ var view = {
 
     for(var j = 0, numWalls = model.walls.length; j < numWalls; j++){
       var wall = model.walls[j];
-      color = "green"
+      var color = "green"
       ctx.beginPath();
       ctx.fillStyle = color
       //alert(wall.getX() + " " + wall.getY() + ", " + wall.getW() + " " + wall.getL())
@@ -843,10 +847,10 @@ var view = {
       var ob = obs[j]
       for(var o = 0, pix = ob.getPixels(), numPix = pix.length, rad = ob.getRadius(); o<numPix; o++){
         //get x and y values of the pixel
-        x = pix[o][0]
-        y = pix[o][1]
+        var x = pix[o][0]
+        var y = pix[o][1]
 
-        color = "maroon"
+        var color = "maroon"
         //draw circles of radius rad around each pixel
         ctx.beginPath()
         ctx.fillStyle = color
@@ -868,10 +872,10 @@ var view = {
 
     //show the points:
     for(var j = 0, pix = this.pointsToShow, numPix = pix.length; j<numPix; j++){
-      x = pix[j][0]
-      y = pix[j][1]
+      var x = pix[j][0]
+      var y = pix[j][1]
 
-      color = "black"
+      var color = "black"
       //draw circles of radius rad around each pixel
       ctx.beginPath()
       ctx.fillStyle = color
@@ -883,9 +887,9 @@ var view = {
   },
 
   //img is a link to the image file
-  showImgAtFor: function(image, x, y, duration, objectToNotifyWhenDoneDisplaying){
-    ocan = document.getElementById("overlay")
-    octx = ocan.getContext('2d')
+  this.showImgAtFor = function(image, x, y, duration, objectToNotifyWhenDoneDisplaying){
+    var ocan = document.getElementById("overlay")
+    var octx = ocan.getContext('2d')
     var imgElement = new Image();
     imgElement.src = image;
 
@@ -907,12 +911,12 @@ var view = {
     //imgElement.style.top = "300"
     //document.body.appendChild(imgElement);
 
-  },
+  }
 
   //display a message to the player
-  message: function(msg){alert(msg)},
+  this.message = function(msg){alert(msg)}
 
-  displayDefusalMessage: function(defusalTimeLimit){
+  this.displayDefusalMessage = function(defusalTimeLimit){
     var ocan = document.getElementById("overlay")
     var octx = ocan.getContext('2d')
     octx.textAlign = "center"
@@ -922,11 +926,11 @@ var view = {
     octx.fillText("You have " + defusalTimeLimit/1000 + " seconds to defuse the exploding balls. but don't choose the wrong ball!", w/2, h/2)
   },
 
-  highlightSelectedBalls: function(event){
-    can = document.getElementById('selectionCanvas')
-    ctx = can.getContext('2d')
+  this.highlightSelectedBalls = function(event){
+    var can = document.getElementById('selectionCanvas')
+    var ctx = can.getContext('2d')
     //iterate through the balls to check whether the mouth is within them:
-    balls = curLevel.model.getBalls()
+    var balls = curLevel.model.getBalls()
     for(var n = 0, numBalls = balls.length; n < numBalls; n++){
       var ball = balls[n]
       var selectionRadiusAddOn = 1
@@ -954,8 +958,7 @@ var view = {
 
   },
   //clears all displays:
-  clearView : function(){
-    "views being cleared"
+  this.clearView = function(){
     var canvii = document.getElementsByTagName("CANVAS")
     var ctxes = [];
     for(var canCounter = 0; canCounter < canvii.length; canCounter++){ctxes.push(canvii[canCounter].getContext('2d'))}
@@ -967,7 +970,7 @@ var view = {
     }
   },
   //timer displaying:
-  timer : {
+  this.timer = {
     hidden: false, //toggle whether it's displayed
     hide: function() {this.hidden = true},
     color: "red",
@@ -994,7 +997,7 @@ var view = {
       }
 
     },
-    reset: function(countdownTime, color, countdown) {
+    reset : function(countdownTime, color, countdown) {
       this.setCountdownTime(countdownTime);
       this.startTime = new Date().getSeconds(); //0
       this.color = color
@@ -1002,23 +1005,22 @@ var view = {
     },
 
 
-    displayTimer: function(){
+    displayTimer : function(){
       //draw timer:
-      octx = document.getElementById("overlay").getContext("2d")
+      var octx = document.getElementById("overlay").getContext("2d")
       if(this.hidden){
         return null //exit the function if it's hidden, before the recursive call
       }
-        ocan = document.getElementById("overlay")
-        octx = ocan.getContext('2d')
 
         octx.clearRect(this.x-this.fontSize,this.y-this.fontSize, this.fontSize*2, this.fontSize*2)
         octx.font = this.fontSize + "px Arial"
         //time = Math.round((this.curTime % 60000)/1000)
-        time = this.curTime == null ? 0:this.curTime
+        var time = this.curTime == null ? 0:this.curTime
         octx.fillStyle = this.getColor()
         octx.textAlign = "center"
         octx.fillText(time, this.x, this.y) //NOTE: assuming time counter should always be under a minute
-        setTimeout(function(){view.timer.updateCurTime();view.timer.displayTimer();}, 1000) //recursive call
+        setTimeout(function(){curLevel.view.timer.updateCurTime();curLevel.view.timer.displayTimer();}, 1000) //recursive call
+        console.log(time)
       }
 
     }
@@ -1033,24 +1035,24 @@ function controller(model, view,levelDuration){
 
   this.gameOver = false
   this.defusalModeOn = false
-  this.setDefusalModeOn = function(){this.defusalModeOn = true; alert('setting defusalModeOn true')}
-  this.setDefusalModeOff = function(){this.defusalModeOn = false; alert('setting defusalModeOn false')}
+  this.setDefusalModeOn = function(){this.defusalModeOn = true;}
+  this.setDefusalModeOff = function(){this.defusalModeOn = false;}
   this.isGameOver = function(){return this.gameOver} //overdoing it on the getters, setters, and LoD? maybe
   this.beginGame = function(){
-
-    view.init();
+    curLevel.view.init();
     this.loadCanvas();
 
     var initialFrameDuration = 1300 //ms
-    view.showInitialFrame(model,initialFrameDuration) //show the frame where the exploding balls look different
+    curLevel.view.showInitialFrame(model,initialFrameDuration) //show the frame where the exploding balls look different
 
     //then start the first update
     this.getWallsFromUser(); //this adds an Event Listener
     setTimeout(function(){
-      view.timer.reset(levelDuration/1000, "green") //violation of LoD but I think it's ok
-      view.timer.displayTimer()// FIGURE OUT WHY THIS METHOD (OR MAYBE THE RESET?) MAKES IT LAGGY
+      curLevel.view.timer.reset(levelDuration/1000, "green") //violation of LoD but I think it's ok
+      curLevel.view.timer.displayTimer()// FIGURE OUT WHY THIS METHOD (OR MAYBE THE RESET?) MAKES IT LAGGY
+      alert('beginGame being called')
       updateGame(0, this.model); //beginning time is 0
-    }, duration)
+    }, initialFrameDuration)
     }
 
   this.ballHitBall = function(){console.log("Game Over")},
@@ -1073,24 +1075,22 @@ function controller(model, view,levelDuration){
   }
 
   this.defusalMode = function(){
-    alert("defusalMode is being called")
     //only start defusalMode if it's not on already - this prevents it being triggered multiple times by collisions:
     if(!curLevel.controller.defusalModeOn){
-      alert("its being called again for real")
       curLevel.controller.setDefusalModeOn()
       var defusalTimeLimit = 10000
-      view.displayDefusalMessage(defusalTimeLimit)
+      curLevel.view.displayDefusalMessage(defusalTimeLimit)
       //remove the wall drawing listeners
       document.removeEventListener("mousedown", this.findWallDrawingPath)
       document.removeEventListener("mousemove", model.addPixelsToUserObstacles)
 
       //listen for new guesses:
-      document.addEventListener("mousemove", view.highlightSelectedBalls)
+      document.addEventListener("mousemove", curLevel.view.highlightSelectedBalls)
       document.addEventListener("mousedown", this.registerDefusalGuess)
 
       //start the timer
       view.timer.reset(defusalTimeLimit/1000, "red", true)
-      view.timer.displayTimer()
+      curLevel.view.timer.displayTimer()
 
 
 
@@ -1104,9 +1104,9 @@ function controller(model, view,levelDuration){
   }
 
   this.endDefusalMode = function(){
-    document.removeEventListener("mousemove", view.highlightSelectedBalls)
+    document.removeEventListener("mousemove", curLevel.view.highlightSelectedBalls)
     document.removeEventListener("mousedown", this.registerDefusalGuess)
-    view.clearView()
+    curLevel.view.clearView()
   }
 
   this.guessesRemaining = model.numExplodingBalls()
@@ -1120,7 +1120,7 @@ function controller(model, view,levelDuration){
         case true: //correct guess
           curLevel.controller.correctGuesses++ //this looks like really bad OOP style but keep in mind it's happening within curLevel.controller
           curLevel.controller.guessesRemaining--
-          view.showImgAtFor("correct.png", event.pageX, event.pageY, 120)
+          curLevel.view.showImgAtFor("correct.png", event.pageX, event.pageY, 120)
           if(curLevel.controller.guessesRemaining == 0 && curLevel.controller.incorrectGuesses == 0){curLevel.controller.endGame("defusalModeSuccess")}
           break;
         case false:
@@ -1138,7 +1138,7 @@ function controller(model, view,levelDuration){
       alert("no more guesses remaining")
       //remove the guessing event listeners
       document.removeEventListener("mousedown", this.registerDefusalGuess)
-      document.removeEventListener("mousemove", view.highlightSelectedBalls)
+      document.removeEventListener("mousemove", curLevel.view.highlightSelectedBalls)
 
     }
 
@@ -1149,7 +1149,7 @@ function controller(model, view,levelDuration){
   this.addGuessedBall = function(ball){guessedBalls.push(ball)}
 
   this.endGame = function(howGameEnded){
-    view.timer.hide()
+    curLevel.view.timer.hide()
     switch(howGameEnded){
       case "defusalModeNeverHappened":
         alert("Level Passed!");
@@ -1167,10 +1167,8 @@ function controller(model, view,levelDuration){
         break;
     }
     curLevel.controller.endDefusalMode()
-    alert('test')
     curLevel = levelZero()
-    alert('tes')
-    curLevel.beginGame()
+    //curLevel.beginGame()
   }
 
 
@@ -1179,10 +1177,10 @@ function controller(model, view,levelDuration){
 
 //takes a model as an argument. It may be good to make view and controller as arguments, but I don't foresee a realy use in doing so
 //edit: also takes levelDuration now, in ms.
-function level(mod, levelDuration) {
-  this.model = mod
-  this.view = view,
-  this.controller = new controller(this.model, this.view, levelDuration),
+function level(model, view, controller, levelDuration) {
+  this.model = model
+  this.view = view
+  this.controller = controller,
   this.gameOver = function(){return this.controller.isGameOver()}
   this.update = function(currentTime){
      console.log('updating')
@@ -1195,7 +1193,6 @@ function level(mod, levelDuration) {
 
   //begins defusal mode:
   this.defusalMode = function(){
-    alert("this is starting dm")
     this.model.freeze()
     this.controller.defusalMode()
   }
@@ -1214,15 +1211,23 @@ function level(mod, levelDuration) {
 
 
 
-function levelZero() {return new level(new model(1,1,/*0.1*/0.04), 15000)}
-function levelOne() {return new level(new model(1,2,0.04,), 15000)}
-var curLevel = levelZero();
+function levelZero() {
+  var levelDuration = 15000;
+  var m = new model(1,1,/*0.1*/0.04)
+  var v = new view()
+  var c = new controller(m, v, levelDuration)
+  return new level(m, v, c, levelDuration)
+}
+//function levelOne() {return new level(new model(1,2,0.04,), 15000)}
+curLevel = levelZero();
 
 function updateGame(currentTime){
+  if(!curLevel.gameOver()){
   window.requestAnimationFrame(function(){
       curLevel.update(currentTime);
       window.requestAnimationFrame(updateGame)
   })
+}
 }
 
 //pix has format [x,y]
