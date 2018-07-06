@@ -97,7 +97,6 @@ var test_procedure = {
 }
 timeline.push(test_procedure);
 */
-var ballColor = "grey"
 jsPsych.init({
   timeline: timeline,
   on_finish: function(){
@@ -108,13 +107,37 @@ jsPsych.init({
 //var randomOneOrNegativeOne = function(){return Math.random()< 0.5 ? -1 : 1}
 
 //takes two arrays of length 2 representing points
+
+
+/*--Game stuff:--*/
+var ballColor = "grey"
+
 var distanceBetween = function(p1, p2){
   var xdist = p2[0]-p1[0]
   var ydist = p2[1]-p1[1]
   return Math.sqrt(xdist*xdist + ydist*ydist)
 }
 
-/*--Game stuff:--*/
+//pix has format [x,y]
+function getPixelPositionRelativeToObject(pix, object) {
+  var posx = pix[0]-object.offsetLeft
+  var posy = pix[1]-object.offsetTop
+  //this resets any out-of-bounds pixels to within-bounds
+  if(posx >= object.width){posx = object.width-1}
+  if(posx <= 0){posx = 1}
+  if(posy >= object.height){posy = object.height-1}
+  if(posy <= 0){posy = 1}
+  return [posx, posy]
+}
+
+function levelZero() {
+  var levelDuration = 15000;
+  var m = new model(1,1,/*0.1*/0.04)
+  var v = new view()
+  var c = new controller(m, v, levelDuration)
+  return new level(m, v, c, levelDuration)
+}
+curLevel = levelZero();
 
 function model(numBalls, numExplodingBalls, speed) {
   this.frozen = false //game pauses and model freezes
@@ -319,40 +342,13 @@ function model(numBalls, numExplodingBalls, speed) {
             }
 
 
-            /*
-            if(ballToWallClosestDistance < this.closestDistanceToObstacle || this.closestDistanceToObstacle == null){
-              this.closestDistanceToObstacle = ballToWallClosestDistance
-            }
-          }
-          return this.closestDistanceToObstacle*/
-
   }
+
   this.update = function(newTime){
    if(!this.frozen){ //don't update if it's frozen
     var timestepDuration = newTime - this.currentTime
     this.currentTime = newTime
 
-
-    //check for collision with any previously updated balls:
-    //commenting this out because we don't need collisions (maybe will implement later)
-    /*
-    var ballCollided = false;
-    //assuming all balls have same, constant radius! that seems fine for the purpose of this experiment (and is much better for efficiency):
-    rad = ball.getRadius();
-    rad2 = rad*rad;
-    for(var k = 0, numUpdBalls = updatedBalls.length; k < numUpdBalls && !ballCollided/*it will stop on collisions; k++){
-      x_diff = cur_x - updatedBalls[k].getX();
-      y_diff = cur_y - updatedBalls[k].getY();
-      distance = Math.pow(x_diff, 2) + Math.pow(y_diff, 2);
-
-
-
-      if(distance < rad2){
-        ballCollided == true;
-        ball.collide("ball");
-
-      }
-    }*/
 
 
     //Checks for collision with the four walls surrounding the game, NOT user-defined obstacles/walls
@@ -786,9 +782,11 @@ function view() {
   this.pointsToShow = new Array(),
   this.showPoint = function(pt) {this.pointsToShow.push(pt)}
 
+  this.initialized = false
   this.init = function(){
     this.can = document.getElementById('mainCanvas')
     this.ctx = this.can.getContext("2d")
+    this.initialized = true
   }
 
   this.showInitialFrame = function(model, duration){
@@ -808,82 +806,83 @@ function view() {
   }
 
   this.update = function(model){
-    console.log(model.getBalls())
-    //var can = this.can;
-    var ctx = this.ctx; //easier to work with than having to write this.ctx each time
-    //clear the context:
-    ctx.clearRect(0,0, w, h);
-    var balls = model.getBalls();
+    if(this.initialized){
+      console.log(model.getBalls())
+      //var can = this.can;
+      var ctx = this.ctx; //easier to work with than having to write this.ctx each time
+      //clear the context:
+      ctx.clearRect(0,0, w, h);
+      var balls = model.getBalls();
 
-    //Iterate through the balls and display their current attributes:
-    for(var j = 0, numBalls = balls.length; j < numBalls; j++){
-      var ball = balls[j];
-      var color = ball.getColor()
-      ctx.beginPath();
-      ctx.fillStyle = color
-      ctx.arc(ball.getX(), ball.getY(), ball.getRadius(), 0, 2*Math.PI);
-      ctx.fill();
-/*    uncomment for displaying an image for a ball
-        var imgElement = new Image();
-        imgElement.src = "ball.png";
-        ctx.drawImage(imgElement, ball.getX(), ball.getY());
-*/
-      ctx.closePath();
-    }
+      //Iterate through the balls and display their current attributes:
+      for(var j = 0, numBalls = balls.length; j < numBalls; j++){
+        var ball = balls[j];
+        var color = ball.getColor()
+        ctx.beginPath();
+        ctx.fillStyle = color
+        ctx.arc(ball.getX(), ball.getY(), ball.getRadius(), 0, 2*Math.PI);
+        ctx.fill();
+  /*    uncomment for displaying an image for a ball
+          var imgElement = new Image();
+          imgElement.src = "ball.png";
+          ctx.drawImage(imgElement, ball.getX(), ball.getY());
+  */
+        ctx.closePath();
+      }
 
-    for(var j = 0, numWalls = model.walls.length; j < numWalls; j++){
-      var wall = model.walls[j];
-      var color = "green"
-      ctx.beginPath();
-      ctx.fillStyle = color
-      //alert(wall.getX() + " " + wall.getY() + ", " + wall.getW() + " " + wall.getL())
-      ctx.rect(wall.getX(), wall.getY(), wall.getW(), wall.getL())
-      ctx.fill();
-      ctx.closePath();
-    }
+      for(var j = 0, numWalls = model.walls.length; j < numWalls; j++){
+        var wall = model.walls[j];
+        var color = "green"
+        ctx.beginPath();
+        ctx.fillStyle = color
+        //alert(wall.getX() + " " + wall.getY() + ", " + wall.getW() + " " + wall.getL())
+        ctx.rect(wall.getX(), wall.getY(), wall.getW(), wall.getL())
+        ctx.fill();
+        ctx.closePath();
+      }
 
-    //display the points/pixels in the user-defined wall as circles and draw line segments between them (except for before the first and after the last pixel)
-    for(var j = 0, obs = model.userObstacles, numObs = obs.length; j<numObs; j++){
-      var ob = obs[j]
-      for(var o = 0, pix = ob.getPixels(), numPix = pix.length, rad = ob.getRadius(); o<numPix; o++){
-        //get x and y values of the pixel
-        var x = pix[o][0]
-        var y = pix[o][1]
+      //display the points/pixels in the user-defined wall as circles and draw line segments between them (except for before the first and after the last pixel)
+      for(var j = 0, obs = model.userObstacles, numObs = obs.length; j<numObs; j++){
+        var ob = obs[j]
+        for(var o = 0, pix = ob.getPixels(), numPix = pix.length, rad = ob.getRadius(); o<numPix; o++){
+          //get x and y values of the pixel
+          var x = pix[o][0]
+          var y = pix[o][1]
 
-        var color = "maroon"
+          var color = "maroon"
+          //draw circles of radius rad around each pixel
+          ctx.beginPath()
+          ctx.fillStyle = color
+          ctx.arc(x, y, rad, 0, 2*Math.PI)
+          ctx.fill()
+
+          //then draw a line from the pixel to the next pixel (if the next pixel exists)
+          if(o < numPix-1){
+            ctx.fillStyle = color
+            ctx.moveTo(pix[o][0], pix[o][1])
+            ctx.lineTo(pix[o+1][0], pix[o+1][1])
+            ctx.stroke();
+          }
+
+          ctx.closePath()
+
+        }
+      }
+
+      //show the points:
+      for(var j = 0, pix = this.pointsToShow, numPix = pix.length; j<numPix; j++){
+        var x = pix[j][0]
+        var y = pix[j][1]
+
+        var color = "black"
         //draw circles of radius rad around each pixel
         ctx.beginPath()
         ctx.fillStyle = color
-        ctx.arc(x, y, rad, 0, 2*Math.PI)
+        ctx.arc(x, y, 3, 0, 2*Math.PI)
         ctx.fill()
-
-        //then draw a line from the pixel to the next pixel (if the next pixel exists)
-        if(o < numPix-1){
-          ctx.fillStyle = color
-          ctx.moveTo(pix[o][0], pix[o][1])
-          ctx.lineTo(pix[o+1][0], pix[o+1][1])
-          ctx.stroke();
-        }
-
-        ctx.closePath()
-
+        ctx.closePath();
       }
     }
-
-    //show the points:
-    for(var j = 0, pix = this.pointsToShow, numPix = pix.length; j<numPix; j++){
-      var x = pix[j][0]
-      var y = pix[j][1]
-
-      var color = "black"
-      //draw circles of radius rad around each pixel
-      ctx.beginPath()
-      ctx.fillStyle = color
-      ctx.arc(x, y, 3, 0, 2*Math.PI)
-      ctx.fill()
-      ctx.closePath();
-    }
-
   },
 
   //img is a link to the image file
@@ -984,22 +983,20 @@ function view() {
     startTime: 0, //0 means it hasn't been set
     curTime: 60,
     updateCurTime: function(){
-      //startDate must be set already for this to work properly. Note this only works with times <60sec
-      this.curTime = this.ctdwnTime - Math.abs(this.startTime - new Date().getSeconds())
-
-      //make any negative times positive:
-      this.curTime = Math.abs(this.curTime)
-        //reset any -1 values which sometimes happen right after timer runs out to 0, just to look less weird for the user
-      if(Math.round(this.curTime == 0)){
-        //display it first because the curLevel.timeHasRunOut() will end the game before displaying the timer
-        this.displayTimer();
-        curLevel.timeHasRunOut()
-      }
+      //startDate must be set already for this to work properly.
+      this.curTime = this.ctdwnTime*1000 - (new Date().valueOf() - this.startTime)
+      this.curTimeInSeconds = Math.round(this.curTime % 60000/1000)
+          //reset any -1 values which sometimes happen right after timer runs out to 0, just to look less weird for the user
+          //if(Math.round(this.curTime == 0)){
+          //display it first because the curLevel.timeHasRunOut() will end the game before displaying the timer
+          //this.displayTimer();
+          //curLevel.timeHasRunOut()
+          //}
 
     },
     reset : function(countdownTime, color, countdown) {
       this.setCountdownTime(countdownTime);
-      this.startTime = new Date().getSeconds(); //0
+      this.startTime = new Date().valueOf(); //0
       this.color = color
       this.updateCurTime()
     },
@@ -1015,7 +1012,7 @@ function view() {
         octx.clearRect(this.x-this.fontSize,this.y-this.fontSize, this.fontSize*2, this.fontSize*2)
         octx.font = this.fontSize + "px Arial"
         //time = Math.round((this.curTime % 60000)/1000)
-        var time = this.curTime == null ? 0:this.curTime
+        var time = this.curTimeInSeconds == null ? 0:this.curTimeInSeconds
         octx.fillStyle = this.getColor()
         octx.textAlign = "center"
         octx.fillText(time, this.x, this.y) //NOTE: assuming time counter should always be under a minute
@@ -1031,7 +1028,6 @@ function view() {
 }
 
 function controller(model, view,levelDuration){
-
 
   this.gameOver = false
   this.defusalModeOn = false
@@ -1209,18 +1205,6 @@ function level(model, view, controller, levelDuration) {
   }
 }
 
-
-
-function levelZero() {
-  var levelDuration = 15000;
-  var m = new model(1,1,/*0.1*/0.04)
-  var v = new view()
-  var c = new controller(m, v, levelDuration)
-  return new level(m, v, c, levelDuration)
-}
-//function levelOne() {return new level(new model(1,2,0.04,), 15000)}
-curLevel = levelZero();
-
 function updateGame(currentTime){
   if(!curLevel.gameOver()){
   window.requestAnimationFrame(function(){
@@ -1229,18 +1213,5 @@ function updateGame(currentTime){
   })
 }
 }
-
-//pix has format [x,y]
-function getPixelPositionRelativeToObject(pix, object) {
-  var posx = pix[0]-object.offsetLeft
-  var posy = pix[1]-object.offsetTop
-  //this resets any out-of-bounds pixels to within-bounds
-  if(posx >= object.width){posx = object.width-1}
-  if(posx <= 0){posx = 1}
-  if(posy >= object.height){posy = object.height-1}
-  if(posy <= 0){posy = 1}
-  return [posx, posy]
-}//NOTE CHANGE Z INDEX OF TIMER
-
 </script>
 </html>
