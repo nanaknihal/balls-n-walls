@@ -1012,11 +1012,12 @@ function view() {
       this.curTime = this.ctdwnTime*1000 - (new Date().valueOf() - this.startTime)
       this.curTimeInSeconds = Math.round(this.curTime % 60000/1000)
           //reset any -1 values which sometimes happen right after timer runs out to 0, just to look less weird for the user
-          //if(Math.round(this.curTime == 0)){
-          //display it first because the curLevel.timeHasRunOut() will end the game before displaying the timer
-          //this.displayTimer();
-          //curLevel.timeHasRunOut()
-          //}
+          if(this.curTimeInSeconds == 0){
+            //display it first because the curLevel.timeHasRunOut() will end the game before displaying the timer
+            curLevel.view.timer.displayTimer();
+            setTimeout(curLevel.timeHasRunOut, 150)
+
+          }
 
     },
     reset : function(countdownTime, color, countdown) {
