@@ -1,25 +1,26 @@
-jsPsych.plugins['mot-game'] = (function(){
+jsPsych.plugins["mot-game"] = (function() {
   var plugin = {};
 
   plugin.info = {
-    name: 'mot-game';
+    name: 'mot-game',
     parameters: {
-      duration: 15000
-      ball_speed: 0.04
-      num_regular_balls: 7
-      num_exploding_balls: 2
-      max_user_defined_obstacles: 1
-      max_user_defined_obstacle_segments: 3 //max_pixels: max_segments + 1
-      max_distance_between_obstacle_pixels:300
-      min_distance_between_obstacle_pixels: 66
-      gameWidth: 650
-      gameHeight: 650
+      duration: null,
+      ball_speed: 0.04,
+      num_regular_balls: 7,
+      num_exploding_balls: 2,
+      max_user_defined_obstacles: 1,
+      max_user_defined_obstacle_segments: 3,
+      max_distance_between_obstacle_pixels:300,
+      min_distance_between_obstacle_pixels: 66,
+      gameWidth: 650,
+      gameHeight: 650,
+      //type:"not-sure-what-this-parameter-does"
     }
   }
 
   plugin.trial = function(display_element, trial) {
     var par = plugin.info.parameters
-    
+
     var w=par.gameWidth, h=par.gameHeight;
     display_element.innerHTML = "<!--main canvas where game happens:-->" +
     "<canvas id='mainCanvas' height='" + h + "' width = '" + w + "'></canvas>" + "<button onclick='curLevel.beginGame()'>S T A R T</button>"
@@ -33,17 +34,18 @@ jsPsych.plugins['mot-game'] = (function(){
     "<canvas id='selectionCanvas' style='position:absolute; left: 0; top: 0; z-index:1' height='" + h + "' width = '" + w + "'></canvas>";
 
     var data = {
-      levelDuration: duration
-      timeFinished: 0
-      defusalMode: "neverNeeded" //"neverNeeded", "successful", or "failure"
-      numWallsMade: 0/*should it register each click?*/:
-      numRegBalls: par.num_regular_balls
-      numExplodingBalls: par.num_exploding_balls
-      ballSpeed: par.ball_speed
-      maxObstacles: par.max_user_defined_obstacles
-      maxObstacleSegments:par.max_user_defined_obstacle_segments
-      maxSegmentLength:par.max_user_defined_obstacle_segment_length
-      minSegmentLength:par.min_user_defined_obstacle_segment_length
+      levelDuration: par.duration,
+      timeDefusalStarted: 0,
+      defusalDuration: 0,
+      defusalMode: "neverNeeded", //"neverNeeded", "successful", "timeRanOut", or "incorrectGuess"
+      numWallsMade: 0,/*should it register each click?*/
+      numRegBalls: par.num_regular_balls,
+      numExplodingBalls: par.num_exploding_balls,
+      ballSpeed: par.ball_speed,
+      maxObstacles: par.max_user_defined_obstacles,
+      maxObstacleSegments:par.max_user_defined_obstacle_segments,
+      maxSegmentLength:par.max_user_defined_obstacle_segment_length,
+      minSegmentLength:par.min_user_defined_obstacle_segment_length,
     }
 
 
@@ -127,7 +129,7 @@ jsPsych.plugins['mot-game'] = (function(){
 
         this.userObstacles = [];
         this.mostRecentObstacle = function(){return this.userObstacles[this.userObstacles.length-1]} //last element in the array
-        this.addNewObstacle = function(){this.userObstacles.push(new userObstacle())}
+        this.addNewObstacle = function(){this.userObstacles.push(new userObstacle()); data.numWallsMade++ /*NOTE: For data collection, this may cause a problem: it will register a new obstacle even if it's just a point*/}
 
         this.removeExcessObstacles = function(){
           while(this.userObstacles.length > this.maxObstacles){this.userObstacles.shift()}
@@ -1112,22 +1114,26 @@ jsPsych.plugins['mot-game'] = (function(){
         curLevel.view.timer.hide()
         switch(howGameEnded){
           case "defusalModeNeverHappened":
+            data.defusalMode = "neverNeeded", "successful", "timeRanOut", or "incorrectGuess"
             alert("Level Passed!");
             break;
           case "defusalModeTimeRanOut":
+            data.defusalMode = "timeRanOut"
             alert("Out of time...restarting at level 0");
             //maybe we can have it restart at the level before?
             break;
           case "incorrectGuess":
+            data.defusalMode = "incorrectGuess"
             alert("Incorrect guess...starting again at level 0")
             //maybe we can have it restart at the level before?
             break;
           case "defusalModeSuccess":
+            data.defusalMode = "successful"
             alert("Level Passed!");
             break;
         }
         curLevel.controller.endDefusalMode()
-        curLevel = levelZero()
+        jsPsych.finishTrial(data);
         //curLevel.beginGame()
       }
 
@@ -1153,8 +1159,10 @@ jsPsych.plugins['mot-game'] = (function(){
 
       //begins defusal mode:
       this.defusalMode = function(){
+        data.
         this.model.freeze()
         this.controller.defusalMode()
+
       }
       this.isDefusalModeOn = function(){return this.controller.defusalModeOn}
       this.timeHasRunOut = function(){
@@ -1177,8 +1185,7 @@ jsPsych.plugins['mot-game'] = (function(){
       })
     }
     }
-    jsPsych.finishTrial(data);
+    curLevel.beginGame()
   }
-
   return plugin;
 })();
