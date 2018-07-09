@@ -4,7 +4,7 @@ jsPsych.plugins["mot-game"] = (function() {
   plugin.info = {
     name: 'mot-game',
     parameters: {
-      duration: null,
+      duration: 15000,
       ball_speed: 0.04,
       num_regular_balls: 7,
       num_exploding_balls: 2,
@@ -1114,21 +1114,25 @@ jsPsych.plugins["mot-game"] = (function() {
         curLevel.view.timer.hide()
         switch(howGameEnded){
           case "defusalModeNeverHappened":
-            data.defusalMode = "neverNeeded", "successful", "timeRanOut", or "incorrectGuess"
+            data.defusalMode = "neverNeeded"
+            data.defusalDuration = 0
             alert("Level Passed!");
             break;
           case "defusalModeTimeRanOut":
             data.defusalMode = "timeRanOut"
+            data.defusalDuration = this.view.curTime; alert(this.view.curTime) //this should be the length of defusal mode as long as the timer is reset before defusal mode begins
             alert("Out of time...restarting at level 0");
             //maybe we can have it restart at the level before?
             break;
           case "incorrectGuess":
             data.defusalMode = "incorrectGuess"
+            data.defusalDuration = this.view.curTime; alert(this.view.curTime)
             alert("Incorrect guess...starting again at level 0")
             //maybe we can have it restart at the level before?
             break;
           case "defusalModeSuccess":
             data.defusalMode = "successful"
+            data.defusalDuration = this.view.curTime; alert(this.view.curTime)
             alert("Level Passed!");
             break;
         }
@@ -1159,7 +1163,7 @@ jsPsych.plugins["mot-game"] = (function() {
 
       //begins defusal mode:
       this.defusalMode = function(){
-        data.
+        data.timeDefusalStarted = this.view.curTime; alert(this.view.curTime)
         this.model.freeze()
         this.controller.defusalMode()
 
