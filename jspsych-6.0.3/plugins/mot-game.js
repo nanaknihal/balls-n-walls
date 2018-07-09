@@ -23,7 +23,7 @@ jsPsych.plugins["mot-game"] = (function() {
 
     var w=par.gameWidth, h=par.gameHeight;
     display_element.innerHTML = "<!--main canvas where game happens:-->" +
-    "<canvas id='mainCanvas' height='" + h + "' width = '" + w + "'></canvas>" + "<button onclick='curLevel.beginGame()'>S T A R T</button>"
+    "<canvas id='mainCanvas' height='" + h + "' width = '" + w + "'></canvas>"
     +
     "<!--overlay canvas that doesn't need to be refreshed constantly:-->" +
     //it may be good to not hard-code the top and left value but rather use variables...this will be decided later when we do more styling
@@ -319,10 +319,12 @@ jsPsych.plugins["mot-game"] = (function() {
           var vel = ball.getVelocity()
           if(collisionLeftWall || collisionRightWall){
             //flip motion in x-direction
+            ball.collide("wall")
             ball.setVelocity([-vel[0], vel[1]])
           } //IF MULTIPLE COLLISIONS IN ONE UPDATE ARE A PROBLEM, PUT AN ELSE HERE
           if(collisionTopWall || collisionBottomWall) {
             //flip motion in y-direction
+            ball.collide("wall")
             ball.setVelocity([vel[0], -vel[1]])
           }
 
@@ -448,7 +450,6 @@ jsPsych.plugins["mot-game"] = (function() {
                         var resultingVelocity = [wallNormalVector_Normalized[0]*negativeTwoTimesDotP+velocityVector[0], wallNormalVector_Normalized[1]*negativeTwoTimesDotP+velocityVector[1]]
 
                         ball.setVelocity(resultingVelocity)
-                        console.log(resultingVelocity)
                         //  this.color = "red"//"#"+((1<<24)*Math.random()|0).toString(16)
     /*not using:
                           angleBetweenResultingVelocityAndXAxis = angleBetweenWallAndXAxis - angleBetweenVelocityAndWall
@@ -485,7 +486,6 @@ jsPsych.plugins["mot-game"] = (function() {
           if(distanceBetween(clickPoint, [balls[k].getX(), balls[k].getY()] ) <= balls[k].getRadius()){
             var guessedBall = balls[k]
             var clickIsInABall = true
-            console.log(guessedBall.getX(), guessedBall.getY())
             if(guessedBall.isBallExplosive() && !curLevel.controller.ballWasAlreadyGuessed(guessedBall)){curLevel.controller.addGuessedBall(guessedBall); return true}
           }
         }
@@ -518,15 +518,12 @@ jsPsych.plugins["mot-game"] = (function() {
       this.explosive = (isExplosive == "e")
       this.isBallExplosive = function(){return this.explosive}
       this.collide = function(collisionType){
-
         if(!this.collisionsEnabled){
-
         } else if(collisionType == "wall" && this.explosive){
           curLevel.defusalMode(); //COMMENT THIS TO DISABLE DEFUSAL MODE
         } else if(collisionType == "userObstacle"){
 
         }
-        console.log(this.collisionsEnabled)
                                      //obstaclesSegmentsIAmInsideOf must be empty so it doesn't register a collision when it's inside
         if(this.collisionsEnabled && this. obstacleSegmentsIAmInsideOf.length < 1){ //it seems unecessary to have this type of if statement with
                                     //collisionsEnabled twice but I couldn't exit the function in the previous if statement to prevent
@@ -767,7 +764,6 @@ jsPsych.plugins["mot-game"] = (function() {
 
       this.update = function(model){
         if(this.initialized){
-          console.log(model.getBalls())
           //var can = this.can;
           var ctx = this.ctx; //easier to work with than having to write this.ctx each time
           //clear the context:
@@ -966,7 +962,7 @@ jsPsych.plugins["mot-game"] = (function() {
           this.color = color
           this.updateCurTime()
         },
-
+        timeElapsedSinceReset : function(){return this.ctdwnTime*1000 - this.curTime},
 
         displayTimer : function(){
           //draw timer:
@@ -983,7 +979,6 @@ jsPsych.plugins["mot-game"] = (function() {
             octx.textAlign = "center"
             octx.fillText(time, this.x, this.y) //NOTE: assuming time counter should always be under a minute
             setTimeout(function(){curLevel.view.timer.updateCurTime();curLevel.view.timer.displayTimer();}, 1000) //recursive call
-            console.log(time)
           }
 
         }
@@ -1120,19 +1115,19 @@ jsPsych.plugins["mot-game"] = (function() {
             break;
           case "defusalModeTimeRanOut":
             data.defusalMode = "timeRanOut"
-            data.defusalDuration = this.view.curTime; alert(this.view.curTime) //this should be the length of defusal mode as long as the timer is reset before defusal mode begins
+            data.defusalDuration = curLevel.view.timer.timeElapsedSinceReset() //this should be the length of defusal mode as long as the timer is reset before defusal mode begins
             alert("Out of time...restarting at level 0");
             //maybe we can have it restart at the level before?
             break;
           case "incorrectGuess":
             data.defusalMode = "incorrectGuess"
-            data.defusalDuration = this.view.curTime; alert(this.view.curTime)
+            data.defusalDuration = curLevel.view.timer.timeElapsedSinceReset()
             alert("Incorrect guess...starting again at level 0")
             //maybe we can have it restart at the level before?
             break;
           case "defusalModeSuccess":
             data.defusalMode = "successful"
-            data.defusalDuration = this.view.curTime; alert(this.view.curTime)
+            data.defusalDuration = curLevel.view.timer.timeElapsedSinceReset()
             alert("Level Passed!");
             break;
         }
@@ -1153,7 +1148,6 @@ jsPsych.plugins["mot-game"] = (function() {
       this.controller = controller,
       this.gameOver = function(){return this.controller.isGameOver()}
       this.update = function(currentTime){
-         console.log('updating')
          this.model.update(currentTime)
          this.view.update(this.model)
       }
@@ -1163,7 +1157,7 @@ jsPsych.plugins["mot-game"] = (function() {
 
       //begins defusal mode:
       this.defusalMode = function(){
-        data.timeDefusalStarted = this.view.curTime; alert(this.view.curTime)
+        data.timeDefusalStarted = this.view.timer.timeElapsedSinceReset(); alert(data.timeDefusalStarted)
         this.model.freeze()
         this.controller.defusalMode()
 
