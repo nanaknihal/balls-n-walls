@@ -70,14 +70,14 @@ jsPsych.plugins["mot-game"] = (function() {
       return [posx, posy]
     }
 
-    function levelZero() {
+    function theLevel() { //now levels are based off parameters passed to jsPsych
       var levelDuration = 15000;
-      var m = new model(1,1,/*0.1*/0.04)
+      var m = new model(par.num_regular_balls,par.num_exploding_balls,/*0.1*/par.ball_speed)
       var v = new view()
       var c = new controller(m, v, levelDuration)
       return new level(m, v, c, levelDuration)
     }
-    curLevel = levelZero();
+    curLevel = theLevel();
 
     function model(numBalls, numExplodingBalls, speed) {
       this.frozen = false //game pauses and model freezes
@@ -449,7 +449,7 @@ jsPsych.plugins["mot-game"] = (function() {
                         var negativeTwoTimesDotP = -2*VelocityAndWallNormalNormalizedDotProduct
                         var resultingVelocity = [wallNormalVector_Normalized[0]*negativeTwoTimesDotP+velocityVector[0], wallNormalVector_Normalized[1]*negativeTwoTimesDotP+velocityVector[1]]
 
-                        ball.setVelocity(resultingVelocity)
+                        ball.setVelocity(resultingVelocity, "userObstacle")
                         //  this.color = "red"//"#"+((1<<24)*Math.random()|0).toString(16)
     /*not using:
                           angleBetweenResultingVelocityAndXAxis = angleBetweenWallAndXAxis - angleBetweenVelocityAndWall
@@ -571,8 +571,8 @@ jsPsych.plugins["mot-game"] = (function() {
 
 
       this.getVelocity = function(){return this.velocity};
-
-      this.setVelocity = function(v){
+      //collisionType is optional parameter but should be used during any collision, especially those with user obstacles so it knows to collide off them
+      this.setVelocity = function(v, collisionType){
           //don't allow setting velocity if ball is inside an obstacle.
           //let the velocity stay the same until it exits the obstacle. it should only be in an obstacle if the obstacle was created over the ball
           for(var p=0; p<this.obstacleSegmentsIAmInsideOf.length; p++){
@@ -586,8 +586,10 @@ jsPsych.plugins["mot-game"] = (function() {
           }
 
           //now, set the velocity iff it's not within any obstacles (it should smoothly pass through obsacles it's already within, and it should only be
-          //within them if they were created on top of it), and if collisions are enabled:\
-          if(this.obstacleSegmentsIAmInsideOf.length < 1 && this.collisionsEnabled){this.velocity = v; console.log("setting velocity")} else{console.log("setting velocity blocked" + this.obstacleSegmentsIAmInsideOf.length)}
+          //within them if they were created on top of it), and if collisions are enabled. Otherwise, if it's not colliding with a user obstacle, it can be set regardless.
+          if((this.obstacleSegmentsIAmInsideOf.length < 1 && this.collisionsEnabled) || collisionType != "userObstacle"){
+            this.velocity = v; console.log("setting velocity")} else{console.log("setting velocity blocked" + this.obstacleSegmentsIAmInsideOf.length)
+          }
 
       }
 
@@ -690,6 +692,19 @@ jsPsych.plugins["mot-game"] = (function() {
             break;
           }
         }
+        //don't allow a wall being drawn through a ball:
+        for(var l=0, balls = curLevel.model.getBalls(), numBalls = balls.length; l<numBalls; l++){
+          var ball = balls[l]
+          var mostRecentPixel = (this.pixels.length == 0) ? pos : this.pixels[this.pixels.length-1]
+          if(ball.isWithinObstacleSegment([this.pixels[this.pixels.length-1]/*last pixel*/, pos/*this pixel*/])){
+            validPosition = false;
+            if(!this.imageDisplayCooldownPeriod){
+              curLevel.view.showImgAtFor("x.png", ball.getX(), ball.getY(), 350, this)
+              this.imageDisplayCooldownPeriod = true
+            }
+            break;
+          }
+        }
 
         if(validPosition){
             this.pixels.push(pos)
@@ -728,6 +743,8 @@ jsPsych.plugins["mot-game"] = (function() {
 
       this.getPixels = function(){return this.pixels}
       this.getRadius = function(){return this.radius}
+      this.imageDisplayCooldownPeriod = false
+      this.respondToImageBeingCleared = function(){this.imageDisplayCooldownPeriod = false}
       //this.atMaxLength() = function(){return this.pixels.length == this.maxPointsInWall}
     }
 
@@ -978,6 +995,7 @@ jsPsych.plugins["mot-game"] = (function() {
             octx.fillStyle = this.getColor()
             octx.textAlign = "center"
             octx.fillText(time, this.x, this.y) //NOTE: assuming time counter should always be under a minute
+            if(!curLevel.gameOver())
             setTimeout(function(){curLevel.view.timer.updateCurTime();curLevel.view.timer.displayTimer();}, 1000) //recursive call
           }
 
@@ -1007,8 +1025,8 @@ jsPsych.plugins["mot-game"] = (function() {
         setTimeout(function(){
           curLevel.view.timer.reset(levelDuration/1000, "green") //violation of LoD but I think it's ok
           curLevel.view.timer.displayTimer()// FIGURE OUT WHY THIS METHOD (OR MAYBE THE RESET?) MAKES IT LAGGY
-          alert('beginGame being called')
-          updateGame(0, this.model); //beginning time is 0
+          alert('updateGame about to be called')
+          updateGame(0); //beginning time is 0
         }, initialFrameDuration)
         }
 
@@ -1077,7 +1095,7 @@ jsPsych.plugins["mot-game"] = (function() {
             case true: //correct guess
               curLevel.controller.correctGuesses++ //this looks like really bad OOP style but keep in mind it's happening within curLevel.controller
               curLevel.controller.guessesRemaining--
-              curLevel.view.showImgAtFor("correct.png", event.pageX, event.pageY, 120)
+              curLevel.view.showImgAtFor("correct.png", event.pageX, event.pageY, 1000)
               if(curLevel.controller.guessesRemaining == 0 && curLevel.controller.incorrectGuesses == 0){curLevel.controller.endGame("defusalModeSuccess")}
               break;
             case false:
@@ -1132,6 +1150,7 @@ jsPsych.plugins["mot-game"] = (function() {
             break;
         }
         curLevel.controller.endDefusalMode()
+        curLevel.controller.gameOver = true
         jsPsych.finishTrial(data);
         //curLevel.beginGame()
       }
@@ -1157,7 +1176,7 @@ jsPsych.plugins["mot-game"] = (function() {
 
       //begins defusal mode:
       this.defusalMode = function(){
-        data.timeDefusalStarted = this.view.timer.timeElapsedSinceReset(); alert(data.timeDefusalStarted)
+        data.timeDefusalStarted = this.view.timer.timeElapsedSinceReset();
         this.model.freeze()
         this.controller.defusalMode()
 

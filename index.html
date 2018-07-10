@@ -52,7 +52,7 @@ var game = {
   "<canvas id='selectionCanvas' style='position:absolute; left: 0; top: 0; z-index:1' height='" + h + "' width = '" + w + "'></canvas>"
 
 };*/
-var game = {
+var level1 = {
   type:"mot-game",
   stimulus:"<p>test</p>",
   duration: 15000,
@@ -67,7 +67,27 @@ var game = {
   gameHeight: 650,
   //type:"not-sure-what-this-parameter-does"
 }
-timeline.push(game);
+timeline.push(level1);
+
+var waitingScreen = {type:"html-keyboard-response", stimulus: "hit any key when you're ready for level 2"}
+timeline.push(waitingScreen)
+
+var level2 = {
+  type:"mot-game",
+  stimulus:"<p>test2</p>",
+  duration: 15000,
+  ball_speed: 0.04,
+  num_regular_balls: 7,
+  num_exploding_balls: 2,
+  max_user_defined_obstacles: 1,
+  max_user_defined_obstacle_segments: 3,
+  max_distance_between_obstacle_pixels:300,
+  min_distance_between_obstacle_pixels: 66,
+  gameWidth: 650,
+  gameHeight: 650,
+  //type:"not-sure-what-this-parameter-does"
+}
+timeline.push(level2);
 
 /* CODE FROM THE JSPSYCH TUTORIAL:
 var blue_trial = {
