@@ -12,6 +12,10 @@ jsPsych.plugins["mot-game"] = (function() {
       max_user_defined_obstacle_segments: 3,
       max_distance_between_obstacle_pixels:300,
       min_distance_between_obstacle_pixels: 66,
+      occluders: true,
+      occluder_images: ["path-to/occluder-img", "path-to/another-occluder-img", "..."],
+      avg_occluders_per_level: 2,
+      occluder_duration: 10000,
       gameWidth: 650,
       gameHeight: 650,
       //type:"not-sure-what-this-parameter-does"
@@ -46,6 +50,10 @@ jsPsych.plugins["mot-game"] = (function() {
       maxObstacleSegments:par.max_user_defined_obstacle_segments,
       maxSegmentLength:par.max_user_defined_obstacle_segment_length,
       minSegmentLength:par.min_user_defined_obstacle_segment_length,
+      occluders: par.occluders,
+      occluder_images: par.occluder_images,
+      occluder_duration: par.occluder_duration
+
     }
 
 
@@ -73,7 +81,7 @@ jsPsych.plugins["mot-game"] = (function() {
     function theLevel() { //now levels are based off parameters passed to jsPsych
       var levelDuration = 15000;
       var m = new model(par.num_regular_balls,par.num_exploding_balls,/*0.1*/par.ball_speed)
-      var v = new view()
+      var v = new view(model)
       var c = new controller(m, v, levelDuration)
       return new level(m, v, c, levelDuration)
     }
@@ -748,7 +756,8 @@ jsPsych.plugins["mot-game"] = (function() {
       //this.atMaxLength() = function(){return this.pixels.length == this.maxPointsInWall}
     }
 
-    function view() {
+    function view(model) {
+      this.currentTime = 0
       //get canvas, context
       this.can = null
       this.ctx = null
@@ -779,7 +788,10 @@ jsPsych.plugins["mot-game"] = (function() {
         this.update(model)
       }
 
-      this.update = function(model){
+      this.update = function(model, newTime){
+        var timestepDuration = newTime - this.currentTime
+        this.currentTime = newTime
+
         if(this.initialized){
           //var can = this.can;
           var ctx = this.ctx; //easier to work with than having to write this.ctx each time
@@ -861,6 +873,13 @@ jsPsych.plugins["mot-game"] = (function() {
             ctx.closePath();
           }
         }
+
+        //show occluder maybe...
+        var numFramesInExperiment = par.duration/timestepDuration
+        //this should be true par.avg_occluders_per_level times per level
+        if(Math.round(Math.random*numFramesInExperiment/par.avg_occluders_per_level) == 0) {
+          alert("now")
+        }
       },
 
       //img is a link to the image file
@@ -934,6 +953,25 @@ jsPsych.plugins["mot-game"] = (function() {
 
 
       },
+
+      this.displayTimer = function(timer){
+        console.log("display")
+        var octx = document.getElementById("overlay").getContext("2d")
+          if(timer.hidden){
+            return null //exit the function if it's hidden, before the recursive call
+          }
+            //clear previously existing timer displays
+            octx.clearRect(timer.x-timer.fontSize,timer.y-timer.fontSize, timer.fontSize*2, timer.fontSize*2)
+            octx.font = timer.fontSize + "px Arial"
+            //time = Math.round((this.curTime % 60000)/1000)
+            var time = timer.getTimeSinceReset == null ? 0: Math.round(timer.getTimeSinceReset()/1000)
+            octx.fillStyle = timer.color
+            octx.textAlign = "center"
+            octx.fillText(time, timer.x, timer.y) //NOTE: assuming time counter should always be under a minute
+
+
+      }
+
       //clears all displays:
       this.clearView = function(){
         var canvii = document.getElementsByTagName("CANVAS")
@@ -945,65 +983,7 @@ jsPsych.plugins["mot-game"] = (function() {
           var canHeight = canvii[conCounter].height
           ctx.clearRect(0,0,canWidth,canHeight);
         }
-      },
-      //timer displaying:
-      this.timer = {
-        hidden: false, //toggle whether it's displayed
-        hide: function() {this.hidden = true},
-        color: "red",
-        getColor: function(){return this.color},
-        fontSize:12,
-        x: w/2, // x positioning
-        y: h/22,
-        countdown: true, //default is countdown-mode, not countup-mode
-        ctdwnTime: 0,
-        setCountdownTime: function(t){this.ctdwnTime = t},
-        startTime: 0, //0 means it hasn't been set
-        curTime: 60,
-        updateCurTime: function(){
-          //startDate must be set already for this to work properly.
-          this.curTime = this.ctdwnTime*1000 - (new Date().valueOf() - this.startTime)
-          this.curTimeInSeconds = Math.round(this.curTime % 60000/1000)
-              //reset any -1 values which sometimes happen right after timer runs out to 0, just to look less weird for the user
-              if(this.curTimeInSeconds == 0){
-                //display it first because the curLevel.timeHasRunOut() will end the game before displaying the timer
-                curLevel.view.timer.displayTimer();
-                setTimeout(curLevel.timeHasRunOut, 150)
-
-              }
-
-        },
-        reset : function(countdownTime, color, countdown) {
-          this.setCountdownTime(countdownTime);
-          this.startTime = new Date().valueOf(); //0
-          this.color = color
-          this.updateCurTime()
-        },
-        timeElapsedSinceReset : function(){return this.ctdwnTime*1000 - this.curTime},
-
-        displayTimer : function(){
-          //draw timer:
-          var octx = document.getElementById("overlay").getContext("2d")
-          if(this.hidden){
-            return null //exit the function if it's hidden, before the recursive call
-          }
-
-            octx.clearRect(this.x-this.fontSize,this.y-this.fontSize, this.fontSize*2, this.fontSize*2)
-            octx.font = this.fontSize + "px Arial"
-            //time = Math.round((this.curTime % 60000)/1000)
-            var time = this.curTimeInSeconds == null ? 0:this.curTimeInSeconds
-            octx.fillStyle = this.getColor()
-            octx.textAlign = "center"
-            octx.fillText(time, this.x, this.y) //NOTE: assuming time counter should always be under a minute
-            if(!curLevel.gameOver())
-            setTimeout(function(){curLevel.view.timer.updateCurTime();curLevel.view.timer.displayTimer();}, 1000) //recursive call
-          }
-
-        }
-
-
-
-
+      }
     }
 
     function controller(model, view,levelDuration){
@@ -1018,14 +998,17 @@ jsPsych.plugins["mot-game"] = (function() {
         this.loadCanvas();
 
         var initialFrameDuration = 1300 //ms
+        curLevel.timer.reset(levelDuration/1000, "green")
+        curLevel.timer.start()
+        curLevel.view.displayTimer(curLevel.timer)
         curLevel.view.showInitialFrame(model,initialFrameDuration) //show the frame where the exploding balls look different
 
         //then start the first update
         this.getWallsFromUser(); //this adds an Event Listener
         setTimeout(function(){
-          curLevel.view.timer.reset(levelDuration/1000, "green") //violation of LoD but I think it's ok
-          curLevel.view.timer.displayTimer()// FIGURE OUT WHY THIS METHOD (OR MAYBE THE RESET?) MAKES IT LAGGY
-          alert('updateGame about to be called')
+          curLevel.timer.reset(levelDuration/1000, "green") //violation of LoD but I think it's ok
+          curLevel.timer.start()
+          curLevel.timer.unHide()
           updateGame(0); //beginning time is 0
         }, initialFrameDuration)
         }
@@ -1064,8 +1047,9 @@ jsPsych.plugins["mot-game"] = (function() {
           document.addEventListener("mousedown", this.registerDefusalGuess)
 
           //start the timer
-          view.timer.reset(defusalTimeLimit/1000, "red", true)
-          curLevel.view.timer.displayTimer()
+          curLevel.timer.reset(defusalTimeLimit/1000, "red", true)
+          timer.start()
+          //view.displayTimer(curLevel.timer)
 
 
 
@@ -1124,7 +1108,7 @@ jsPsych.plugins["mot-game"] = (function() {
       this.addGuessedBall = function(ball){guessedBalls.push(ball)}
 
       this.endGame = function(howGameEnded){
-        curLevel.view.timer.hide()
+        curLevel.timer.hide()
         switch(howGameEnded){
           case "defusalModeNeverHappened":
             data.defusalMode = "neverNeeded"
@@ -1133,19 +1117,19 @@ jsPsych.plugins["mot-game"] = (function() {
             break;
           case "defusalModeTimeRanOut":
             data.defusalMode = "timeRanOut"
-            data.defusalDuration = curLevel.view.timer.timeElapsedSinceReset() //this should be the length of defusal mode as long as the timer is reset before defusal mode begins
+            data.defusalDuration = curLevel.timer.getTimeSinceReset() //this should be the length of defusal mode as long as the timer is reset before defusal mode begins
             alert("Out of time...restarting at level 0");
             //maybe we can have it restart at the level before?
             break;
           case "incorrectGuess":
             data.defusalMode = "incorrectGuess"
-            data.defusalDuration = curLevel.view.timer.timeElapsedSinceReset()
-            alert("Incorrect guess...starting again at level 0")
+            data.defusalDuration = curLevel.timer.getTimeSinceReset()
+            alert("Incorrect guess. Level failed.")
             //maybe we can have it restart at the level before?
             break;
           case "defusalModeSuccess":
             data.defusalMode = "successful"
-            data.defusalDuration = curLevel.view.timer.timeElapsedSinceReset()
+            data.defusalDuration = curLevel.timer.getTimeSinceReset()
             alert("Level Passed!");
             break;
         }
@@ -1159,16 +1143,74 @@ jsPsych.plugins["mot-game"] = (function() {
 
     }
 
-    //takes a model as an argument. It may be good to make view and controller as arguments, but I don't foresee a realy use in doing so
-    //edit: also takes levelDuration now, in ms.
+    //game timer. can be reset, told to count down, up, set coundtown time.
+    function timer(){
+      this.hidden = false, //toggle whether it's displayed
+      this.hide = function() {this.hidden = true},
+      this.unHide = function() {this.hidden = false}
+      this.paused = true
+      this.color = "red",
+      this.getColor = function(){return this.color},
+      this.fontSize =12,
+      this.x = w/2, // x positioning
+      this.y = h/22,
+      this.countdown = true, //default is countdown-mode, not countup-mode
+      this.ctdwnTime = par.levelDuration,
+      this.setCountdownTime = function(t){this.ctdwnTime = t},
+      this.startTime = 0, //null means it hasn't been set
+      this.curTime = 1000,
+      this.updateCurTime = function(){
+        //startDate must be set already for this to work properly.
+        this.curTime = new Date().valueOf() - this.startTime
+        this.curTimeInSeconds = Math.round(this.curTime % 60000/1000)
+            if(this.curTimeInSeconds == this.ctdwnTime){
+              //display it first because the curLevel.timeHasRunOut() will end the game before displaying the timer
+              curLevel.view.displayTimer(this);
+              setTimeout(curLevel.timeHasRunOut, 150)
+              //this.ctdwnTime = -1 //reset it so it doesn't call timeHasRunOut a million times
+
+            }
+
+      }
+
+      this.reset = function(countdownTime, color) {
+        this.setCountdownTime(countdownTime);
+        this.startTime = new Date().valueOf(); //0
+        this.color = color
+        this.updateCurTime()
+      }
+
+      //this is sensitive to counting up or down
+      this.getTimeSinceReset = function(){
+        this.updateCurTime()
+        return (this.countdown) ? this.ctdwnTime*1000 - this.curTime : this.curTime
+      }
+
+      this.start = function(){
+        this.paused = false;
+        this.run()
+      }
+
+      this.run = function(){
+        setTimeout(function(){
+        if(!(curLevel.gameOver() || this.paused)){
+        curLevel.timer.updateCurTime();curLevel.view.displayTimer(curLevel.timer); curLevel.timer.run()}}, 1000) //recursive call
+      }
+      this.pause = function(){this.paused = true}
+}
+
+
+
+
     function level(model, view, controller, levelDuration) {
+      this.timer = new timer()
       this.model = model
       this.view = view
       this.controller = controller,
       this.gameOver = function(){return this.controller.isGameOver()}
-      this.update = function(currentTime){
-         this.model.update(currentTime)
-         this.view.update(this.model)
+      this.update = function(){
+        model.update(this.timer.getTimeSinceReset())
+        view.update(this.model, this.timer.getTimeSinceReset())
       }
       this.beginGame = function(){
         this.controller.beginGame()
@@ -1176,7 +1218,7 @@ jsPsych.plugins["mot-game"] = (function() {
 
       //begins defusal mode:
       this.defusalMode = function(){
-        data.timeDefusalStarted = this.view.timer.timeElapsedSinceReset();
+        data.timeDefusalStarted = this.timer.getTimeSinceReset();
         this.model.freeze()
         this.controller.defusalMode()
 
@@ -1195,9 +1237,10 @@ jsPsych.plugins["mot-game"] = (function() {
     }
 
     function updateGame(currentTime){
+      curLevel.curTime = currentTime
       if(!curLevel.gameOver()){
       window.requestAnimationFrame(function(){
-          curLevel.update(currentTime);
+          curLevel.update();
           window.requestAnimationFrame(updateGame)
       })
     }
