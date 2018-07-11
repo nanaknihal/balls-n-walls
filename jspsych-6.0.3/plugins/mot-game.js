@@ -877,8 +877,10 @@ jsPsych.plugins["mot-game"] = (function() {
         //show occluder maybe...
         var numFramesInExperiment = par.duration/timestepDuration
         //this should be true par.avg_occluders_per_level times per level
-        if(Math.round(Math.random*numFramesInExperiment/par.avg_occluders_per_level) == 0) {
-          alert("now")
+        console.log(Math.round(Math.random()*numFramesInExperiment/par.avg_occluders_per_level))
+        if(Math.round(Math.random()*numFramesInExperiment/par.avg_occluders_per_level) == 0) {
+          //alert("NOOOOOOOOWWW")
+          curLevel.view.showImgAtFor("occluder1.png", 0, 0, 1000)
         }
       },
 
@@ -955,7 +957,6 @@ jsPsych.plugins["mot-game"] = (function() {
       },
 
       this.displayTimer = function(timer){
-        console.log("display")
         var octx = document.getElementById("overlay").getContext("2d")
           if(timer.hidden){
             return null //exit the function if it's hidden, before the recursive call
@@ -1048,7 +1049,7 @@ jsPsych.plugins["mot-game"] = (function() {
 
           //start the timer
           curLevel.timer.reset(defusalTimeLimit/1000, "red", true)
-          timer.start()
+          curLevel.timer.start()
           //view.displayTimer(curLevel.timer)
 
 
@@ -1129,7 +1130,7 @@ jsPsych.plugins["mot-game"] = (function() {
             break;
           case "defusalModeSuccess":
             data.defusalMode = "successful"
-            data.defusalDuration = curLevel.timer.getTimeSinceReset()
+            data.defusalDuration = curLevel.timer.getTimeSinceReset(true)
             alert("Level Passed!");
             break;
         }
@@ -1164,10 +1165,8 @@ jsPsych.plugins["mot-game"] = (function() {
         this.curTime = new Date().valueOf() - this.startTime
         this.curTimeInSeconds = Math.round(this.curTime % 60000/1000)
             if(this.curTimeInSeconds == this.ctdwnTime){
-              //display it first because the curLevel.timeHasRunOut() will end the game before displaying the timer
-              curLevel.view.displayTimer(this);
-              setTimeout(curLevel.timeHasRunOut, 150)
-              //this.ctdwnTime = -1 //reset it so it doesn't call timeHasRunOut a million times
+              curLevel.timeHasRunOut()
+              //this.ctdwnTime = -1000 //reset it so it doesn't call timeHasRunOut a million times
 
             }
 
@@ -1181,8 +1180,8 @@ jsPsych.plugins["mot-game"] = (function() {
       }
 
       //this is sensitive to counting up or down
-      this.getTimeSinceReset = function(){
-        this.updateCurTime()
+      this.getTimeSinceReset = function(noupdate/*optional parameter, if true will not update the time before returning the time*/){
+        if(noupdate != true) {this.updateCurTime()}
         return (this.countdown) ? this.ctdwnTime*1000 - this.curTime : this.curTime
       }
 
