@@ -13,9 +13,6 @@ jsPsych.plugins["mot-game"] = (function() {
       max_distance_between_obstacle_pixels:300,
       min_distance_between_obstacle_pixels: 66,
       occluders: true,
-      occluder_images: ["path-to/occluder-img", "path-to/another-occluder-img", "..."],
-      avg_occluders_per_level: 2,
-      occluder_duration: 10000,
       gameWidth: 650,
       gameHeight: 650,
       //type:"not-sure-what-this-parameter-does"
@@ -43,16 +40,15 @@ jsPsych.plugins["mot-game"] = (function() {
       defusalDuration: 0,
       defusalMode: "neverNeeded", //"neverNeeded", "successful", "timeRanOut", or "incorrectGuess"
       numWallsMade: 0,/*should it register each click?*/
-      numRegBalls: par.num_regular_balls,
-      numExplodingBalls: par.num_exploding_balls,
+      numRegBalls: par.num_regular_balls, //redundant
+      numExplodingBalls: par.num_exploding_balls, //redundant with the following
+      ball_initial_conditions: null
       ballSpeed: par.ball_speed,
       maxObstacles: par.max_user_defined_obstacles,
       maxObstacleSegments:par.max_user_defined_obstacle_segments,
       maxSegmentLength:par.max_user_defined_obstacle_segment_length,
       minSegmentLength:par.min_user_defined_obstacle_segment_length,
-      occluders: par.occluders,
-      occluder_images: par.occluder_images,
-      occluder_duration: par.occluder_duration
+      occluders: par.occluders
 
     }
 
@@ -93,6 +89,7 @@ jsPsych.plugins["mot-game"] = (function() {
       this.currentTime = 0
       this.balls = []; //including exploding balls
       this.explodingBalls = [];
+      this.occluders = [new occluder("occluders/occluder1.png", w/3, 0), new occluder("occluders/occluder1.png", 2*w/3, 0)];
       this.numExplodingBalls = function(){return this.explodingBalls.length}
 
       //initialize the balls:
@@ -111,6 +108,9 @@ jsPsych.plugins["mot-game"] = (function() {
         this.balls.push(bal)
         this.explodingBalls.push(bal)
       }
+
+      this.getBalls = function(){return this.balls}
+      this.getOccluders = function(){return this.occluders}
 
       /*Not using this inefficient wall type anymore:
       /*MAKE SURE TO NOT MAKE THE WIDTHS NEGATIVE - THE wall.highestPoint, leftestPoint, etc. methods will not work if they
@@ -158,7 +158,6 @@ jsPsych.plugins["mot-game"] = (function() {
 
 
 
-      this.getBalls = function(){return this.balls}
 
       //functions to help find intersections of balls and obstacles:
       var equation = function(m,b){
@@ -652,8 +651,8 @@ jsPsych.plugins["mot-game"] = (function() {
         this.respondToImageBeingCleared = function(){this.animationAlreadyDisplayed=false}
     }
 
-    function wall(x,y/*top left x and y*/, w, l/*length and width*/){
-
+  //function wall(x,y/*top left x and y*/, w, l/*length and width*/){
+  /*
       this.x = x;
       this.y = y;
       this.w = w;
@@ -668,7 +667,7 @@ jsPsych.plugins["mot-game"] = (function() {
       this.lowestSide = function(){return y+l}
       this.leftestSide = function(){return x}
       this.rightestSide = function(){return x+w}
-    }
+    }*/
 
     function userObstacle() {
       this.pixels = new Array(),
@@ -875,13 +874,12 @@ jsPsych.plugins["mot-game"] = (function() {
         }
 
         //show occluder maybe...
-        var numFramesInExperiment = par.duration/timestepDuration
+        //var numFramesInExperiment = par.duration/timestepDuration
         //this should be true par.avg_occluders_per_level times per level
-        console.log(Math.round(Math.random()*numFramesInExperiment/par.avg_occluders_per_level))
-        if(Math.round(Math.random()*numFramesInExperiment/par.avg_occluders_per_level) == 0) {
-          //alert("NOOOOOOOOWWW")
-          curLevel.view.showImgAtFor("occluder1.png", 0, 0, 1000)
-        }
+        //if(Math.round(Math.random()*numFramesInExperiment/par.avg_occluders_per_level) == 0) {
+        //  var oc = new occluder()
+        //  oc.show()
+        //}
       },
 
       //img is a link to the image file
@@ -909,6 +907,12 @@ jsPsych.plugins["mot-game"] = (function() {
         //imgElement.style.top = "300"
         //document.body.appendChild(imgElement);
 
+      }
+
+      this.showOccluders = function(){
+        for(var j = 0, occs = model.getOccluders(), numOccs = occs.length; j < numOccs; j++){
+          this.showImgAtFor(occs[j].imgPath, occs[j].x, occs[j].y, curLevel.timer.getTime())
+        }
       }
 
       //display a message to the player
@@ -965,7 +969,7 @@ jsPsych.plugins["mot-game"] = (function() {
             octx.clearRect(timer.x-timer.fontSize,timer.y-timer.fontSize, timer.fontSize*2, timer.fontSize*2)
             octx.font = timer.fontSize + "px Arial"
             //time = Math.round((this.curTime % 60000)/1000)
-            var time = timer.getTimeSinceReset == null ? 0: Math.round(timer.getTimeSinceReset()/1000)
+            var time = timer.getTime == null ? 0: Math.round(timer.getTime()/1000)
             octx.fillStyle = timer.color
             octx.textAlign = "center"
             octx.fillText(time, timer.x, timer.y) //NOTE: assuming time counter should always be under a minute
@@ -1118,19 +1122,19 @@ jsPsych.plugins["mot-game"] = (function() {
             break;
           case "defusalModeTimeRanOut":
             data.defusalMode = "timeRanOut"
-            data.defusalDuration = curLevel.timer.getTimeSinceReset() //this should be the length of defusal mode as long as the timer is reset before defusal mode begins
+            data.defusalDuration = curLevel.timer.getTime() //this should be the length of defusal mode as long as the timer is reset before defusal mode begins
             alert("Out of time...restarting at level 0");
             //maybe we can have it restart at the level before?
             break;
           case "incorrectGuess":
             data.defusalMode = "incorrectGuess"
-            data.defusalDuration = curLevel.timer.getTimeSinceReset()
+            data.defusalDuration = curLevel.timer.getTime()
             alert("Incorrect guess. Level failed.")
             //maybe we can have it restart at the level before?
             break;
           case "defusalModeSuccess":
             data.defusalMode = "successful"
-            data.defusalDuration = curLevel.timer.getTimeSinceReset(true)
+            data.defusalDuration = curLevel.timer.getTime(true)
             alert("Level Passed!");
             break;
         }
@@ -1141,6 +1145,27 @@ jsPsych.plugins["mot-game"] = (function() {
       }
 
 
+
+    }
+
+    function occluder(){
+      //var rand = Math.random()*(par.occluder_images.length-1)
+      //alert(par.occluder_images.length-1)
+      //this.imgPath = par.occluder_images[rand] //random occluder image
+
+      //this.beingShown = false
+      this.imgPath = null
+      this.loadImage = function(){
+
+      this.show = function() {
+        if(!this.beingShown){
+          this.beingShown = true
+          randomPixel = [Math.round(Math.random()*w), Math.round(Math.random()*h)]
+          curLevel.view.showImgAtFor(this.imgPath, randomPixel[0], randomPixel[1], curLevel.timer.getTime(), this)
+          console.log("occluder object? " + this)
+        }
+      }
+      this.respondToImageBeingCleared = function(){this.beingShown = false}
 
     }
 
@@ -1180,7 +1205,7 @@ jsPsych.plugins["mot-game"] = (function() {
       }
 
       //this is sensitive to counting up or down
-      this.getTimeSinceReset = function(noupdate/*optional parameter, if true will not update the time before returning the time*/){
+      this.getTime = function(noupdate/*optional parameter, if true will not update the time before returning the time*/){
         if(noupdate != true) {this.updateCurTime()}
         return (this.countdown) ? this.ctdwnTime*1000 - this.curTime : this.curTime
       }
@@ -1208,8 +1233,8 @@ jsPsych.plugins["mot-game"] = (function() {
       this.controller = controller,
       this.gameOver = function(){return this.controller.isGameOver()}
       this.update = function(){
-        model.update(this.timer.getTimeSinceReset())
-        view.update(this.model, this.timer.getTimeSinceReset())
+        model.update(this.timer.getTime())
+        view.update(this.model, this.timer.getTime())
       }
       this.beginGame = function(){
         this.controller.beginGame()
@@ -1217,7 +1242,7 @@ jsPsych.plugins["mot-game"] = (function() {
 
       //begins defusal mode:
       this.defusalMode = function(){
-        data.timeDefusalStarted = this.timer.getTimeSinceReset();
+        data.timeDefusalStarted = this.timer.getTime();
         this.model.freeze()
         this.controller.defusalMode()
 
