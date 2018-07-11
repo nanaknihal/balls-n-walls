@@ -45,12 +45,13 @@ jsPsych.plugins["mot-game"] = (function() {
       numWallsMade: 0,/*should it register each click?*/
       numRegBalls: par.num_regular_balls, //redundant
       numExplodingBalls: par.num_exploding_balls, //redundant with the following
-      ball_initial_conditions: null,
+      ballInitialConditions: {balls:[]},
       ballSpeed: par.ball_speed,
       maxObstacles: par.max_user_defined_obstacles,
       maxObstacleSegments:par.max_user_defined_obstacle_segments,
       maxSegmentLength:par.max_user_defined_obstacle_segment_length,
       minSegmentLength:par.min_user_defined_obstacle_segment_length,
+      createdSegments:{segments: []},
       occluders: par.occluders
 
     }
@@ -496,7 +497,7 @@ jsPsych.plugins["mot-game"] = (function() {
           if(distanceBetween(clickPoint, [balls[k].getX(), balls[k].getY()] ) <= balls[k].getRadius()){
             var guessedBall = balls[k]
             var clickIsInABall = true
-            if(guessedBall.isBallExplosive() && !curLevel.controller.ballWasAlreadyGuessed(guessedBall)){curLevel.controller.addGuessedBall(guessedBall); return true}
+            if(guessedBall.explosive && !curLevel.controller.ballWasAlreadyGuessed(guessedBall)){curLevel.controller.addGuessedBall(guessedBall); return true}
           }
         }
         //after iterating through all of them and none of them beign correct guesses (because correct guesses would have resulted in return true)
@@ -526,7 +527,6 @@ jsPsych.plugins["mot-game"] = (function() {
       this.getColor = function() {return this.color}
       this.setColor = function(col) {this.color = col}
       this.explosive = (isExplosive == "e")
-      this.isBallExplosive = function(){return this.explosive}
       this.collide = function(collisionType){
         if(!this.collisionsEnabled){
         } else if(collisionType == "wall" && this.explosive){
@@ -718,6 +718,7 @@ jsPsych.plugins["mot-game"] = (function() {
 
         if(validPosition){
             this.pixels.push(pos)
+            data.createdSegments.segments.push({position: pos, timeCreated:curLevel.timer.getTimeSinceBeggining()/*this time will be a few ms after they actually clicked because of all the processing between the click and calling this...shouldn't bee too problematic but watch out*/})
             //alert the balls of the new user obstacle, now that it has changed (it doesn't matter that excess wall's haven't been removed yet -
             //they are being alerted so they don't collide if inside the new segment and existing obstacle if they're already inside. if they don't
             //collide with the old segment either that's fine)
@@ -780,7 +781,7 @@ jsPsych.plugins["mot-game"] = (function() {
         //change the exploding balls' colors:
         for(var j = 0, balls = model.getBalls(), numBalls = balls.length; j < numBalls; j++){
           var ball = balls[j];
-            if(ball.isBallExplosive()){
+            if(ball.explosive){
 
             ball.setColor("orange")
             setTimeout(function(){curLevel.resetAllBalldesigns(curLevel.model)},duration)
@@ -1010,6 +1011,17 @@ jsPsych.plugins["mot-game"] = (function() {
       this.setDefusalModeOff = function(){this.defusalModeOn = false;}
       this.isGameOver = function(){return this.gameOver} //overdoing it on the getters, setters, and LoD? maybe
       this.beginGame = function(){
+        var balls = model.getBalls()
+        for(var i = 0, l = balls.length; i<l; i++){
+          var ball = balls[i]
+          //push the important info from this ball to the data
+          data.ballInitialConditions.balls.push(
+            {explosive: ball.explosive,
+             position: [ball.getX(), ball.getY()],
+             velocity:ball.getVelocity()}
+           )
+
+        }
         curLevel.view.init();
         this.loadCanvas();
 
@@ -1223,7 +1235,17 @@ jsPsych.plugins["mot-game"] = (function() {
       //this is sensitive to counting up or down
       this.getTime = function(noupdate/*optional parameter, if true will not update the time before returning the time*/){
         if(noupdate != true) {this.updateCurTime()}
-        return (this.countdown) ? this.ctdwnTime*1000 - this.curTime : this.curTime
+        return (this.countdown) ? this.getTimeTilCountdownEnd() : this.getTimeSinceBeggining(noupdate)
+      }
+
+      this.getTimeSinceBeggining = function(noupdate){
+        if(noupdate != true) {this.updateCurTime()}
+        return this.curTime
+      }
+
+      this.getTimeTilCountdownEnd = function(noupdate){
+        if(noupdate != true) {this.updateCurTime()}
+        return this.ctdwnTime*1000 - this.curTime
       }
 
       this.start = function(){
