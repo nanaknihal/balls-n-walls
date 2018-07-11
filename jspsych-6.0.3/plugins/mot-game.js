@@ -30,6 +30,9 @@ jsPsych.plugins["mot-game"] = (function() {
     //it may be good to not hard-code the top and left value but rather use variables...this will be decided later when we do more styling
     "<canvas id='overlay' style='position:absolute; left: 0; top: 0; z-index:2' height='" + h + "' width = '" + w + "'></canvas>"
     +
+    "<!--occluder overlay canvas that doesn't need to be refreshed constantly:-->" +
+    //it may be good to not hard-code the top and left value but rather use variables...this will be decided later when we do more styling
+    "<canvas id='occluderCanvas' style='position:absolute; left: 0; top: 0; z-index:2' height='" + h + "' width = '" + w + "'></canvas>" +
     "<!--selection canvas for ball selection in defusal mode:-->" +
     //it may be good to not hard-code the top and left value but rather use variables...this will be decided later when we do more styling
     "<canvas id='selectionCanvas' style='position:absolute; left: 0; top: 0; z-index:1' height='" + h + "' width = '" + w + "'></canvas>";
@@ -42,7 +45,7 @@ jsPsych.plugins["mot-game"] = (function() {
       numWallsMade: 0,/*should it register each click?*/
       numRegBalls: par.num_regular_balls, //redundant
       numExplodingBalls: par.num_exploding_balls, //redundant with the following
-      ball_initial_conditions: null
+      ball_initial_conditions: null,
       ballSpeed: par.ball_speed,
       maxObstacles: par.max_user_defined_obstacles,
       maxObstacleSegments:par.max_user_defined_obstacle_segments,
@@ -89,7 +92,7 @@ jsPsych.plugins["mot-game"] = (function() {
       this.currentTime = 0
       this.balls = []; //including exploding balls
       this.explodingBalls = [];
-      this.occluders = [new occluder("occluders/occluder1.png", w/3, 0), new occluder("occluders/occluder1.png", 2*w/3, 0)];
+      this.occluders = [new occluder("occluders/occluder1.png", w/3, h/2), new occluder("occluders/occluder1.png", 2*w/3, h/2)];
       this.numExplodingBalls = function(){return this.explodingBalls.length}
 
       //initialize the balls:
@@ -182,7 +185,7 @@ jsPsych.plugins["mot-game"] = (function() {
       function intersectionOf2Equations(e1, e2){
           var x = (e2.b-e1.b)/(e1.m-e2.m)
           var y = e1.m*x+e1.b
-          console.assert(Math.round(y) == Math.round(e2.m*x+e2.b))//remove this for production if we reeally need an insignificant efficiency boost -
+          //console.assert(Math.round(y) == Math.round(e2.m*x+e2.b))//remove this for production if we reeally need an insignificant efficiency boost -
                                                                   //just checking whether both equations give the same y value for the x value
           return [x,y]
       }
@@ -645,7 +648,7 @@ jsPsych.plugins["mot-game"] = (function() {
           if(!this.animationAlreadyDisplayed){
             //don't allow for simultaneous animations for the same userObstacleCollisionAnimation object
             this.animationAlreadyDisplayed = true
-            curLevel.view.showImgAtFor(img, x, y, duration, this)
+            curLevel.view.showImgAtFor(img, x, y, duration, {objectToNotifyWhenDoneDisplaying: this})
           }
         }
         this.respondToImageBeingCleared = function(){this.animationAlreadyDisplayed=false}
@@ -706,7 +709,7 @@ jsPsych.plugins["mot-game"] = (function() {
           if(ball.isWithinObstacleSegment([this.pixels[this.pixels.length-1]/*last pixel*/, pos/*this pixel*/])){
             validPosition = false;
             if(!this.imageDisplayCooldownPeriod){
-              curLevel.view.showImgAtFor("x.png", ball.getX(), ball.getY(), 350, this)
+              curLevel.view.showImgAtFor("x.png", ball.getX(), ball.getY(), 350, {objectToNotifyWhenDoneDisplaying: this})
               this.imageDisplayCooldownPeriod = true
             }
             break;
@@ -772,7 +775,7 @@ jsPsych.plugins["mot-game"] = (function() {
       }
 
       this.showInitialFrame = function(model, duration){
-        //just call view's update function once. However, the exploding balls' colors must be changed. TODO: add a nice countdown animation on top, on the overlay canvas maybe
+        //just call view's update function once. However, the exploding balls' colors must be changed.
 
         //change the exploding balls' colors:
         for(var j = 0, balls = model.getBalls(), numBalls = balls.length; j < numBalls; j++){
@@ -784,7 +787,9 @@ jsPsych.plugins["mot-game"] = (function() {
           }
 
         }
-        this.update(model)
+
+        //show the occluder images
+        this.showOccluders()
       }
 
       this.update = function(model, newTime){
@@ -882,24 +887,25 @@ jsPsych.plugins["mot-game"] = (function() {
         //}
       },
 
-      //img is a link to the image file
-      this.showImgAtFor = function(image, x, y, duration, objectToNotifyWhenDoneDisplaying){
-        var ocan = document.getElementById("overlay")
-        var octx = ocan.getContext('2d')
+      //img is a path to the image file. options is an object: {objectToNotifyWhenDoneDisplaying: value, customContext: value}
+      this.showImgAtFor = function(image, x, y, duration, options){
+        var ctx = (options === undefined || options.customContext === undefined) ? document.getElementById("overlay").getContext('2d') : options.customContext
+        console.assert(ctx instanceof CanvasRenderingContext2D)
         var imgElement = new Image();
         imgElement.src = image;
 
         var width = null, height = null;
         imgElement.onload = function(){
           width = imgElement.width, height = imgElement.height;
-          octx.drawImage(imgElement, x-width/2, y-height/2)
+          ctx.drawImage(imgElement, x-width/2, y-height/2)
         }
 
         //clear it after the duration's up:
         setTimeout(function(){
-          octx.clearRect(x-width/2,y-height/2,width, height)
-          if(objectToNotifyWhenDoneDisplaying !== undefined){
-            objectToNotifyWhenDoneDisplaying.respondToImageBeingCleared()
+          ctx.clearRect(x-width/2,y-height/2,width, height)
+          if(options !== undefined && options.objectToNotifyWhenDoneDisplaying !== undefined){
+
+            options.objectToNotifyWhenDoneDisplaying.respondToImageBeingCleared()
           }
 
         }, duration)
@@ -910,9 +916,14 @@ jsPsych.plugins["mot-game"] = (function() {
       }
 
       this.showOccluders = function(){
-        for(var j = 0, occs = model.getOccluders(), numOccs = occs.length; j < numOccs; j++){
-          this.showImgAtFor(occs[j].imgPath, occs[j].x, occs[j].y, curLevel.timer.getTime())
+        for(var j = 0, occs = curLevel.model.getOccluders(), numOccs = occs.length; j < numOccs; j++){
+          console.log(occs)
+          this.showImgAtFor(occs[j].imgPath, occs[j].x, occs[j].y, curLevel.timer.getTime(), {customContext:document.getElementById("occluderCanvas").getContext("2d")})
         }
+      }
+      this.hideOccluders = function(){
+        var ctx = document.getElementById("occluderCanvas").getContext("2d")
+        ctx.clearRect(0,0,w,h)
       }
 
       //display a message to the player
@@ -926,7 +937,7 @@ jsPsych.plugins["mot-game"] = (function() {
         octx.strokeText("Defusal Mode", w/2, h/3)
         octx.font = ("12px Arial")
         octx.fillText("You have " + defusalTimeLimit/1000 + " seconds to defuse the exploding balls. but don't choose the wrong ball!", w/2, h/2)
-      },
+      }
 
       this.highlightSelectedBalls = function(event){
         var can = document.getElementById('selectionCanvas')
@@ -958,7 +969,7 @@ jsPsych.plugins["mot-game"] = (function() {
         }
 
 
-      },
+      }
 
       this.displayTimer = function(timer){
         var octx = document.getElementById("overlay").getContext("2d")
@@ -1043,6 +1054,7 @@ jsPsych.plugins["mot-game"] = (function() {
           curLevel.controller.setDefusalModeOn()
           var defusalTimeLimit = 10000
           curLevel.view.displayDefusalMessage(defusalTimeLimit)
+          curLevel.view.hideOccluders()
           //remove the wall drawing listeners
           document.removeEventListener("mousedown", this.findWallDrawingPath)
           document.removeEventListener("mousemove", model.addPixelsToUserObstacles)
@@ -1148,20 +1160,24 @@ jsPsych.plugins["mot-game"] = (function() {
 
     }
 
-    function occluder(){
+    function occluder(imgPath, x, y){
       //var rand = Math.random()*(par.occluder_images.length-1)
       //alert(par.occluder_images.length-1)
       //this.imgPath = par.occluder_images[rand] //random occluder image
 
-      //this.beingShown = false
-      this.imgPath = null
-      this.loadImage = function(){
+      this.beingShown = false
+      this.x = x
+      this.y = y
+      this.imgPath = imgPath
+      this.loadImage = function(imgPath){
+        this.imgPath = imgPath
+      }
 
       this.show = function() {
         if(!this.beingShown){
           this.beingShown = true
           randomPixel = [Math.round(Math.random()*w), Math.round(Math.random()*h)]
-          curLevel.view.showImgAtFor(this.imgPath, randomPixel[0], randomPixel[1], curLevel.timer.getTime(), this)
+          curLevel.view.showImgAtFor(this.imgPath, randomPixel[0], randomPixel[1], curLevel.timer.getTime(), {objectToNotifyWhenDoneDisplaying: this})
           console.log("occluder object? " + this)
         }
       }
