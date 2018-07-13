@@ -29,7 +29,7 @@ jsPsych.plugins["mot-game"] = (function() {
     +
     "<!--overlay canvas that doesn't need to be refreshed constantly:-->" +
     //it may be good to not hard-code the top and left value but rather use variables...this will be decided later when we do more styling
-    "<canvas id='overlay' style='position:absolute; left: 0; top: 0; z-index:2' height='" + h + "' width = '" + w + "'></canvas>"
+    "<canvas id='overlay' style='position:absolute; left: 0; top: 0; z-index:3' height='" + h + "' width = '" + w + "'></canvas>"
     +
     "<!--occluder overlay canvas that doesn't need to be refreshed constantly:-->" +
     //it may be good to not hard-code the top and left value but rather use variables...this will be decided later when we do more styling
@@ -67,6 +67,24 @@ jsPsych.plugins["mot-game"] = (function() {
       return Math.sqrt(xdist*xdist + ydist*ydist)
     }
 
+    //point is in format [x,y]; rect is in format {x: , y: , width: , height: }
+    var pointIsWithinRectangle = function(point, rect){
+      var furthestRightCoordinate = rect.x + rect.width
+      var furthestDownCoordinate = rect.y + rect.height
+      if(point[0] >= Math.min(rect.x, furthestRightCoordinate) && point[0] <= Math.max(rect.x, furthestRightCoordinate) &&
+         point[1] >= Math.min(rect.y, furthestDownCoordinate) && point[1] <= Math.max(rect.y, furthestDownCoordinate))//Math.min and Math.max are used in case
+                                                                                                                      //the rectangle has negative dimensions and
+                                                                                                                      //furthest____Coordinate isn't actually
+                                                                                                                      //the furthest _____ coordinate - it's the opposite
+      {
+        return true
+      } else {
+        var ctx = document.getElementById("occluderCanvas").getContext("2d")
+        ctx.arc(point[0], point[1], 3, 0, 2*Math.PI)
+        return false
+      }
+    }
+
     //pix has format [x,y]
     function getPixelPositionRelativeToObject(pix, object) {
       var posx = pix[0]-object.offsetLeft
@@ -88,7 +106,7 @@ jsPsych.plugins["mot-game"] = (function() {
     }
     curLevel = theLevel();
 
-    function model(numBalls, numExplodingBalls, speed) {
+    function model(numNormalBalls, numExplodingBalls, speed) {
       this.frozen = false //game pauses and model freezes
       this.freeze = function(){this.frozen = true}
       this.currentTime = 0
@@ -98,18 +116,65 @@ jsPsych.plugins["mot-game"] = (function() {
       this.numExplodingBalls = function(){return this.explodingBalls.length}
 
       //initialize the balls:
-      var ballRadius = 20
-      for(var i = 0; i<numBalls; i++){
-        //random x-y coordinates of a new ball:
+      var randomCoordinatesForNormalBall = function(){
         var x = Math.round(1.5*ballRadius + Math.random()*(w-3*ballRadius));
-        var y = Math.round(1.5*ballRadius + Math.random()*(h-3*ballRadius)); //.5*ballradius minimum disrance from wall
-        this.balls.push(new ball(x,y,ballRadius, speed))
+        var y = Math.round(1.5*ballRadius + Math.random()*(h-3*ballRadius)); //.5*ballradius minimum distance from wall
+        return [x,y]
       }
-      //initialize the exploding balls:
-      for(var i = 0; i<numExplodingBalls; i++){  //exploding balls can't be too close to the edges; that isn't fair
+
+      var randomCoordinatesForExplodingBall = function(){
         var x = Math.round(10*ballRadius + Math.random()*(w-20*ballRadius));
         var y = Math.round(10*ballRadius + Math.random()*(h-20*ballRadius));
-        var bal = new ball(x,y,ballRadius,speed, "e") //e for explosive
+        return [x,y]
+      }
+
+      //takes circle's center and radius as arguments
+      var circleIsInAnOccluder = function(center, radius){
+        for(var j = 0, occs = par.occluder_rectangles, numOccs = occs.length; j < numOccs; j++){
+          var occRectPlusBallRadius = {
+            x:occs[j].x - radius,
+            y:occs[j].y - radius,
+            width:occs[j].width + 2*radius,
+            height:occs[j].height + 2*radius
+          }
+          if(pointIsWithinRectangle(center, occRectPlusBallRadius)){return true}
+        }
+
+        return false; //never called if true is returned in the loop
+      }
+
+      var ballRadius = 20
+      //now initialize balls, but make sure they aren't in occluders
+      for(var i = 0; i<numNormalBalls; i++){
+        //random x-y coordinates of a new ball:
+        var coords = randomCoordinatesForNormalBall()
+        //make sure the ball isn't inside any occluders:
+          var inOcc = circleIsInAnOccluder(coords, ballRadius)
+          while(inOcc){
+            //reset the coordinates until the piwr and the coordinates are therefore valid
+            coords = randomCoordinatesForNormalBall()
+            inOcc = circleIsInAnOccluder(coords, ballRadius)
+          }
+        //make the ball (and add it to this.balls) if it's at a valid position:
+        this.balls.push(new ball(coords[0],coords[1],ballRadius, speed))
+      }
+
+
+
+      //initialize the exploding balls:
+      for(var i = 0; i<numExplodingBalls; i++){  //exploding balls can't be too close to the edges; that isn't fair
+
+      //random x-y coordinates of a new explodingj ball:
+      var coords = randomCoordinatesForNormalBall()
+      //make sure the ball isn't inside any occluders:
+        var inOcc = circleIsInAnOccluder(coords, ballRadius)
+        while(inOcc){
+          //reset the coordinates until the piwr and the coordinates are therefore valid
+          coords = randomCoordinatesForNormalBall()
+          inOcc = circleIsInAnOccluder(coords, ballRadius)
+        }
+
+        var bal = new ball(coords[0], coords[1], ballRadius, speed, "e")
         this.balls.push(bal)
         this.explodingBalls.push(bal)
       }
@@ -793,7 +858,7 @@ jsPsych.plugins["mot-game"] = (function() {
         }
 
         //show the occluder images
-        //this.showOccluders()
+        this.showOccluders()
       }
 
       this.update = function(model, newTime){
