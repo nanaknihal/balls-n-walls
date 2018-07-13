@@ -13,6 +13,7 @@ jsPsych.plugins["mot-game"] = (function() {
       max_distance_between_obstacle_pixels:300,
       min_distance_between_obstacle_pixels: 66,
       occluders: true,
+      occluder_rectangles:[{x: 100, y: 0, width: 45, height: 650},{x: 300, y: 0, width: 45, height: 650}],
       gameWidth: 650,
       gameHeight: 650,
       //type:"not-sure-what-this-parameter-does"
@@ -93,7 +94,7 @@ jsPsych.plugins["mot-game"] = (function() {
       this.currentTime = 0
       this.balls = []; //including exploding balls
       this.explodingBalls = [];
-      this.occluders = [new occluder("occluders/occluder1.png", w/3, h/2), new occluder("occluders/occluder1.png", 2*w/3, h/2)];
+      /*this.occluders = [new occluder("occluders/occluder1.png", w/3, h/2), new occluder("occluders/occluder1.png", 2*w/3, h/2)];*/
       this.numExplodingBalls = function(){return this.explodingBalls.length}
 
       //initialize the balls:
@@ -775,22 +776,24 @@ jsPsych.plugins["mot-game"] = (function() {
         this.initialized = true
       }
 
-      this.showInitialFrame = function(model, duration){
-        //just call view's update function once. However, the exploding balls' colors must be changed.
-
+      this.showInitialFrame = function(model, initialFrameDuration){
+        //just call view's update function once. However, the exploding balls' colors must be changed first.
         //change the exploding balls' colors:
-        for(var j = 0, balls = model.getBalls(), numBalls = balls.length; j < numBalls; j++){
+        for(var j = 0, balls = curLevel.model.getBalls(), numBalls = balls.length; j < numBalls; j++){
           var ball = balls[j];
             if(ball.explosive){
 
+            console.log(ball)
             ball.setColor("orange")
-            setTimeout(function(){curLevel.resetAllBalldesigns(curLevel.model)},duration)
+            //alert(duration)
           }
+        this.update()
+        setTimeout(curLevel.resetAllBalldesigns, initialFrameDuration, model)
 
         }
 
         //show the occluder images
-        this.showOccluders()
+        //this.showOccluders()
       }
 
       this.update = function(model, newTime){
@@ -802,7 +805,7 @@ jsPsych.plugins["mot-game"] = (function() {
           var ctx = this.ctx; //easier to work with than having to write this.ctx each time
           //clear the context:
           ctx.clearRect(0,0, w, h);
-          var balls = model.getBalls();
+          var balls = curLevel.model.getBalls();
 
           //Iterate through the balls and display their current attributes:
           for(var j = 0, numBalls = balls.length; j < numBalls; j++){
@@ -837,7 +840,7 @@ jsPsych.plugins["mot-game"] = (function() {
           //}
 
           //display the points/pixels in the user-defined wall as circles and draw line segments between them (except for before the first and after the last pixel)
-          for(var j = 0, obs = model.userObstacles, numObs = obs.length; j<numObs; j++){
+          for(var j = 0, obs = curLevel.model.userObstacles, numObs = obs.length; j<numObs; j++){
             var ob = obs[j]
             for(var o = 0, pix = ob.getPixels(), numPix = pix.length, rad = ob.getRadius(); o<numPix; o++){
               //get x and y values of the pixel
@@ -917,11 +920,26 @@ jsPsych.plugins["mot-game"] = (function() {
       }
 
       this.showOccluders = function(){
-        for(var j = 0, occs = curLevel.model.getOccluders(), numOccs = occs.length; j < numOccs; j++){
-          console.log(occs)
-          this.showImgAtFor(occs[j].imgPath, occs[j].x, occs[j].y, curLevel.timer.getTime(), {customContext:document.getElementById("occluderCanvas").getContext("2d")})
+        var ctx = document.getElementById("occluderCanvas").getContext("2d")
+        var occluderPatternImg = new Image();
+        occluderPatternImg.src = "occluders/occluderpattern.png"
+        ctx.drawImage(occluderPatternImg, 100, 100)
+        var occluderPatter = null
+        occluderPatternImg.onload = function(){
+          occluderPattern = ctx.createPattern(occluderPatternImg, "repeat")
         }
-      }
+
+        setTimeout(function(){ //setTimeout used because of onload delay
+        //loop through occluder rectangles:
+        for(var j = 0, rects = par.occluder_rectangles, numRects = rects.length; j < numRects; j++){
+          ctx.beginPath()
+          ctx.fillStyle = occluderPattern
+          ctx.rect(rects[j].x, rects[j].y, rects[j].width, rects[j].height)
+          ctx.fill()
+          //this.showImgAtFor(occs[j].imgPath, occs[j].x, occs[j].y, curLevel.timer.getTime(), {customContext:document.getElementById("occluderCanvas").getContext("2d")})
+        }
+        ctx.closePath()
+      }, 100)}
       this.hideOccluders = function(){
         var ctx = document.getElementById("occluderCanvas").getContext("2d")
         ctx.clearRect(0,0,w,h)
@@ -1011,7 +1029,7 @@ jsPsych.plugins["mot-game"] = (function() {
       this.setDefusalModeOff = function(){this.defusalModeOn = false;}
       this.isGameOver = function(){return this.gameOver} //overdoing it on the getters, setters, and LoD? maybe
       this.beginGame = function(){
-        var balls = model.getBalls()
+        var balls = curLevel.model.getBalls()
         for(var i = 0, l = balls.length; i<l; i++){
           var ball = balls[i]
           //push the important info from this ball to the data
@@ -1114,7 +1132,11 @@ jsPsych.plugins["mot-game"] = (function() {
             case false:
               curLevel.controller.incorrectGuesses++
               curLevel.controller.guessesRemaining-- //-- instead of set to 0 because then we can collect data about how many the got right/wrong
-              curLevel.controller.endGame("incorrectGuess")
+              curLevel.view.showImgAtFor("incorrect.png", event.pageX, event.pageY, 1000)
+              //if this was their last guess:
+              if(curLevel.controller.guessesRemaining == 0){
+                curLevel.controller.endGame("incorrectGuess")
+              }
               return null
               break;
             case "notABall":
@@ -1123,10 +1145,10 @@ jsPsych.plugins["mot-game"] = (function() {
           }
 
         } else { //if there are no guesses remaining:
-          alert("no more guesses remaining")
+          //this should never be called; the above cases should cover everything
           //remove the guessing event listeners
-          document.removeEventListener("mousedown", this.registerDefusalGuess)
-          document.removeEventListener("mousemove", curLevel.view.highlightSelectedBalls)
+          //document.removeEventListener("mousedown", this.registerDefusalGuess)
+          //document.removeEventListener("mousemove", curLevel.view.highlightSelectedBalls)
 
         }
 
@@ -1153,7 +1175,8 @@ jsPsych.plugins["mot-game"] = (function() {
           case "incorrectGuess":
             data.defusalMode = "incorrectGuess"
             data.defusalDuration = curLevel.timer.getTime()
-            alert("Incorrect guess. Level failed.")
+            alert("defusal mode failed. not all the guesses were correct; you wasted time trying to defuse the innocuous balls")
+            //alert("Incorrect guess. Level failed.")
             //maybe we can have it restart at the level before?
             break;
           case "defusalModeSuccess":
@@ -1172,7 +1195,7 @@ jsPsych.plugins["mot-game"] = (function() {
 
     }
 
-    function occluder(imgPath, x, y){
+    /*function occluder(imgPath, x, y){
       //var rand = Math.random()*(par.occluder_images.length-1)
       //alert(par.occluder_images.length-1)
       //this.imgPath = par.occluder_images[rand] //random occluder image
@@ -1180,10 +1203,14 @@ jsPsych.plugins["mot-game"] = (function() {
       this.beingShown = false
       this.x = x
       this.y = y
+      this.width = null
+      this.height = null
       this.imgPath = imgPath
+
       this.loadImage = function(imgPath){
         this.imgPath = imgPath
       }
+
 
       this.show = function() {
         if(!this.beingShown){
@@ -1195,7 +1222,7 @@ jsPsych.plugins["mot-game"] = (function() {
       }
       this.respondToImageBeingCleared = function(){this.beingShown = false}
 
-    }
+    }*/
 
     //game timer. can be reset, told to count down, up, set coundtown time.
     function timer(){
@@ -1291,7 +1318,7 @@ jsPsych.plugins["mot-game"] = (function() {
       }
 
       this.resetAllBalldesigns = function(model){
-        var balls = model.getBalls()
+        var balls = curLevel.model.getBalls()
         for(var m=0, numBalls = balls.length; m<numBalls; m++){
           balls[m].setColor(ballColor);
         }
