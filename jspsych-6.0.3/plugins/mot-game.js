@@ -6,6 +6,7 @@ jsPsych.plugins["mot-game"] = (function() {
     parameters: {
       duration: 15000,
       ball_speed: 0.04,
+      ball_radius: 20,
       num_regular_balls: 7,
       num_exploding_balls: 2,
       max_user_defined_obstacles: 1,
@@ -14,9 +15,121 @@ jsPsych.plugins["mot-game"] = (function() {
       min_distance_between_obstacle_pixels: 66,
       occluders: true,
       occluder_rectangles:[{x: 100, y: 0, width: 45, height: 650},{x: 300, y: 0, width: 45, height: 650}],
+      replay_mode: true,
+      replay_mode_parameters: {ball_initial_conditions:{
+    			"balls": [
+    				{
+    					"explosive": false,
+    					"position": [
+    						182,
+    						114
+    					],
+    					"velocity": [
+    						0.039582245517110724,
+    						0.0057659205529705425
+    					],
+    					"radius": 20
+    				},
+    				{
+    					"explosive": false,
+    					"position": [
+    						617,
+    						126
+    					],
+    					"velocity": [
+    						-0.031811537795483576,
+    						-0.024249248711795592
+    					],
+    					"radius": 20
+    				},
+    				{
+    					"explosive": false,
+    					"position": [
+    						501,
+    						374
+    					],
+    					"velocity": [
+    						0.019947660914696793,
+    						0.03467118146288467
+    					],
+    					"radius": 20
+    				},
+    				{
+    					"explosive": false,
+    					"position": [
+    						552,
+    						477
+    					],
+    					"velocity": [
+    						0.02670533949559586,
+    						0.02977960447059309
+    					],
+    					"radius": 20
+    				},
+    				{
+    					"explosive": false,
+    					"position": [
+    						521,
+    						227
+    					],
+    					"velocity": [
+    						-0.013284426126463432,
+    						-0.03772961731174245
+    					],
+    					"radius": 20
+    				},
+    				{
+    					"explosive": false,
+    					"position": [
+    						174,
+    						34
+    					],
+    					"velocity": [
+    						0.03971721114695792,
+    						-0.004747961531853578
+    					],
+    					"radius": 20
+    				},
+    				{
+    					"explosive": false,
+    					"position": [
+    						186,
+    						510
+    					],
+    					"velocity": [
+    						0.019291503508563724,
+    						-0.0350405178668791
+    					],
+    					"radius": 20
+    				},
+    				{
+    					"explosive": true,
+    					"position": [
+    						34,
+    						44
+    					],
+    					"velocity": [
+    						0.032708482346952825,
+    						-0.023025098969582637
+    					],
+    					"radius": 20
+    				},
+    				{
+    					"explosive": true,
+    					"position": [
+    						446,
+    						540
+    					],
+    					"velocity": [
+    						0.022719435283549423,
+    						0.03292153186588694
+    					],
+    					"radius": 20
+    				}
+    			]
+    		}, created_segments: {/*see createdSegments in data returned after experiment*/}},
       gameWidth: 650,
-      gameHeight: 650,
-      //type:"not-sure-what-this-parameter-does"
+      gameHeight: 650
     }
   }
 
@@ -143,10 +256,43 @@ jsPsych.plugins["mot-game"] = (function() {
         return false; //never called if true is returned in the loop
       }
 
-      var ballRadius = 20
-      //now initialize balls, but make sure they aren't in occluders
-      for(var i = 0; i<numNormalBalls; i++){
-        //random x-y coordinates of a new ball:
+      //now, initialize the balls. how that is done depends on whether it's replay mode
+      if(par.replay_mode){
+        alert('replay_mode')
+        var balls = par.replay_mode_parameters.ball_initial_conditions.balls
+        //^these aren't actual ball objects; they're just the minimal data necessary to recreate the balls
+        //now, recreate the balls and add them to this.balls
+        for(var i = 0, numBalls = balls.length; i < numBalls; i++){
+          var b = balls[i]
+          var explosiveParameter = b.explosive ? "e" : null //to be passed as parameter of whether to make the ball explosive. "e" makes the ball explosive
+          this.balls.push(new ball(b.position[0], b.position[1], b.radius, 0, explosiveParameter))
+          //now set the velocity of the ball (balls are initialized with speed, not velocity):
+          this.balls[this.balls.length-1/*most recently pushed ball*/].setVelocity(b.velocity)
+        }
+
+      } else {
+        var ballRadius = par.ball_radius
+        //now initialize balls, but make sure they aren't in occluders
+        for(var i = 0; i<numNormalBalls; i++){
+          //random x-y coordinates of a new ball:
+          var coords = randomCoordinatesForNormalBall()
+          //make sure the ball isn't inside any occluders:
+            var inOcc = circleIsInAnOccluder(coords, ballRadius)
+            while(inOcc){
+              //reset the coordinates until the piwr and the coordinates are therefore valid
+              coords = randomCoordinatesForNormalBall()
+              inOcc = circleIsInAnOccluder(coords, ballRadius)
+            }
+          //make the ball (and add it to this.balls) if it's at a valid position:
+          this.balls.push(new ball(coords[0],coords[1],ballRadius, speed))
+        }
+
+
+
+        //initialize the exploding balls:
+        for(var i = 0; i<numExplodingBalls; i++){  //exploding balls can't be too close to the edges; that isn't fair
+
+        //random x-y coordinates of a new explodingj ball:
         var coords = randomCoordinatesForNormalBall()
         //make sure the ball isn't inside any occluders:
           var inOcc = circleIsInAnOccluder(coords, ballRadius)
@@ -155,29 +301,13 @@ jsPsych.plugins["mot-game"] = (function() {
             coords = randomCoordinatesForNormalBall()
             inOcc = circleIsInAnOccluder(coords, ballRadius)
           }
-        //make the ball (and add it to this.balls) if it's at a valid position:
-        this.balls.push(new ball(coords[0],coords[1],ballRadius, speed))
-      }
 
-
-
-      //initialize the exploding balls:
-      for(var i = 0; i<numExplodingBalls; i++){  //exploding balls can't be too close to the edges; that isn't fair
-
-      //random x-y coordinates of a new explodingj ball:
-      var coords = randomCoordinatesForNormalBall()
-      //make sure the ball isn't inside any occluders:
-        var inOcc = circleIsInAnOccluder(coords, ballRadius)
-        while(inOcc){
-          //reset the coordinates until the piwr and the coordinates are therefore valid
-          coords = randomCoordinatesForNormalBall()
-          inOcc = circleIsInAnOccluder(coords, ballRadius)
+          var bal = new ball(coords[0], coords[1], ballRadius, speed, "e")
+          this.balls.push(bal)
+          this.explodingBalls.push(bal)
         }
-
-        var bal = new ball(coords[0], coords[1], ballRadius, speed, "e")
-        this.balls.push(bal)
-        this.explodingBalls.push(bal)
       }
+
 
       this.getBalls = function(){return this.balls}
       this.getOccluders = function(){return this.occluders}
@@ -1099,9 +1229,12 @@ jsPsych.plugins["mot-game"] = (function() {
           var ball = balls[i]
           //push the important info from this ball to the data
           data.ballInitialConditions.balls.push(
-            {explosive: ball.explosive,
-             position: [ball.getX(), ball.getY()],
-             velocity:ball.getVelocity()}
+                {
+                   explosive: ball.explosive,
+                   position: [ball.getX(), ball.getY()],
+                   velocity:ball.getVelocity(),
+                   radius: ball.getRadius()
+               }
            )
 
         }

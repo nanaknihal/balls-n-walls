@@ -57,6 +57,7 @@ var level1 = {
   stimulus:"<p>test</p>",
   duration: 15000,
   ball_speed: 0.04,
+  ball_radius: 20,
   num_regular_balls: 7,
   num_exploding_balls: 2,
   max_user_defined_obstacles: 1,
@@ -65,9 +66,121 @@ var level1 = {
   min_distance_between_obstacle_pixels: 66,
   occluders: true,
   occluder_rectangles:[{x: 100, y: 325, width: 45, height: 650},{x: 300, y: 325, width: 45, height: 650}],
+  replay_mode: true,
+  replay_mode_parameters: {ball_initial_conditions:{
+			"balls": [
+				{
+					"explosive": false,
+					"position": [
+						182,
+						114
+					],
+					"velocity": [
+						0.039582245517110724,
+						0.0057659205529705425
+					],
+					"radius": 20
+				},
+				{
+					"explosive": false,
+					"position": [
+						617,
+						126
+					],
+					"velocity": [
+						-0.031811537795483576,
+						-0.024249248711795592
+					],
+					"radius": 20
+				},
+				{
+					"explosive": false,
+					"position": [
+						501,
+						374
+					],
+					"velocity": [
+						0.019947660914696793,
+						0.03467118146288467
+					],
+					"radius": 20
+				},
+				{
+					"explosive": false,
+					"position": [
+						552,
+						477
+					],
+					"velocity": [
+						0.02670533949559586,
+						0.02977960447059309
+					],
+					"radius": 20
+				},
+				{
+					"explosive": false,
+					"position": [
+						521,
+						227
+					],
+					"velocity": [
+						-0.013284426126463432,
+						-0.03772961731174245
+					],
+					"radius": 20
+				},
+				{
+					"explosive": false,
+					"position": [
+						174,
+						34
+					],
+					"velocity": [
+						0.03971721114695792,
+						-0.004747961531853578
+					],
+					"radius": 20
+				},
+				{
+					"explosive": false,
+					"position": [
+						186,
+						510
+					],
+					"velocity": [
+						0.019291503508563724,
+						-0.0350405178668791
+					],
+					"radius": 20
+				},
+				{
+					"explosive": true,
+					"position": [
+						34,
+						44
+					],
+					"velocity": [
+						0.032708482346952825,
+						-0.023025098969582637
+					],
+					"radius": 20
+				},
+				{
+					"explosive": true,
+					"position": [
+						446,
+						540
+					],
+					"velocity": [
+						0.022719435283549423,
+						0.03292153186588694
+					],
+					"radius": 20
+				}
+			]
+		}},
   gameWidth: 650,
-  gameHeight: 650,
-  //type:"not-sure-what-this-parameter-does"
+  gameHeight: 650
 }
 timeline.push(level1);
 
