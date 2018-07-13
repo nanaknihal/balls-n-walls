@@ -16,118 +16,256 @@ jsPsych.plugins["mot-game"] = (function() {
       occluders: true,
       occluder_rectangles:[{x: 100, y: 0, width: 45, height: 650},{x: 300, y: 0, width: 45, height: 650}],
       replay_mode: true,
-      replay_mode_parameters: {ball_initial_conditions:{
-    			"balls": [
-    				{
-    					"explosive": false,
-    					"position": [
-    						182,
-    						114
-    					],
-    					"velocity": [
-    						0.039582245517110724,
-    						0.0057659205529705425
-    					],
-    					"radius": 20
-    				},
-    				{
-    					"explosive": false,
-    					"position": [
-    						617,
-    						126
-    					],
-    					"velocity": [
-    						-0.031811537795483576,
-    						-0.024249248711795592
-    					],
-    					"radius": 20
-    				},
-    				{
-    					"explosive": false,
-    					"position": [
-    						501,
-    						374
-    					],
-    					"velocity": [
-    						0.019947660914696793,
-    						0.03467118146288467
-    					],
-    					"radius": 20
-    				},
-    				{
-    					"explosive": false,
-    					"position": [
-    						552,
-    						477
-    					],
-    					"velocity": [
-    						0.02670533949559586,
-    						0.02977960447059309
-    					],
-    					"radius": 20
-    				},
-    				{
-    					"explosive": false,
-    					"position": [
-    						521,
-    						227
-    					],
-    					"velocity": [
-    						-0.013284426126463432,
-    						-0.03772961731174245
-    					],
-    					"radius": 20
-    				},
-    				{
-    					"explosive": false,
-    					"position": [
-    						174,
-    						34
-    					],
-    					"velocity": [
-    						0.03971721114695792,
-    						-0.004747961531853578
-    					],
-    					"radius": 20
-    				},
-    				{
-    					"explosive": false,
-    					"position": [
-    						186,
-    						510
-    					],
-    					"velocity": [
-    						0.019291503508563724,
-    						-0.0350405178668791
-    					],
-    					"radius": 20
-    				},
-    				{
-    					"explosive": true,
-    					"position": [
-    						34,
-    						44
-    					],
-    					"velocity": [
-    						0.032708482346952825,
-    						-0.023025098969582637
-    					],
-    					"radius": 20
-    				},
-    				{
-    					"explosive": true,
-    					"position": [
-    						446,
-    						540
-    					],
-    					"velocity": [
-    						0.022719435283549423,
-    						0.03292153186588694
-    					],
-    					"radius": 20
-    				}
-    			]
-    		}, created_segments: {/*see createdSegments in data returned after experiment*/}},
+      replay_mode_parameters: {ball_initial_conditions:[
+        {
+          "explosive": false,
+          "position": [
+            440,
+            529
+          ],
+          "velocity": [
+            0.00633302505215406,
+            0.03949547814229864
+          ],
+          "radius": 20
+        },
+        {
+          "explosive": false,
+          "position": [
+            45,
+            324
+          ],
+          "velocity": [
+            -0.010300166864923918,
+            -0.038651087469238475
+          ],
+          "radius": 20
+        },
+        {
+          "explosive": false,
+          "position": [
+            260,
+            55
+          ],
+          "velocity": [
+            -0.019541414881860737,
+            -0.034901763629005794
+          ],
+          "radius": 20
+        },
+        {
+          "explosive": false,
+          "position": [
+            541,
+            483
+          ],
+          "velocity": [
+            0.005597870726629676,
+            -0.03960636114726955
+          ],
+          "radius": 20
+        },
+        {
+          "explosive": false,
+          "position": [
+            51,
+            128
+          ],
+          "velocity": [
+            -0.00636843106908864,
+            0.039489784574219526
+          ],
+          "radius": 20
+        },
+        {
+          "explosive": false,
+          "position": [
+            562,
+            92
+          ],
+          "velocity": [
+            0.005515141830692307,
+            -0.03961796575529021
+          ],
+          "radius": 20
+        },
+        {
+          "explosive": false,
+          "position": [
+            217,
+            342
+          ],
+          "velocity": [
+            -0.023738804642270742,
+            -0.0321942410091635
+          ],
+          "radius": 20
+        },
+        {
+          "explosive": true,
+          "position": [
+            413,
+            340
+          ],
+          "velocity": [
+            -0.028962811755436108,
+            -0.0275890473778848
+          ],
+          "radius": 20
+        },
+        {
+          "explosive": true,
+          "position": [
+            380,
+            360
+          ],
+          "velocity": [
+            -0.03788014073017481,
+            -0.012848927514082715
+          ],
+          "radius": 20
+        }
+  			],
+
+          created_points: [
+			{
+				"position": [
+					477,
+					382
+				],
+				"timeCreated": 475,
+				"eventType": "mousedown"
+			},
+			{
+				"position": [
+					408,
+					341
+				],
+				"timeCreated": 688,
+				"eventType": "mousemove"
+			},
+			{
+				"position": [
+					342,
+					351
+				],
+				"timeCreated": 821,
+				"eventType": "mousemove"
+			},
+			{
+				"position": [
+					384,
+					620
+				],
+				"timeCreated": 2342,
+				"eventType": "mousedown"
+			},
+			{
+				"position": [
+					462,
+					616
+				],
+				"timeCreated": 2503,
+				"eventType": "mousemove"
+			},
+			{
+				"position": [
+					536,
+					605
+				],
+				"timeCreated": 2571,
+				"eventType": "mousemove"
+			},
+			{
+				"position": [
+					290,
+					503
+				],
+				"timeCreated": 4743,
+				"eventType": "mousedown"
+			},
+			{
+				"position": [
+					335,
+					558
+				],
+				"timeCreated": 5070,
+				"eventType": "mousemove"
+			},
+			{
+				"position": [
+					400,
+					579
+				],
+				"timeCreated": 5287,
+				"eventType": "mousemove"
+			},
+			{
+				"position": [
+					438,
+					489
+				],
+				"timeCreated": 6734,
+				"eventType": "mousedown"
+			},
+			{
+				"position": [
+					474,
+					549
+				],
+				"timeCreated": 7088,
+				"eventType": "mousemove"
+			},
+			{
+				"position": [
+					478,
+					615
+				],
+				"timeCreated": 7421,
+				"eventType": "mousemove"
+			},
+			{
+				"position": [
+					379,
+					632
+				],
+				"timeCreated": 8670,
+				"eventType": "mousedown"
+			},
+			{
+				"position": [
+					479,
+					631
+				],
+				"timeCreated": 9420,
+				"eventType": "mousemove"
+			},
+			{
+				"position": [
+					432,
+					240
+				],
+				"timeCreated": 17845,
+				"eventType": "mousedown"
+			},
+			{
+				"position": [
+					524,
+					307
+				],
+				"timeCreated": 3748,
+				"eventType": "mousedown"
+			},
+			{
+				"position": [
+					509,
+					193
+				],
+				"timeCreated": 6332,
+				"eventType": "mousedown"
+			}
+		]
+      },
       gameWidth: 650,
       gameHeight: 650
     }
@@ -165,7 +303,7 @@ jsPsych.plugins["mot-game"] = (function() {
       maxObstacleSegments:par.max_user_defined_obstacle_segments,
       maxSegmentLength:par.max_user_defined_obstacle_segment_length,
       minSegmentLength:par.min_user_defined_obstacle_segment_length,
-      createdSegments:{segments: []},
+      createdPoints:[],
       occluders: par.occluders
 
     }
@@ -210,6 +348,21 @@ jsPsych.plugins["mot-game"] = (function() {
       return [posx, posy]
     }
 
+    //adds a point much like a user click does, but with a fake mousedown event
+    function addReplayObstaclePointAfterTime (pt, time){
+      setTimeout(function(){
+        //fake "event" object (parentheses around it just to be sure the variables is super private since it's used by setTimeout and
+        //must not be changed before setTimeout finishes execution)
+        var event = {
+         type: pt.eventType,
+         x: pt.position[0],
+         y: pt.position[1],
+         isFromReplay: true
+       }
+       curLevel.model.addPixelsToUserObstacles(event)
+       console.log(event)
+     }, time) //(the time created is measured after the gameplay part begins so initialFrameDuration is added)
+  }
     function theLevel() { //now levels are based off parameters passed to jsPsych
       var levelDuration = 15000;
       var m = new model(par.num_regular_balls,par.num_exploding_balls,/*0.1*/par.ball_speed)
@@ -259,9 +412,9 @@ jsPsych.plugins["mot-game"] = (function() {
       //now, initialize the balls. how that is done depends on whether it's replay mode
       if(par.replay_mode){
         alert('replay_mode')
-        var balls = par.replay_mode_parameters.ball_initial_conditions.balls
+        var balls = par.replay_mode_parameters.ball_initial_conditions
         //^these aren't actual ball objects; they're just the minimal data necessary to recreate the balls
-        //now, recreate the balls and add them to this.balls
+        //now, recreate the balls and add them to this.balls. ball_initial_conditions is an array of "ball" objects
         for(var i = 0, numBalls = balls.length; i < numBalls; i++){
           var b = balls[i]
           var explosiveParameter = b.explosive ? "e" : null //to be passed as parameter of whether to make the ball explosive. "e" makes the ball explosive
@@ -292,13 +445,13 @@ jsPsych.plugins["mot-game"] = (function() {
         //initialize the exploding balls:
         for(var i = 0; i<numExplodingBalls; i++){  //exploding balls can't be too close to the edges; that isn't fair
 
-        //random x-y coordinates of a new explodingj ball:
-        var coords = randomCoordinatesForNormalBall()
+        //random x-y coordinates of a new exploding ball:
+        var coords = randomCoordinatesForExplodingBall()
         //make sure the ball isn't inside any occluders:
           var inOcc = circleIsInAnOccluder(coords, ballRadius)
           while(inOcc){
-            //reset the coordinates until the piwr and the coordinates are therefore valid
-            coords = randomCoordinatesForNormalBall()
+            //reset the coordinates until they're not in the occluder
+            coords = randomCoordinatesForExplodingBall()
             inOcc = circleIsInAnOccluder(coords, ballRadius)
           }
 
@@ -346,7 +499,17 @@ jsPsych.plugins["mot-game"] = (function() {
         this.addPixelsToUserObstacles = function(event){
           //if(curLevel.model.userObstacles.length < 1){this.addNewObstacle()} //make a new user obstacle if none exist
 
-          if(event.type == "mousedown"){this.addNewObstacle()}//make a new user obstacle if it was a mousedown not a mousemove
+          if(event.type == "mousedown"){
+            //Make a new user obstacle if it was a mousedown not a mousemove. But first, collect the data.
+            data.createdPoints.push(
+              {position: [event.pageX, event.pageY],
+               timeCreated:curLevel.timer.timeElapsed(),//this time will be a few ms after they actually clicked because of all the processing between the click and calling this...shouldn't bee too problematic but watch out
+               eventType:event.type //mousedown events create new obstacles; mousemove events add points to them
+            })
+
+            //now, make the new obstacle:
+            this.addNewObstacle()
+          }
 
           //if(userObstacle.atMaxLength()){this.addNewObstacle()}     //make a new user obstacle if the current one has the maximum number of points
 
@@ -878,13 +1041,32 @@ jsPsych.plugins["mot-game"] = (function() {
       this.pixelLimitExceeded = false,
 
       this.addPixels = function(event){
-        var pos = getPixelPositionRelativeToObject([event.pageX, event.pageY], curLevel.view.can)
+        //for accuracy, collect the time added before all these calculations. for even more (probably insignificant) accuracy, time can be collected earlier
+        //and passed to this function, but I doubt that's necessary
+        var timeAdded = curLevel.timer.timeElapsed()
+
+
+        //TRICK: in replay mode, a custom fake event object is passed to this fuction. The fake event object doesn't have all the parameters of a mousemove event,
+        //but it has an x and y coordinate and an additional isFromReplay: true. These x and y (from mousemove events at least, not mousedown because the mousedown
+        //coordinates are collected before getting the point's relative position to the canvas) are not pageX and pageY; they are coordinates relative to the canvas
+
+        //so, the point's position on the canvas determined accordingly:
+        var pos = null
+        if(event.isFromReplay !== undefined && event.type == "mousemove"){
+          pos = [event.x, event.y]
+        } else{
+          pos = getPixelPositionRelativeToObject([event.pageX, event.pageY], curLevel.view.can)
+        }
+
         //if there are no existing pixels/points, just add it without the for loop
         var numPix = this.pixels.length;
         if(numPix == 0){
+          console.log("n0")
           this.pixels.push(pos)
+          console.log("a" + this.pixels)
           return; //break it so the function doesn't try to add the value again
         }
+
         var validPosition = true
         //add them if they're far enough from the previous pixels.
         for(var l=0; l<numPix; l++){
@@ -914,7 +1096,11 @@ jsPsych.plugins["mot-game"] = (function() {
 
         if(validPosition){
             this.pixels.push(pos)
-            data.createdSegments.segments.push({position: pos, timeCreated:curLevel.timer.getTimeSinceBeggining()/*this time will be a few ms after they actually clicked because of all the processing between the click and calling this...shouldn't bee too problematic but watch out*/})
+            data.createdPoints.push(
+              {position: pos,
+               timeCreated:timeAdded,//this time will be a few ms after they actually clicked because of all the processing between the click and calling this...shouldn't bee too problematic but watch out
+               eventType:event.type //mousedown events create new obstacles; mousemove events add points to them
+            })
             //alert the balls of the new user obstacle, now that it has changed (it doesn't matter that excess wall's haven't been removed yet -
             //they are being alerted so they don't collide if inside the new segment and existing obstacle if they're already inside. if they don't
             //collide with the old segment either that's fine)
@@ -978,7 +1164,6 @@ jsPsych.plugins["mot-game"] = (function() {
           var ball = balls[j];
             if(ball.explosive){
 
-            console.log(ball)
             ball.setColor("orange")
             //alert(duration)
           }
@@ -1247,12 +1432,29 @@ jsPsych.plugins["mot-game"] = (function() {
         curLevel.view.displayTimer(curLevel.timer)
         curLevel.view.showInitialFrame(model,initialFrameDuration) //show the frame where the exploding balls look different
 
-        //then start the first update
-        this.getWallsFromUser(); //this adds an Event Listener
+        //if it's in replay mode, create the points at the appropriate times via setTimeout
+        if(par.replay_mode){
+          var pts = par.replay_mode_parameters.created_points
+          //iterate through the points
+          for(var i = 0, len = pts.length; i < len; i++){
+            //create the point at the right time
+            var pt = pts[i]
+            console.log(pt)
+            addReplayObstaclePointAfterTime(pt, pt.timeCreated+initialFrameDuration) //initialFrameDuration is added because time of obstacle creation was measured since last timer reset (which was when gameplay started)
+          }
+
+        } else { //if game isn't in replay mode
+          setTimeout(
+            curLevel.controller.getWallsFromUser, //this adds an event listener to get drawn walls
+            initialFrameDuration) //after the initial frame is over
+        }
+
+        //now, set the timeout for what happens when the initial frame is loaded regardless of replay mode
         setTimeout(function(){
-          curLevel.timer.reset(levelDuration/1000, "green") //violation of LoD but I think it's ok
+          curLevel.timer.reset(levelDuration/1000, "green")
           curLevel.timer.start()
           curLevel.timer.unHide()
+          //then start the first update
           updateGame(0); //beginning time is 0
         }, initialFrameDuration)
         }
@@ -1263,7 +1465,7 @@ jsPsych.plugins["mot-game"] = (function() {
 
       this.getWallsFromUser = function(){
         //first, add the event listener for mouseclicks
-        document.addEventListener("mousedown", this.findWallDrawingPath);
+        document.addEventListener("mousedown", curLevel.controller.findWallDrawingPath);
       },
 
       this.findWallDrawingPath = function(event){
@@ -1460,10 +1662,11 @@ jsPsych.plugins["mot-game"] = (function() {
       //this is sensitive to counting up or down
       this.getTime = function(noupdate/*optional parameter, if true will not update the time before returning the time*/){
         if(noupdate != true) {this.updateCurTime()}
-        return (this.countdown) ? this.getTimeTilCountdownEnd() : this.getTimeSinceBeggining(noupdate)
+        return (this.countdown) ? this.getTimeTilCountdownEnd() : this.timeElapsed(noupdate)
       }
 
-      this.getTimeSinceBeggining = function(noupdate){
+      //returns how much time has elapsed since the timer has been reset
+      this.timeElapsed = function(noupdate){
         if(noupdate != true) {this.updateCurTime()}
         return this.curTime
       }
