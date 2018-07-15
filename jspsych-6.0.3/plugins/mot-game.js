@@ -5,263 +5,313 @@ jsPsych.plugins["mot-game"] = (function() {
     name: 'mot-game',
     parameters: {
       duration: 15000,
-      ball_speed: 0.04,
-      ball_radius: 20,
-      num_regular_balls: 7,
-      num_exploding_balls: 2,
-      max_user_defined_obstacles: 1,
-      max_user_defined_obstacle_segments: 3,
-      max_distance_between_obstacle_pixels:300,
-      min_distance_between_obstacle_pixels: 66,
+      ballSpeed: 0.04,
+      ballRadius: 20,
+      numRegularBalls: 7,
+      numExplodingBalls: 2,
+      maxUserDefinedObstacles: 1,
+      maxUserDefinedObstacleSegments: 3,
+      maxDistanceBetweenObstaclePixels:300,
+      minDistanceBetweenObstaclePixels: 66,
       occluders: true,
-      occluder_rectangles:[{x: 100, y: 0, width: 45, height: 650},{x: 300, y: 0, width: 45, height: 650}],
-      replay_mode: true,
-      replay_mode_parameters: {ball_initial_conditions:[
-        {
-          "explosive": false,
-          "position": [
-            440,
-            529
-          ],
-          "velocity": [
-            0.00633302505215406,
-            0.03949547814229864
-          ],
-          "radius": 20
-        },
-        {
-          "explosive": false,
-          "position": [
-            45,
-            324
-          ],
-          "velocity": [
-            -0.010300166864923918,
-            -0.038651087469238475
-          ],
-          "radius": 20
-        },
-        {
-          "explosive": false,
-          "position": [
-            260,
-            55
-          ],
-          "velocity": [
-            -0.019541414881860737,
-            -0.034901763629005794
-          ],
-          "radius": 20
-        },
-        {
-          "explosive": false,
-          "position": [
-            541,
-            483
-          ],
-          "velocity": [
-            0.005597870726629676,
-            -0.03960636114726955
-          ],
-          "radius": 20
-        },
-        {
-          "explosive": false,
-          "position": [
-            51,
-            128
-          ],
-          "velocity": [
-            -0.00636843106908864,
-            0.039489784574219526
-          ],
-          "radius": 20
-        },
-        {
-          "explosive": false,
-          "position": [
-            562,
-            92
-          ],
-          "velocity": [
-            0.005515141830692307,
-            -0.03961796575529021
-          ],
-          "radius": 20
-        },
-        {
-          "explosive": false,
-          "position": [
-            217,
-            342
-          ],
-          "velocity": [
-            -0.023738804642270742,
-            -0.0321942410091635
-          ],
-          "radius": 20
-        },
-        {
-          "explosive": true,
-          "position": [
-            413,
-            340
-          ],
-          "velocity": [
-            -0.028962811755436108,
-            -0.0275890473778848
-          ],
-          "radius": 20
-        },
-        {
-          "explosive": true,
-          "position": [
-            380,
-            360
-          ],
-          "velocity": [
-            -0.03788014073017481,
-            -0.012848927514082715
-          ],
-          "radius": 20
-        }
-  			],
-
-          created_points: [
+      occluderRectangles:[{x: 100, y: 0, width: 45, height: 650},{x: 300, y: 0, width: 45, height: 650}],
+      replayMode: false,
+      replayModeParameters: {"ballInitialConditions": [
+				{
+					"explosive": false,
+					"position": [
+						70,
+						94
+					],
+					"velocity": [
+						0.03766050050908541,
+						0.01347912094333964
+					],
+					"radius": 20
+				},
+				{
+					"explosive": false,
+					"position": [
+						527,
+						157
+					],
+					"velocity": [
+						-0.010817799151943752,
+						-0.038509417309382975
+					],
+					"radius": 20
+				},
+				{
+					"explosive": false,
+					"position": [
+						482,
+						310
+					],
+					"velocity": [
+						-0.015351161403634588,
+						0.03693699830196764
+					],
+					"radius": 20
+				},
+				{
+					"explosive": false,
+					"position": [
+						385,
+						289
+					],
+					"velocity": [
+						0.028658807072509274,
+						0.02790470887109723
+					],
+					"radius": 20
+				},
+				{
+					"explosive": false,
+					"position": [
+						467,
+						384
+					],
+					"velocity": [
+						0.02666340835764002,
+						-0.029817153699736875
+					],
+					"radius": 20
+				},
+				{
+					"explosive": false,
+					"position": [
+						69,
+						523
+					],
+					"velocity": [
+						-0.015821812185672614,
+						-0.03673785866325502
+					],
+					"radius": 20
+				},
+				{
+					"explosive": false,
+					"position": [
+						215,
+						559
+					],
+					"velocity": [
+						0.03757894872675242,
+						0.013704839021021464
+					],
+					"radius": 20
+				},
+				{
+					"explosive": true,
+					"position": [
+						220,
+						206
+					],
+					"velocity": [
+						0.028690120461517043,
+						0.02787251312500617
+					],
+					"radius": 20
+				},
+				{
+					"explosive": true,
+					"position": [
+						389,
+						293
+					],
+					"velocity": [
+						0.039662896638767584,
+						-0.005182145330115616
+					],
+					"radius": 20
+				}
+			],
+		"ballSpeed": 0.04,
+		"maxObstacles": 1,
+		"maxObstacleSegments": 3,
+		"createdPoints": [
 			{
 				"position": [
-					477,
-					382
+					260,
+					359
 				],
-				"timeCreated": 475,
+				"timeCreated": 639,
 				"eventType": "mousedown"
 			},
 			{
 				"position": [
-					408,
-					341
+					327,
+					373
 				],
-				"timeCreated": 688,
+				"timeCreated": 798,
 				"eventType": "mousemove"
 			},
 			{
 				"position": [
-					342,
-					351
+					394,
+					371
 				],
-				"timeCreated": 821,
+				"timeCreated": 929,
 				"eventType": "mousemove"
 			},
 			{
 				"position": [
-					384,
-					620
+					199,
+					106
 				],
-				"timeCreated": 2342,
+				"timeCreated": 1901,
 				"eventType": "mousedown"
 			},
 			{
 				"position": [
-					462,
-					616
+					110,
+					119
 				],
-				"timeCreated": 2503,
+				"timeCreated": 2047,
 				"eventType": "mousemove"
 			},
 			{
 				"position": [
-					536,
-					605
+					53,
+					159
 				],
-				"timeCreated": 2571,
+				"timeCreated": 2130,
 				"eventType": "mousemove"
 			},
 			{
 				"position": [
-					290,
-					503
+					184,
+					297
 				],
-				"timeCreated": 4743,
+				"timeCreated": 3538,
 				"eventType": "mousedown"
 			},
 			{
 				"position": [
-					335,
-					558
+					216,
+					366
 				],
-				"timeCreated": 5070,
+				"timeCreated": 3830,
 				"eventType": "mousemove"
 			},
 			{
 				"position": [
-					400,
-					579
+					45,
+					194
 				],
-				"timeCreated": 5287,
-				"eventType": "mousemove"
-			},
-			{
-				"position": [
-					438,
-					489
-				],
-				"timeCreated": 6734,
+				"timeCreated": 5443,
 				"eventType": "mousedown"
 			},
 			{
 				"position": [
-					474,
-					549
+					44,
+					356
 				],
-				"timeCreated": 7088,
+				"timeCreated": 5846,
 				"eventType": "mousemove"
 			},
 			{
 				"position": [
-					478,
-					615
+					415,
+					114
 				],
-				"timeCreated": 7421,
+				"timeCreated": 8937,
+				"eventType": "mousedown"
+			},
+			{
+				"position": [
+					465,
+					158
+				],
+				"timeCreated": 9212,
 				"eventType": "mousemove"
 			},
 			{
 				"position": [
-					379,
-					632
+					481,
+					232
 				],
-				"timeCreated": 8670,
-				"eventType": "mousedown"
-			},
-			{
-				"position": [
-					479,
-					631
-				],
-				"timeCreated": 9420,
+				"timeCreated": 9344,
 				"eventType": "mousemove"
 			},
 			{
 				"position": [
-					432,
-					240
+					449,
+					290
 				],
-				"timeCreated": 17845,
+				"timeCreated": 9510,
+				"eventType": "mousemove"
+			},
+			{
+				"position": [
+					122,
+					481
+				],
+				"timeCreated": 10639,
 				"eventType": "mousedown"
 			},
 			{
 				"position": [
-					524,
-					307
+					227,
+					480
 				],
-				"timeCreated": 3748,
+				"timeCreated": 11045,
+				"eventType": "mousemove"
+			},
+			{
+				"position": [
+					296,
+					470
+				],
+				"timeCreated": 11428,
+				"eventType": "mousemove"
+			},
+			{
+				"position": [
+					367,
+					452
+				],
+				"timeCreated": 11726,
+				"eventType": "mousemove"
+			},
+			{
+				"position": [
+					550,
+					74
+				],
+				"timeCreated": 12456,
 				"eventType": "mousedown"
 			},
 			{
 				"position": [
-					509,
-					193
+					488,
+					46
 				],
-				"timeCreated": 6332,
+				"timeCreated": 12790,
+				"eventType": "mousemove"
+			},
+			{
+				"position": [
+					422,
+					54
+				],
+				"timeCreated": 13028,
+				"eventType": "mousemove"
+			},
+			{
+				"position": [
+					331,
+					239
+				],
+				"timeCreated": 4148,
+				"eventType": "mousedown"
+			},
+			{
+				"position": [
+					394,
+					153
+				],
+				"timeCreated": 5108,
 				"eventType": "mousedown"
 			}
 		]
@@ -294,15 +344,17 @@ jsPsych.plugins["mot-game"] = (function() {
       timeDefusalStarted: 0,
       defusalDuration: 0,
       defusalMode: "neverNeeded", //"neverNeeded", "successful", "timeRanOut", or "incorrectGuess"
+      correctGuesses: null,
+      incorrectGuesses: null,
       numWallsMade: 0,/*should it register each click?*/
-      numRegBalls: par.num_regular_balls, //redundant
-      numExplodingBalls: par.num_exploding_balls, //redundant with the following
-      ballInitialConditions: {balls:[]},
-      ballSpeed: par.ball_speed,
-      maxObstacles: par.max_user_defined_obstacles,
-      maxObstacleSegments:par.max_user_defined_obstacle_segments,
-      maxSegmentLength:par.max_user_defined_obstacle_segment_length,
-      minSegmentLength:par.min_user_defined_obstacle_segment_length,
+      numRegBalls: par.numRegularBalls, //redundant
+      numExplodingBalls: par.numExplodingBalls, //redundant with the following
+      ballInitialConditions: [], //an array of objects representing balls and their respective initial conditions
+      ballSpeed: par.ballSpeed,
+      maxObstacles: par.maxUserDefinedObstacles,
+      maxObstacleSegments:par.maxUserDefinedObstacleSegments,
+      maxSegmentLength:par.maxDistanceBetweenObstaclePixels,
+      minSegmentLength:par.minDistanceBetweenObstaclePixels,
       createdPoints:[],
       occluders: par.occluders
 
@@ -359,13 +411,18 @@ jsPsych.plugins["mot-game"] = (function() {
          y: pt.position[1],
          isFromReplay: true
        }
+       //mousedown events are recorded differently to the data and their position actually matches pageX and pageY coordinates. So they can be made accessible by pageX and pageY:
+       if(event.type == "mousedown"){
+         event.pageX = pt.position[0];
+         event.pageY = pt.position[1]
+       }
        curLevel.model.addPixelsToUserObstacles(event)
        console.log(event)
      }, time) //(the time created is measured after the gameplay part begins so initialFrameDuration is added)
   }
     function theLevel() { //now levels are based off parameters passed to jsPsych
       var levelDuration = 15000;
-      var m = new model(par.num_regular_balls,par.num_exploding_balls,/*0.1*/par.ball_speed)
+      var m = new model(par.numRegularBalls,par.numExplodingBalls,/*0.1*/par.ballSpeed)
       var v = new view(model)
       var c = new controller(m, v, levelDuration)
       return new level(m, v, c, levelDuration)
@@ -396,7 +453,7 @@ jsPsych.plugins["mot-game"] = (function() {
 
       //takes circle's center and radius as arguments
       var circleIsInAnOccluder = function(center, radius){
-        for(var j = 0, occs = par.occluder_rectangles, numOccs = occs.length; j < numOccs; j++){
+        for(var j = 0, occs = par.occluderRectangles, numOccs = occs.length; j < numOccs; j++){
           var occRectPlusBallRadius = {
             x:occs[j].x - radius,
             y:occs[j].y - radius,
@@ -410,11 +467,11 @@ jsPsych.plugins["mot-game"] = (function() {
       }
 
       //now, initialize the balls. how that is done depends on whether it's replay mode
-      if(par.replay_mode){
-        alert('replay_mode')
-        var balls = par.replay_mode_parameters.ball_initial_conditions
+      if(par.replayMode){
+        alert('replayMode')
+        var balls = par.replayModeParameters.ballInitialConditions
         //^these aren't actual ball objects; they're just the minimal data necessary to recreate the balls
-        //now, recreate the balls and add them to this.balls. ball_initial_conditions is an array of "ball" objects
+        //now, recreate the balls and add them to this.balls. ballInitialConditions is an array of "ball" objects
         for(var i = 0, numBalls = balls.length; i < numBalls; i++){
           var b = balls[i]
           var explosiveParameter = b.explosive ? "e" : null //to be passed as parameter of whether to make the ball explosive. "e" makes the ball explosive
@@ -424,7 +481,7 @@ jsPsych.plugins["mot-game"] = (function() {
         }
 
       } else {
-        var ballRadius = par.ball_radius
+        var ballRadius = par.ballRadius
         //now initialize balls, but make sure they aren't in occluders
         for(var i = 0; i<numNormalBalls; i++){
           //random x-y coordinates of a new ball:
@@ -1033,10 +1090,10 @@ jsPsych.plugins["mot-game"] = (function() {
 
     function userObstacle() {
       this.pixels = new Array(),
-      this.maxPixels = par.max_user_defined_obstacle_segments+1,
+      this.maxPixels = par.maxUserDefinedObstacleSegments+1,
       this.radius = 4,
-      this.minDistanceBetweenPixels = par.min_distance_between_obstacle_pixels,
-      this.maxDistanceBetweenPixels = par.max_distance_between_obstacle_pixels,
+      this.minDistanceBetweenPixels = par.minDistanceBetweenObstaclePixels,
+      this.maxDistanceBetweenPixels = par.maxDistanceBetweenObstaclePixels,
       //minDistanceToCallItSamePixelSquared: 300,
       this.pixelLimitExceeded = false,
 
@@ -1311,7 +1368,7 @@ jsPsych.plugins["mot-game"] = (function() {
 
         setTimeout(function(){ //setTimeout used because of onload delay
         //loop through occluder rectangles:
-        for(var j = 0, rects = par.occluder_rectangles, numRects = rects.length; j < numRects; j++){
+        for(var j = 0, rects = par.occluderRectangles, numRects = rects.length; j < numRects; j++){
           ctx.beginPath()
           ctx.fillStyle = occluderPattern
           ctx.rect(rects[j].x, rects[j].y, rects[j].width, rects[j].height)
@@ -1413,7 +1470,7 @@ jsPsych.plugins["mot-game"] = (function() {
         for(var i = 0, l = balls.length; i<l; i++){
           var ball = balls[i]
           //push the important info from this ball to the data
-          data.ballInitialConditions.balls.push(
+          data.ballInitialConditions.push(
                 {
                    explosive: ball.explosive,
                    position: [ball.getX(), ball.getY()],
@@ -1433,8 +1490,8 @@ jsPsych.plugins["mot-game"] = (function() {
         curLevel.view.showInitialFrame(model,initialFrameDuration) //show the frame where the exploding balls look different
 
         //if it's in replay mode, create the points at the appropriate times via setTimeout
-        if(par.replay_mode){
-          var pts = par.replay_mode_parameters.created_points
+        if(par.replayMode){
+          var pts = par.replayModeParameters.createdPoints
           //iterate through the points
           for(var i = 0, len = pts.length; i < len; i++){
             //create the point at the right time
@@ -1570,11 +1627,15 @@ jsPsych.plugins["mot-game"] = (function() {
             data.defusalMode = "timeRanOut"
             data.defusalDuration = curLevel.timer.getTime() //this should be the length of defusal mode as long as the timer is reset before defusal mode begins
             alert("Out of time...restarting at level 0");
+            data.correctGuesses = curLevel.controller.correctGuesses
+            data.incorrectGuesses = curLevel.controller.incorrectGuesses
             //maybe we can have it restart at the level before?
             break;
           case "incorrectGuess":
             data.defusalMode = "incorrectGuess"
             data.defusalDuration = curLevel.timer.getTime()
+            data.correctGuesses = curLevel.controller.correctGuesses
+            data.incorrectGuesses = curLevel.controller.incorrectGuesses
             alert("defusal mode failed. not all the guesses were correct; you wasted time trying to defuse the innocuous balls")
             //alert("Incorrect guess. Level failed.")
             //maybe we can have it restart at the level before?
@@ -1582,6 +1643,8 @@ jsPsych.plugins["mot-game"] = (function() {
           case "defusalModeSuccess":
             data.defusalMode = "successful"
             data.defusalDuration = curLevel.timer.getTime(true)
+            data.correctGuesses = curLevel.controller.correctGuesses
+            data.incorrectGuesses = curLevel.controller.incorrectGuesses
             alert("Level Passed!");
             break;
         }
