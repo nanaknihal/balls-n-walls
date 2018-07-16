@@ -4,285 +4,11 @@ jsPsych.plugins["mot-game"] = (function() {
   plugin.info = {
     name: 'mot-game',
     parameters: {
-      duration: 15000,
-      ballSpeed: 0.04,
-      ballRadius: 20,
-      numRegularBalls: 7,
-      numExplodingBalls: 2,
-      maxUserDefinedObstacles: 1,
-      maxUserDefinedObstacleSegments: 3,
-      maxDistanceBetweenObstaclePixels:300,
-      minDistanceBetweenObstaclePixels: 66,
-      occluders: true,
-      occluderRectangles:[{x: 100, y: 0, width: 45, height: 650},{x: 300, y: 0, width: 45, height: 650}],
-      replayMode: true,
-      replayModeParameters: {"ballInitialConditions": [
-			{
-				"explosive": false,
-				"position": [
-					452,
-					361
-				],
-				"velocity": [
-					0.03860096841357722,
-					-0.01048643111520854
-				],
-				"radius": 20
-			},
-			{
-				"explosive": false,
-				"position": [
-					614,
-					456
-				],
-				"velocity": [
-					0.013557549308971684,
-					0.037632337912157435
-				],
-				"radius": 20
-			},
-			{
-				"explosive": false,
-				"position": [
-					438,
-					348
-				],
-				"velocity": [
-					0.0351144783069237,
-					0.019156550139119124
-				],
-				"radius": 20
-			},
-			{
-				"explosive": false,
-				"position": [
-					388,
-					405
-				],
-				"velocity": [
-					0.03380436441892031,
-					0.021383754259550275
-				],
-				"radius": 20
-			},
-			{
-				"explosive": false,
-				"position": [
-					272,
-					618
-				],
-				"velocity": [
-					-0.03999344038568691,
-					-0.0007243798150881363
-				],
-				"radius": 20
-			},
-			{
-				"explosive": false,
-				"position": [
-					537,
-					595
-				],
-				"velocity": [
-					0.03944547382565874,
-					-0.0066373635330055246
-				],
-				"radius": 20
-			},
-			{
-				"explosive": false,
-				"position": [
-					568,
-					455
-				],
-				"velocity": [
-					0.02702510830056431,
-					0.029489718909185454
-				],
-				"radius": 20
-			},
-			{
-				"explosive": true,
-				"position": [
-					265,
-					315
-				],
-				"velocity": [
-					-0.03893091564541011,
-					0.009186065915829383
-				],
-				"radius": 20
-			},
-			{
-				"explosive": true,
-				"position": [
-					254,
-					269
-				],
-				"velocity": [
-					-0.026472597947135083,
-					-0.029986689679411756
-				],
-				"radius": 20
-			}
-		],
-		"ballSpeed": 0.04,
-		"maxObstacles": 1,
-		"maxObstacleSegments": 3,
-		"createdPoints": [
-			{
-				"position": [
-					256,
-					358
-				],
-				"timeCreated": 770.299999974668,
-				"eventType": "mousedown"
-			},
-			{
-				"position": [
-					330,
-					353
-				],
-				"timeCreated": 952.4000000092201,
-				"eventType": "mousemove"
-			},
-			{
-				"position": [
-					390,
-					300
-				],
-				"timeCreated": 1223.4000000171363,
-				"eventType": "mousemove"
-			},
-			{
-				"position": [
-					365,
-					160
-				],
-				"timeCreated": 4248.599999991711,
-				"eventType": "mousedown"
-			},
-			{
-				"position": [
-					438,
-					174
-				],
-				"timeCreated": 4422.69999999553,
-				"eventType": "mousemove"
-			},
-			{
-				"position": [
-					397,
-					326
-				],
-				"timeCreated": 7535.399999993388,
-				"eventType": "mousedown"
-			},
-			{
-				"position": [
-					398,
-					457
-				],
-				"timeCreated": 8227.399999974295,
-				"eventType": "mousemove"
-			},
-			{
-				"position": [
-					542,
-					290
-				],
-				"timeCreated": 10212.400000018533,
-				"eventType": "mousedown"
-			},
-			{
-				"position": [
-					391,
-					473
-				],
-				"timeCreated": 11276.000000012573,
-				"eventType": "mousedown"
-			},
-			{
-				"position": [
-					456,
-					446
-				],
-				"timeCreated": 11442.800000018906,
-				"eventType": "mousemove"
-			},
-			{
-				"position": [
-					520,
-					415
-				],
-				"timeCreated": 11546.199999982491,
-				"eventType": "mousemove"
-			},
-			{
-				"position": [
-					533,
-					111
-				],
-				"timeCreated": 13244.400000025053,
-				"eventType": "mousedown"
-			},
-			{
-				"position": [
-					605,
-					148
-				],
-				"timeCreated": 13466.2000000244,
-				"eventType": "mousemove"
-			},
-			{
-				"position": [
-					632,
-					209
-				],
-				"timeCreated": 13665.500000002794,
-				"eventType": "mousemove"
-			},
-			{
-				"position": [
-					413,
-					293
-				],
-				"timeCreated": 16554.699999978766,
-				"eventType": "mousedown"
-			},
-			{
-				"position": [
-					458,
-					376
-				],
-				"timeCreated": 7989.6999999764375,
-				"eventType": "mousedown"
-			},
-			{
-				"position": [
-					459,
-					392
-				],
-				"timeCreated": 8523.600000014994,
-				"eventType": "mousedown"
-			},
-			{
-				"position": [
-					626,
-					105
-				],
-				"timeCreated": 9725.700000009965,
-				"eventType": "mousedown"
-			}
-		]
-      },
-      gameWidth: 650,
-      gameHeight: 650
     }
   }
 
   plugin.trial = function(display_element, trial) {
-    var par = plugin.info.parameters
+    var par = trial
 
     var w=par.gameWidth, h=par.gameHeight;
     display_element.innerHTML = "<!--main canvas where game happens:-->" +
@@ -376,6 +102,7 @@ jsPsych.plugins["mot-game"] = (function() {
          event.pageX = pt.position[0];
          event.pageY = pt.position[1]
        }
+       curLevel.view.showPoint(pt.position)
        curLevel.model.addPixelsToUserObstacles(event)
        console.log(event)
      }, time) //(the time created is measured after the gameplay part begins so initialFrameDuration is added)
@@ -1058,10 +785,6 @@ jsPsych.plugins["mot-game"] = (function() {
       this.pixelLimitExceeded = false,
 
       this.addPixels = function(event){
-        //for accuracy, collect the time added before all these calculations. for even more (probably insignificant) accuracy, time can be collected earlier
-        //and passed to this function, but I doubt that's necessary
-        var timeAdded = curLevel.timer.timeElapsed()
-
 
         //TRICK: in replay mode, a custom fake event object is passed to this fuction. The fake event object doesn't have all the parameters of a mousemove event,
         //but it has an x and y coordinate and an additional isFromReplay: true. These x and y (from mousemove events at least, not mousedown because the mousedown
@@ -1074,13 +797,12 @@ jsPsych.plugins["mot-game"] = (function() {
         } else{
           pos = getPixelPositionRelativeToObject([event.pageX, event.pageY], curLevel.view.can)
         }
-
+        console.log("pos: " + pos)
         //if there are no existing pixels/points, just add it without the for loop
         var numPix = this.pixels.length;
         if(numPix == 0){
-          console.log("n0")
+          console.log("First pixel!")
           this.pixels.push(pos)
-          console.log("a" + this.pixels)
           return; //break it so the function doesn't try to add the value again
         }
 
@@ -1474,6 +1196,7 @@ jsPsych.plugins["mot-game"] = (function() {
             if(par.replayMode){
               var pts = par.replayModeParameters.createdPoints
               //iterate through the points
+              alert(pts.length)
               for(var i = 0, len = pts.length; i < len; i++){
                 //create the point at the right time
                 var pt = pts[i]
