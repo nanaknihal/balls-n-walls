@@ -15,303 +15,263 @@ jsPsych.plugins["mot-game"] = (function() {
       minDistanceBetweenObstaclePixels: 66,
       occluders: true,
       occluderRectangles:[{x: 100, y: 0, width: 45, height: 650},{x: 300, y: 0, width: 45, height: 650}],
-      replayMode: false,
+      replayMode: true,
       replayModeParameters: {"ballInitialConditions": [
-				{
-					"explosive": false,
-					"position": [
-						70,
-						94
-					],
-					"velocity": [
-						0.03766050050908541,
-						0.01347912094333964
-					],
-					"radius": 20
-				},
-				{
-					"explosive": false,
-					"position": [
-						527,
-						157
-					],
-					"velocity": [
-						-0.010817799151943752,
-						-0.038509417309382975
-					],
-					"radius": 20
-				},
-				{
-					"explosive": false,
-					"position": [
-						482,
-						310
-					],
-					"velocity": [
-						-0.015351161403634588,
-						0.03693699830196764
-					],
-					"radius": 20
-				},
-				{
-					"explosive": false,
-					"position": [
-						385,
-						289
-					],
-					"velocity": [
-						0.028658807072509274,
-						0.02790470887109723
-					],
-					"radius": 20
-				},
-				{
-					"explosive": false,
-					"position": [
-						467,
-						384
-					],
-					"velocity": [
-						0.02666340835764002,
-						-0.029817153699736875
-					],
-					"radius": 20
-				},
-				{
-					"explosive": false,
-					"position": [
-						69,
-						523
-					],
-					"velocity": [
-						-0.015821812185672614,
-						-0.03673785866325502
-					],
-					"radius": 20
-				},
-				{
-					"explosive": false,
-					"position": [
-						215,
-						559
-					],
-					"velocity": [
-						0.03757894872675242,
-						0.013704839021021464
-					],
-					"radius": 20
-				},
-				{
-					"explosive": true,
-					"position": [
-						220,
-						206
-					],
-					"velocity": [
-						0.028690120461517043,
-						0.02787251312500617
-					],
-					"radius": 20
-				},
-				{
-					"explosive": true,
-					"position": [
-						389,
-						293
-					],
-					"velocity": [
-						0.039662896638767584,
-						-0.005182145330115616
-					],
-					"radius": 20
-				}
-			],
+			{
+				"explosive": false,
+				"position": [
+					452,
+					361
+				],
+				"velocity": [
+					0.03860096841357722,
+					-0.01048643111520854
+				],
+				"radius": 20
+			},
+			{
+				"explosive": false,
+				"position": [
+					614,
+					456
+				],
+				"velocity": [
+					0.013557549308971684,
+					0.037632337912157435
+				],
+				"radius": 20
+			},
+			{
+				"explosive": false,
+				"position": [
+					438,
+					348
+				],
+				"velocity": [
+					0.0351144783069237,
+					0.019156550139119124
+				],
+				"radius": 20
+			},
+			{
+				"explosive": false,
+				"position": [
+					388,
+					405
+				],
+				"velocity": [
+					0.03380436441892031,
+					0.021383754259550275
+				],
+				"radius": 20
+			},
+			{
+				"explosive": false,
+				"position": [
+					272,
+					618
+				],
+				"velocity": [
+					-0.03999344038568691,
+					-0.0007243798150881363
+				],
+				"radius": 20
+			},
+			{
+				"explosive": false,
+				"position": [
+					537,
+					595
+				],
+				"velocity": [
+					0.03944547382565874,
+					-0.0066373635330055246
+				],
+				"radius": 20
+			},
+			{
+				"explosive": false,
+				"position": [
+					568,
+					455
+				],
+				"velocity": [
+					0.02702510830056431,
+					0.029489718909185454
+				],
+				"radius": 20
+			},
+			{
+				"explosive": true,
+				"position": [
+					265,
+					315
+				],
+				"velocity": [
+					-0.03893091564541011,
+					0.009186065915829383
+				],
+				"radius": 20
+			},
+			{
+				"explosive": true,
+				"position": [
+					254,
+					269
+				],
+				"velocity": [
+					-0.026472597947135083,
+					-0.029986689679411756
+				],
+				"radius": 20
+			}
+		],
 		"ballSpeed": 0.04,
 		"maxObstacles": 1,
 		"maxObstacleSegments": 3,
 		"createdPoints": [
 			{
 				"position": [
-					260,
-					359
+					256,
+					358
 				],
-				"timeCreated": 639,
+				"timeCreated": 770.299999974668,
 				"eventType": "mousedown"
 			},
 			{
 				"position": [
-					327,
-					373
+					330,
+					353
 				],
-				"timeCreated": 798,
+				"timeCreated": 952.4000000092201,
 				"eventType": "mousemove"
 			},
 			{
 				"position": [
-					394,
-					371
+					390,
+					300
 				],
-				"timeCreated": 929,
+				"timeCreated": 1223.4000000171363,
 				"eventType": "mousemove"
 			},
 			{
 				"position": [
-					199,
-					106
+					365,
+					160
 				],
-				"timeCreated": 1901,
+				"timeCreated": 4248.599999991711,
 				"eventType": "mousedown"
 			},
 			{
 				"position": [
-					110,
-					119
+					438,
+					174
 				],
-				"timeCreated": 2047,
+				"timeCreated": 4422.69999999553,
 				"eventType": "mousemove"
 			},
 			{
 				"position": [
-					53,
-					159
+					397,
+					326
 				],
-				"timeCreated": 2130,
-				"eventType": "mousemove"
-			},
-			{
-				"position": [
-					184,
-					297
-				],
-				"timeCreated": 3538,
+				"timeCreated": 7535.399999993388,
 				"eventType": "mousedown"
 			},
 			{
 				"position": [
-					216,
-					366
+					398,
+					457
 				],
-				"timeCreated": 3830,
+				"timeCreated": 8227.399999974295,
 				"eventType": "mousemove"
 			},
 			{
 				"position": [
-					45,
-					194
-				],
-				"timeCreated": 5443,
-				"eventType": "mousedown"
-			},
-			{
-				"position": [
-					44,
-					356
-				],
-				"timeCreated": 5846,
-				"eventType": "mousemove"
-			},
-			{
-				"position": [
-					415,
-					114
-				],
-				"timeCreated": 8937,
-				"eventType": "mousedown"
-			},
-			{
-				"position": [
-					465,
-					158
-				],
-				"timeCreated": 9212,
-				"eventType": "mousemove"
-			},
-			{
-				"position": [
-					481,
-					232
-				],
-				"timeCreated": 9344,
-				"eventType": "mousemove"
-			},
-			{
-				"position": [
-					449,
+					542,
 					290
 				],
-				"timeCreated": 9510,
-				"eventType": "mousemove"
-			},
-			{
-				"position": [
-					122,
-					481
-				],
-				"timeCreated": 10639,
+				"timeCreated": 10212.400000018533,
 				"eventType": "mousedown"
 			},
 			{
 				"position": [
-					227,
-					480
+					391,
+					473
 				],
-				"timeCreated": 11045,
-				"eventType": "mousemove"
-			},
-			{
-				"position": [
-					296,
-					470
-				],
-				"timeCreated": 11428,
-				"eventType": "mousemove"
-			},
-			{
-				"position": [
-					367,
-					452
-				],
-				"timeCreated": 11726,
-				"eventType": "mousemove"
-			},
-			{
-				"position": [
-					550,
-					74
-				],
-				"timeCreated": 12456,
+				"timeCreated": 11276.000000012573,
 				"eventType": "mousedown"
 			},
 			{
 				"position": [
-					488,
-					46
+					456,
+					446
 				],
-				"timeCreated": 12790,
+				"timeCreated": 11442.800000018906,
 				"eventType": "mousemove"
 			},
 			{
 				"position": [
-					422,
-					54
+					520,
+					415
 				],
-				"timeCreated": 13028,
+				"timeCreated": 11546.199999982491,
 				"eventType": "mousemove"
 			},
 			{
 				"position": [
-					331,
-					239
+					533,
+					111
 				],
-				"timeCreated": 4148,
+				"timeCreated": 13244.400000025053,
 				"eventType": "mousedown"
 			},
 			{
 				"position": [
-					394,
-					153
+					605,
+					148
 				],
-				"timeCreated": 5108,
+				"timeCreated": 13466.2000000244,
+				"eventType": "mousemove"
+			},
+			{
+				"position": [
+					632,
+					209
+				],
+				"timeCreated": 13665.500000002794,
+				"eventType": "mousemove"
+			},
+			{
+				"position": [
+					413,
+					293
+				],
+				"timeCreated": 16554.699999978766,
+				"eventType": "mousedown"
+			},
+			{
+				"position": [
+					458,
+					376
+				],
+				"timeCreated": 7989.6999999764375,
+				"eventType": "mousedown"
+			},
+			{
+				"position": [
+					459,
+					392
+				],
+				"timeCreated": 8523.600000014994,
+				"eventType": "mousedown"
+			},
+			{
+				"position": [
+					626,
+					105
+				],
+				"timeCreated": 9725.700000009965,
 				"eventType": "mousedown"
 			}
 		]
@@ -468,7 +428,7 @@ jsPsych.plugins["mot-game"] = (function() {
 
       //now, initialize the balls. how that is done depends on whether it's replay mode
       if(par.replayMode){
-        alert('replayMode')
+        console.log(document.dataset)
         var balls = par.replayModeParameters.ballInitialConditions
         //^these aren't actual ball objects; they're just the minimal data necessary to recreate the balls
         //now, recreate the balls and add them to this.balls. ballInitialConditions is an array of "ball" objects
@@ -550,17 +510,17 @@ jsPsych.plugins["mot-game"] = (function() {
         this.addNewObstacle = function(){this.userObstacles.push(new userObstacle()); data.numWallsMade++ /*NOTE: For data collection, this may cause a problem: it will register a new obstacle even if it's just a point*/}
 
         this.removeExcessObstacles = function(){
-          while(this.userObstacles.length > this.maxObstacles){this.userObstacles.shift()}
+          while(this.userObstacles.length > this.maxObstacles){ /*alert("shift");*/ this.userObstacles.shift()}
         }
 
         this.addPixelsToUserObstacles = function(event){
           //if(curLevel.model.userObstacles.length < 1){this.addNewObstacle()} //make a new user obstacle if none exist
-
+          console.log(event)
           if(event.type == "mousedown"){
             //Make a new user obstacle if it was a mousedown not a mousemove. But first, collect the data.
             data.createdPoints.push(
               {position: [event.pageX, event.pageY],
-               timeCreated:curLevel.timer.timeElapsed(),//this time will be a few ms after they actually clicked because of all the processing between the click and calling this...shouldn't bee too problematic but watch out
+               timeCreated: event.timeStamp - timestampWallCreationEnabled,//make timeCreated the event's time relative to the time wall creation was initially enabled
                eventType:event.type //mousedown events create new obstacles; mousemove events add points to them
             })
 
@@ -1155,7 +1115,7 @@ jsPsych.plugins["mot-game"] = (function() {
             this.pixels.push(pos)
             data.createdPoints.push(
               {position: pos,
-               timeCreated:timeAdded,//this time will be a few ms after they actually clicked because of all the processing between the click and calling this...shouldn't bee too problematic but watch out
+               timeCreated: event.timeStamp - timestampWallCreationEnabled,//make timeCreated the event's time relative to the time wall creation was initially enabled
                eventType:event.type //mousedown events create new obstacles; mousemove events add points to them
             })
             //alert the balls of the new user obstacle, now that it has changed (it doesn't matter that excess wall's haven't been removed yet -
@@ -1489,32 +1449,49 @@ jsPsych.plugins["mot-game"] = (function() {
         curLevel.view.displayTimer(curLevel.timer)
         curLevel.view.showInitialFrame(model,initialFrameDuration) //show the frame where the exploding balls look different
 
-        //if it's in replay mode, create the points at the appropriate times via setTimeout
-        if(par.replayMode){
-          var pts = par.replayModeParameters.createdPoints
-          //iterate through the points
-          for(var i = 0, len = pts.length; i < len; i++){
-            //create the point at the right time
-            var pt = pts[i]
-            console.log(pt)
-            addReplayObstaclePointAfterTime(pt, pt.timeCreated+initialFrameDuration) //initialFrameDuration is added because time of obstacle creation was measured since last timer reset (which was when gameplay started)
-          }
 
-        } else { //if game isn't in replay mode
-          setTimeout(
-            curLevel.controller.getWallsFromUser, //this adds an event listener to get drawn walls
-            initialFrameDuration) //after the initial frame is over
-        }
-
-        //now, set the timeout for what happens when the initial frame is loaded regardless of replay mode
+        //now set what happens after the initial frame is over:
         setTimeout(function(){
-          curLevel.timer.reset(levelDuration/1000, "green")
-          curLevel.timer.start()
-          curLevel.timer.unHide()
-          //then start the first update
-          updateGame(0); //beginning time is 0
+
+            curLevel.timer.reset(levelDuration/1000, "green")
+            curLevel.timer.start()
+            curLevel.timer.unHide()
+            //then start the first update
+            updateGame(0); //beginning time is 0
+
+            //grab the timestamp via the event loop to know when this piece of code gets executed. Timestamps may be more reliable than the timer class here,
+            //and they doesn't get reset unless the document gets reloaded, unlike timers. Hence, timestamps are used for collection of user obstacle
+            //creation times. The folloing code will execute whether replay mode is happening or not, and will allow for precise logging
+            //of wall creation time, relative to the moment when wall creation is enabled.
+            var wallCreationEnabledEvent = new Event("wallCreationEnabled")
+            document.addEventListener("wallCreationEnabled", function(event){timestampWallCreationEnabled/*this should be global (within the plugin though)*/ = event.timeStamp}, false)
+            document.dispatchEvent(wallCreationEnabledEvent)
+            //collect time difference between now:
+            var theTime = Date.now()
+            //and ...(to be continued later, in the par.replayMode == true part of the following if)
+
+            //if it's in replay mode, create the correct points.
+            if(par.replayMode){
+              var pts = par.replayModeParameters.createdPoints
+              //iterate through the points
+              for(var i = 0, len = pts.length; i < len; i++){
+                //create the point at the right time
+                var pt = pts[i]
+                //...(continued) now:
+                var theNewTime = Date.now()
+                var timeTilPointQueued = theNewTime-theTime //this was at most about 1ms on my laptop but may be significant on slower devices for more obstacles
+                addReplayObstaclePointAfterTime(pt, pt.timeCreated-timeTilPointQueued/*subtracting it compensates for miniscule time lost going through all points*/)
+              }
+
+            } else { //if game isn't in replay mode
+              curLevel.controller.getWallsFromUser() //this adds an event listener to get drawn walls from user.
+            }
+
         }, initialFrameDuration)
-        }
+}
+
+
+
 
       this.ballHitBall = function(){console.log("Game Over")},
 
