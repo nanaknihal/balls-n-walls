@@ -241,8 +241,8 @@ jsPsych.plugins["mot-game"] = (function() {
         }
 
         this.addPixelsToUserObstacles = function(event){
+          console.log("adding a pixel at " + (event.timeStamp-timestampWallCreationEnabled)/1000 +"s")
           //if(curLevel.model.userObstacles.length < 1){this.addNewObstacle()} //make a new user obstacle if none exist
-          console.log(event)
           if(event.type == "mousedown"){
             //Make a new user obstacle if it was a mousedown not a mousemove. But first, collect the data.
             data.createdPoints.push(
@@ -256,7 +256,6 @@ jsPsych.plugins["mot-game"] = (function() {
           }
 
           //if(userObstacle.atMaxLength()){this.addNewObstacle()}     //make a new user obstacle if the current one has the maximum number of points
-
           //if(curLevel.model.mostRecentObstacle() === undefined){curLevel.model.addNewObstacle()}
           curLevel.model.mostRecentObstacle().addPixels(event)
           curLevel.model.removeExcessObstacles() //remove any excess obstaclds if there are any real-time, while pixels are being added
@@ -1194,9 +1193,9 @@ jsPsych.plugins["mot-game"] = (function() {
 
             //if it's in replay mode, create the correct points.
             if(par.replayMode){
+              console.log(par.replayModeParameters.createdPoints)
               var pts = par.replayModeParameters.createdPoints
               //iterate through the points
-              alert(pts.length)
               for(var i = 0, len = pts.length; i < len; i++){
                 //create the point at the right time
                 var pt = pts[i]
@@ -1243,7 +1242,7 @@ jsPsych.plugins["mot-game"] = (function() {
           curLevel.view.displayDefusalMessage(defusalTimeLimit)
           curLevel.view.hideOccluders()
           //remove the wall drawing listeners
-          document.removeEventListener("mousedown", this.findWallDrawingPath)
+          document.removeEventListener("mousedown", curLevel.controller.findWallDrawingPath)
           document.removeEventListener("mousemove", model.addPixelsToUserObstacles)
 
           //listen for new guesses:
@@ -1284,7 +1283,13 @@ jsPsych.plugins["mot-game"] = (function() {
               curLevel.controller.correctGuesses++ //this looks like really bad OOP style but keep in mind it's happening within curLevel.controller
               curLevel.controller.guessesRemaining--
               curLevel.view.showImgAtFor("correct.png", event.pageX, event.pageY, 1000)
-              if(curLevel.controller.guessesRemaining == 0 && curLevel.controller.incorrectGuesses == 0){curLevel.controller.endGame("defusalModeSuccess")}
+              if(curLevel.controller.guessesRemaining == 0){
+                  if(curLevel.controller.incorrectGuesses == 0){
+                    curLevel.controller.endGame("defusalModeSuccess")
+                  } else{
+                    curLevel.controller.endGame("incorrectGuess")
+                  }
+              }
               break;
             case false:
               curLevel.controller.incorrectGuesses++
@@ -1317,6 +1322,10 @@ jsPsych.plugins["mot-game"] = (function() {
 
       this.endGame = function(howGameEnded){
         curLevel.timer.hide()
+        document.removeEventListener("mousedown", curLevel.controller.findWallDrawingPath)
+        document.removeEventListener("mousemove", curLevel.model.addPixelsToUserObstacles)
+
+        //maybe someday change to the state pattern
         switch(howGameEnded){
           case "defusalModeNeverHappened":
             data.defusalMode = "neverNeeded"
