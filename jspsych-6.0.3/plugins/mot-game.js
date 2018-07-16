@@ -34,7 +34,7 @@ jsPsych.plugins["mot-game"] = (function() {
       incorrectGuesses: null,
       numWallsMade: 0,/*should it register each click?*/
       numRegBalls: par.numRegularBalls, //redundant
-      numExplodingBalls: par.numExplodingBalls, //redundant with the following
+      numExplodingBalls: par.numExplodingBalls, //redundant with the following but makes life easier later for data analysis
       ballInitialConditions: [], //an array of objects representing balls and their respective initial conditions
       ballSpeed: par.ballSpeed,
       maxObstacles: par.maxUserDefinedObstacles,
@@ -42,7 +42,9 @@ jsPsych.plugins["mot-game"] = (function() {
       maxSegmentLength:par.maxDistanceBetweenObstaclePixels,
       minSegmentLength:par.minDistanceBetweenObstaclePixels,
       createdPoints:[],
-      occluders: par.occluders
+      occluders: par.occluders,
+      occluderRectangles: par.occluderRectangles
+      savedModelData: par.savedModelData
 
     }
 
@@ -122,8 +124,17 @@ jsPsych.plugins["mot-game"] = (function() {
       this.currentTime = 0
       this.balls = []; //including exploding balls
       this.explodingBalls = [];
+      this.occluderRects = par.occluderRectangles
+      this.getOccluderRects = function(){return this.occluderRectangles}
       /*this.occluders = [new occluder("occluders/occluder1.png", w/3, h/2), new occluder("occluders/occluder1.png", 2*w/3, h/2)];*/
       this.numExplodingBalls = function(){return this.explodingBalls.length}
+
+      this.resetAllBalldesigns = function(){
+        var balls = this.getBalls()
+        for(var m=0, numBalls = balls.length; m<numBalls; m++){
+          balls[m].setColor(ballColor);
+        }
+      }
 
       //initialize the balls:
       var randomCoordinatesForNormalBall = function(){
@@ -155,8 +166,8 @@ jsPsych.plugins["mot-game"] = (function() {
 
       //now, initialize the balls. how that is done depends on whether it's replay mode
       if(par.replayMode){
-        console.log(document.dataset)
-        var balls = par.replayModeParameters.ballInitialConditions
+
+        /*var balls = par.replayModeParameters.ballInitialConditions
         //^these aren't actual ball objects; they're just the minimal data necessary to recreate the balls
         //now, recreate the balls and add them to this.balls. ballInitialConditions is an array of "ball" objects
         for(var i = 0, numBalls = balls.length; i < numBalls; i++){
@@ -164,9 +175,10 @@ jsPsych.plugins["mot-game"] = (function() {
           var explosiveParameter = b.explosive ? "e" : null //to be passed as parameter of whether to make the ball explosive. "e" makes the ball explosive
           this.balls.push(new ball(b.position[0], b.position[1], b.radius, 0, explosiveParameter))
           //now set the velocity of the ball (balls are initialized with speed, not velocity):
-          this.balls[this.balls.length-1/*most recently pushed ball*/].setVelocity(b.velocity)
+          this.balls[this.balls.length-1/*most recently pushed ball*].setVelocity(b.velocity)
         }
-
+        */
+        curLevel.replayMode()
       } else {
         var ballRadius = par.ballRadius
         //now initialize balls, but make sure they aren't in occluders
@@ -207,7 +219,6 @@ jsPsych.plugins["mot-game"] = (function() {
 
 
       this.getBalls = function(){return this.balls}
-      this.getOccluders = function(){return this.occluders}
 
       /*Not using this inefficient wall type anymore:
       /*MAKE SURE TO NOT MAKE THE WIDTHS NEGATIVE - THE wall.highestPoint, leftestPoint, etc. methods will not work if they
@@ -234,7 +245,11 @@ jsPsych.plugins["mot-game"] = (function() {
 
         this.userObstacles = [];
         this.mostRecentObstacle = function(){return this.userObstacles[this.userObstacles.length-1]} //last element in the array
-        this.addNewObstacle = function(){this.userObstacles.push(new userObstacle()); data.numWallsMade++ /*NOTE: For data collection, this may cause a problem: it will register a new obstacle even if it's just a point*/}
+        this.addNewObstacle = function(){
+          this.userObstacles.push(new userObstacle())
+          data.numWallsMade++ //NOTE: For data collection, this may cause a problem: it will register a new obstacle even if it's just a point
+          data.savedModelData[data.savedModelData.length - 1].userObstacles.push
+         }
 
         this.removeExcessObstacles = function(){
           while(this.userObstacles.length > this.maxObstacles){ /*alert("shift");*/ this.userObstacles.shift()}
@@ -880,7 +895,8 @@ jsPsych.plugins["mot-game"] = (function() {
       //this.atMaxLength() = function(){return this.pixels.length == this.maxPointsInWall}
     }
 
-    function view(model) {
+    function view(mod) {
+      this.model = mod
       this.currentTime = 0
       //get canvas, context
       this.can = null
@@ -896,10 +912,10 @@ jsPsych.plugins["mot-game"] = (function() {
         this.initialized = true
       }
 
-      this.showInitialFrame = function(model, initialFrameDuration){
+      this.showInitialFrame = function(mod, initialFrameDuration){
         //just call view's update function once. However, the exploding balls' colors must be changed first.
         //change the exploding balls' colors:
-        for(var j = 0, balls = curLevel.model.getBalls(), numBalls = balls.length; j < numBalls; j++){
+        for(var j = 0, balls = mod.getBalls(), numBalls = balls.length; j < numBalls; j++){
           var ball = balls[j];
             if(ball.explosive){
 
@@ -907,15 +923,15 @@ jsPsych.plugins["mot-game"] = (function() {
             //alert(duration)
           }
         this.update()
-        setTimeout(curLevel.resetAllBalldesigns, initialFrameDuration, model)
+        setTimeout(curLevel.model.resetAllBalldesigns, initialFrameDuration)
 
         }
 
         //show the occluder images
-        this.showOccluders()
+        this.showOccluders(mod.getOccluderRects)
       }
 
-      this.update = function(model, newTime){
+      this.update = function(mod, newTime){
         var timestepDuration = newTime - this.currentTime
         this.currentTime = newTime
 
@@ -924,7 +940,7 @@ jsPsych.plugins["mot-game"] = (function() {
           var ctx = this.ctx; //easier to work with than having to write this.ctx each time
           //clear the context:
           ctx.clearRect(0,0, w, h);
-          var balls = curLevel.model.getBalls();
+          var balls = mod.getBalls();
 
           //Iterate through the balls and display their current attributes:
           for(var j = 0, numBalls = balls.length; j < numBalls; j++){
@@ -949,7 +965,7 @@ jsPsych.plugins["mot-game"] = (function() {
             ctx.beginPath();
             ctx.fillStyle = color
             //ctx.rect(wall.getX(), wall.getY(), wall.getW(), wall.getL())
-            var wallThickness = curLevel.model.wallThickness
+            var wallThickness = this.model.wallThickness
             ctx.rect(0,0,wallThickness, h)
             ctx.rect(0,0,w,wallThickness)
             ctx.rect(w-wallThickness,0,wallThickness,h)
@@ -959,9 +975,9 @@ jsPsych.plugins["mot-game"] = (function() {
           //}
 
           //display the points/pixels in the user-defined wall as circles and draw line segments between them (except for before the first and after the last pixel)
-          for(var j = 0, obs = curLevel.model.userObstacles, numObs = obs.length; j<numObs; j++){
+          for(var j = 0, obs = mod.userObstacles, numObs = obs.length; j<numObs; j++){
             var ob = obs[j]
-            for(var o = 0, pix = ob.getPixels(), numPix = pix.length, rad = ob.getRadius(); o<numPix; o++){
+            for(var o = 0, pix = ob.pixels, numPix = pix.length, rad = ob.getRadius(); o<numPix; o++){
               //get x and y values of the pixel
               var x = pix[o][0]
               var y = pix[o][1]
@@ -1038,7 +1054,7 @@ jsPsych.plugins["mot-game"] = (function() {
 
       }
 
-      this.showOccluders = function(){
+      this.showOccluders = function(occluderRectangles){
         var ctx = document.getElementById("occluderCanvas").getContext("2d")
         var occluderPatternImg = new Image();
         occluderPatternImg.src = "occluders/occluderpattern.png"
@@ -1050,7 +1066,7 @@ jsPsych.plugins["mot-game"] = (function() {
 
         setTimeout(function(){ //setTimeout used because of onload delay
         //loop through occluder rectangles:
-        for(var j = 0, rects = par.occluderRectangles, numRects = rects.length; j < numRects; j++){
+        for(var j = 0, rects = occluderRectangles, numRects = rects.length; j < numRects; j++){
           ctx.beginPath()
           ctx.fillStyle = occluderPattern
           ctx.rect(rects[j].x, rects[j].y, rects[j].width, rects[j].height)
@@ -1081,7 +1097,7 @@ jsPsych.plugins["mot-game"] = (function() {
         var can = document.getElementById('selectionCanvas')
         var ctx = can.getContext('2d')
         //iterate through the balls to check whether the mouth is within them:
-        var balls = curLevel.model.getBalls()
+        var balls = this.mod.getBalls()
         for(var n = 0, numBalls = balls.length; n < numBalls; n++){
           var ball = balls[n]
           var selectionRadiusAddOn = 1
@@ -1192,19 +1208,20 @@ jsPsych.plugins["mot-game"] = (function() {
             var theTime = Date.now()
             //and ...(to be continued later, in the par.replayMode == true part of the following if)
 
-            //if it's in replay mode, create the correct points.
+            //if it's in replay mode, load the first frame
             if(par.replayMode){
-              var pts = par.replayModeParameters.createdPoints
+              //if it's in replay mode, create the correct points.
+              /*var pts = par.replayModeParameters.createdPoints
               //iterate through the points
-              alert(pts.length)
               for(var i = 0, len = pts.length; i < len; i++){
                 //create the point at the right time
                 var pt = pts[i]
                 //...(continued) now:
                 var theNewTime = Date.now()
                 var timeTilPointQueued = theNewTime-theTime //this was at most about 1ms on my laptop but may be significant on slower devices for more obstacles
-                addReplayObstaclePointAfterTime(pt, pt.timeCreated-timeTilPointQueued/*subtracting it compensates for miniscule time lost going through all points*/)
-              }
+                addReplayObstaclePointAfterTime(pt, pt.timeCreated-timeTilPointQueued/*subtracting it compensates for miniscule time lost going through all points)
+              }*/
+
 
             } else { //if game isn't in replay mode
               curLevel.controller.getWallsFromUser() //this adds an event listener to get drawn walls from user.
@@ -1481,14 +1498,18 @@ jsPsych.plugins["mot-game"] = (function() {
         if(curLevel.isDefusalModeOn()){curLevel.controller.endGame("defusalModeTimeRanOut")}else{curLevel.controller.endGame("defusalModeNeverHappened")}
       }
 
-      this.resetAllBalldesigns = function(model){
-        var balls = curLevel.model.getBalls()
-        for(var m=0, numBalls = balls.length; m<numBalls; m++){
-          balls[m].setColor(ballColor);
-        }
-      }
+
     }
 
+    //currentSavedFrameIndex is incremented after displaying each frame of the saved model
+    this.replayModeUpdate = function(currentSavedFrameIndex){
+      console.log(currentSavedFrameIndex)
+      window.requestAnimationFrame(function(){
+        view.update(makeAFakeModelObjectFromGivenReplayFrame(par.savedModelData[currentSavedFrameIndex]))
+        window.requestAnimationFrame(replayModeUpdate, currentSavedFrameIndex+1)
+      })
+      currentSavedFrameIndex++
+    }
     function updateGame(currentTime){
       curLevel.curTime = currentTime
       if(!curLevel.gameOver()){
@@ -1497,6 +1518,16 @@ jsPsych.plugins["mot-game"] = (function() {
           window.requestAnimationFrame(updateGame)
       })
     }
+    }
+
+    function makeAFakeModelObjectFromGivenReplayFrame(replayFrame){
+      return {
+        balls: replayFrame.balls,
+        getBalls: function(){return this.balls},
+        occluderRects: par.occluderRects
+        getOccluderRects: function(){return this.occluderRects}
+
+      }
     }
     curLevel.beginGame()
   }
