@@ -43,8 +43,8 @@ jsPsych.plugins["mot-game"] = (function() {
       minSegmentLength:par.minDistanceBetweenObstaclePixels,
       createdPoints:[],
       occluders: par.occluders,
-      occluderRectangles: par.occluderRectangles
-      savedModelData: par.savedModelData
+      occluderRectangles: par.occluderRectangles,
+      savedModel: par.savedModel
 
     }
 
@@ -164,10 +164,10 @@ jsPsych.plugins["mot-game"] = (function() {
         return false; //never called if true is returned in the loop
       }
 
-      //now, initialize the balls. how that is done depends on whether it's replay mode
+      /*now, initialize the balls. how that is done depends on whether it's replay mode
       if(par.replayMode){
 
-        /*var balls = par.replayModeParameters.ballInitialConditions
+        var balls = par.replayModeParameters.ballInitialConditions
         //^these aren't actual ball objects; they're just the minimal data necessary to recreate the balls
         //now, recreate the balls and add them to this.balls. ballInitialConditions is an array of "ball" objects
         for(var i = 0, numBalls = balls.length; i < numBalls; i++){
@@ -177,11 +177,12 @@ jsPsych.plugins["mot-game"] = (function() {
           //now set the velocity of the ball (balls are initialized with speed, not velocity):
           this.balls[this.balls.length-1/*most recently pushed ball*].setVelocity(b.velocity)
         }
-        */
-        curLevel.replayMode()
-      } else {
-        var ballRadius = par.ballRadius
+
+      } else {*/
+
+
         //now initialize balls, but make sure they aren't in occluders
+        var ballRadius = par.ballRadius
         for(var i = 0; i<numNormalBalls; i++){
           //random x-y coordinates of a new ball:
           var coords = randomCoordinatesForNormalBall()
@@ -1195,7 +1196,11 @@ jsPsych.plugins["mot-game"] = (function() {
             curLevel.timer.start()
             curLevel.timer.unHide()
             //then start the first update
-            updateGame(0); //beginning time is 0
+            if(par.replayMode){
+              updateGame(0); //beginning time is 0
+            } else{
+              curLevel.replayModeUpdate(0);
+            }
 
             //grab the timestamp via the event loop to know when this piece of code gets executed. Timestamps may be more reliable than the timer class here,
             //and they doesn't get reset unless the document gets reloaded, unlike timers. Hence, timestamps are used for collection of user obstacle
@@ -1498,14 +1503,45 @@ jsPsych.plugins["mot-game"] = (function() {
         if(curLevel.isDefusalModeOn()){curLevel.controller.endGame("defusalModeTimeRanOut")}else{curLevel.controller.endGame("defusalModeNeverHappened")}
       }
 
+      this.saveFrame = function(){
+        var frame =
+        {
+          time: curLevel.timer.timeElapsed(),
+          balls: [],
+          userObstacles: []
+        }
+        var balls = this.model.getBalls()
+        for(var b = 0, sizeOfBalls = balls.length; b < sizeOfBalls; b++){
+          frame.balls.push(
+            {
+              explosive : ball.explosive,
+              x : ball.getX(),
+              y : ball.getY(),
+              getX : function(){return this.x},
+              getY : function(){return this.y},
+              radius : par.ballRadius,
+              getRadius : function(){return this.radius}
+            }
+          )
+        }
+
+        for(var o = 0, obstacles = model.userObstacles, numObs = obstacles.length; o < numObs; o++){
+          alert("obs: " + obstacles)
+          frame.userObstacles.push(
+            {
+            //obstacles[o].pixels
+            })
+        }
+        data.savedModel.push(frame)
+      }
 
     }
 
     //currentSavedFrameIndex is incremented after displaying each frame of the saved model
-    this.replayModeUpdate = function(currentSavedFrameIndex){
+    replayModeUpdate = function(currentSavedFrameIndex){
       console.log(currentSavedFrameIndex)
       window.requestAnimationFrame(function(){
-        view.update(makeAFakeModelObjectFromGivenReplayFrame(par.savedModelData[currentSavedFrameIndex]))
+        curLevel.view.update(makeAFakeModelObjectFromGivenReplayFrame(par.savedModel[currentSavedFrameIndex]))
         window.requestAnimationFrame(replayModeUpdate, currentSavedFrameIndex+1)
       })
       currentSavedFrameIndex++
@@ -1524,12 +1560,13 @@ jsPsych.plugins["mot-game"] = (function() {
       return {
         balls: replayFrame.balls,
         getBalls: function(){return this.balls},
-        occluderRects: par.occluderRects
-        getOccluderRects: function(){return this.occluderRects}
+        occluderRects: par.occluderRects,
+        getOccluderRects: function(){return this.occluderRects},
+        userObstacles: replayFrame.userObstacles
 
       }
     }
     curLevel.beginGame()
-  }
+  
   return plugin;
 })();
