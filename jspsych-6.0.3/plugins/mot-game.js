@@ -1515,8 +1515,7 @@ jsPsych.plugins["mot-game"] = (function() {
           var ball = balls[b]
           frame.balls.push(
             {
-              x : ball.getX(),
-              y : ball.getY(),
+              pos: [ball.getX(), ball.getY()]
             }
           )
         }
