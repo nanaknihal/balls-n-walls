@@ -8,7 +8,7 @@ jsPsych.plugins["mot-game"] = (function() {
   }
 
   plugin.trial = function(display_element, trial) {
-    var par = trial
+    par = trial
 
     var w=par.gameWidth, h=par.gameHeight;
     display_element.innerHTML = "<!--main canvas where game happens:-->" +
@@ -115,6 +115,8 @@ jsPsych.plugins["mot-game"] = (function() {
       return new level(m, v, c, levelDuration)
     }
     curLevel = theLevel();
+
+
 
     function model(numNormalBalls, numExplodingBalls, speed) {
       this.frozen = false //game pauses and model freezes
@@ -411,7 +413,6 @@ jsPsych.plugins["mot-game"] = (function() {
        if(!this.frozen){ //don't update if it's frozen
         var timestepDuration = newTime - this.currentTime
         this.currentTime = newTime
-
 
 
         //Checks for collision with the four walls surrounding the game, NOT user-defined obstacles/walls
@@ -1187,23 +1188,22 @@ jsPsych.plugins["mot-game"] = (function() {
             var wallCreationEnabledEvent = new Event("wallCreationEnabled")
             document.addEventListener("wallCreationEnabled", function(event){timestampWallCreationEnabled/*this should be global (within the plugin though)*/ = event.timeStamp}, false)
             document.dispatchEvent(wallCreationEnabledEvent)
-            //collect time difference between now:
-            var theTime = Date.now()
+            timeAtDispatch = Date.now() //this should be global
             //and ...(to be continued later, in the par.replayMode == true part of the following if)
 
             //if it's in replay mode, create the correct points.
             if(par.replayMode){
-              console.log(par.replayModeParameters.createdPoints)
-              var pts = par.replayModeParameters.createdPoints
+              rota = new replayObstacleTimerAndAdder()
+              /*var pts = par.replayModeParameters.createdPoints
               //iterate through the points
               for(var i = 0, len = pts.length; i < len; i++){
                 //create the point at the right time
                 var pt = pts[i]
                 //...(continued) now:
                 var theNewTime = Date.now()
-                var timeTilPointQueued = theNewTime-theTime //this was at most about 1ms on my laptop but may be significant on slower devices for more obstacles
-                addReplayObstaclePointAfterTime(pt, pt.timeCreated-timeTilPointQueued/*subtracting it compensates for miniscule time lost going through all points*/)
-              }
+                var timeTilPointQueued = theNewTime-timeAtDispatch //this was at most about 1ms on my laptop but may be significant on slower devices for more obstacles
+                //addReplayObstaclePointAfterTime(pt, pt.timeCreated-timeTilPointQueued/*subtracting it compensates for miniscule time lost going through all points*)
+              }*/
 
             } else { //if game isn't in replay mode
               curLevel.controller.getWallsFromUser() //this adds an event listener to get drawn walls from user.
@@ -1508,6 +1508,31 @@ jsPsych.plugins["mot-game"] = (function() {
     }
     }
     curLevel.beginGame()
+  }
+  function replayObstacleTimerAndAdder(){
+    this.obstaclePointsToAdd = par.replayModeParameters.createdPoints
+    var myself = this
+    setInterval(function(){
+      //add replay obstacles points if relevant
+        var soonestPointToAdd = myself.obstaclePointsToAdd[0]
+        if(soonestPointToAdd.timeCreated - (Date.now()-timeAtDispatch) < 600){ //if it's within 9ms of point creation time
+          //generate fake obstacle creation event:
+          var event = {
+           type: soonestPointToAdd.eventType,
+           x: soonestPointToAdd.position[0],
+           y: soonestPointToAdd.position[1],
+           isFromReplay: true
+           }
+           //mousedown events are recorded differently to the data and their position actually matches pageX and pageY coordinates. So they can be made accessible by pageX and pageY:
+           if(event.type == "mousedown"){
+             event.pageX = soonestPointToAdd.position[0];
+             event.pageY = soonestPointToAdd.position[1]
+           }
+           //curLevel.view.showPoint(pt.position)
+           curLevel.model.addPixelsToUserObstacles(event)
+           myself.obstaclePointsToAdd.shift()
+        }
+      },2) //update every 2ms
   }
   return plugin;
 })();
