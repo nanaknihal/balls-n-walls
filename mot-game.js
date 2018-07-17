@@ -1306,7 +1306,13 @@ jsPsych.plugins["mot-game"] = (function() {
               curLevel.controller.correctGuesses++ //this looks like really bad OOP style but keep in mind it's happening within curLevel.controller
               curLevel.controller.guessesRemaining--
               curLevel.view.showImgAtFor("correct.png", event.pageX, event.pageY, 1000)
-              if(curLevel.controller.guessesRemaining == 0 && curLevel.controller.incorrectGuesses == 0){curLevel.controller.endGame("defusalModeSuccess")}
+              if(curLevel.controller.guessesRemaining == 0){
+                  if(curLevel.controller.incorrectGuesses == 0){
+                    curLevel.controller.endGame("defusalModeSuccess")
+                  } else{
+                    curLevel.controller.endGame("incorrectGuess")
+                  }
+              }
               break;
             case false:
               curLevel.controller.incorrectGuesses++
@@ -1339,6 +1345,9 @@ jsPsych.plugins["mot-game"] = (function() {
 
       this.endGame = function(howGameEnded){
         curLevel.timer.hide()
+        document.removeEventListener("mousedown", curLevel.controller.findWallDrawingPath)
+        document.removeEventListener("mousemove", curLevel.model.addPixelsToUserObstacles)
+        //maybe someday change to the state pattern
         switch(howGameEnded){
           case "defusalModeNeverHappened":
             data.defusalMode = "neverNeeded"
