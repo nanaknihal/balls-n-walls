@@ -64,9 +64,10 @@ var level1 = {
   maxUserDefinedObstacleSegments: 3,
   maxDistanceBetweenObstaclePixels:300,
   minDistanceBetweenObstaclePixels: 66,
+  wallThickness:1,  //1px thick border walls
   occluders: true,
   occluderRectangles:[{x: 100, y: 0, width: 45, height: 650},{x: 300, y: 0, width: 45, height: 650}],
-  replayMode: true,
+  //replayMode: false,
   replayModeParameters: /*{"ballInitialConditions":[
 			{
 				"explosive": false,
@@ -350,7 +351,7 @@ var level2 = {
   minDistanceBetweenObstaclePixels: 66,
   occluders: true,
   occluderRectangles:[{x: 100, y: 0, width: 45, height: 650},{x: 300, y: 0, width: 45, height: 650}],
-  replayMode: true,
+  //replayMode: true,
   replayModeParameters: {"ballInitialConditions": [
 			{
 				"explosive": false,
@@ -614,7 +615,7 @@ var level2 = {
   gameWidth: 650,
   gameHeight: 650
 }
-timeline.push(level2);
+//timeline.push(level2);
 
 /* CODE FROM THE JSPSYCH TUTORIAL:
 var blue_trial = {

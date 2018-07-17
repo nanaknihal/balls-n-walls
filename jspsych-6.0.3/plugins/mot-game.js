@@ -123,14 +123,16 @@ jsPsych.plugins["mot-game"] = (function() {
       this.freeze = function(){this.frozen = true}
       this.currentTime = 0
       this.balls = []; //including exploding balls
+      this.getBalls = function(){return this.balls}
       this.explodingBalls = [];
       this.occluderRects = par.occluderRectangles
       this.getOccluderRects = function(){return this.occluderRectangles}
       /*this.occluders = [new occluder("occluders/occluder1.png", w/3, h/2), new occluder("occluders/occluder1.png", 2*w/3, h/2)];*/
       this.numExplodingBalls = function(){return this.explodingBalls.length}
 
+      var myself = this
       this.resetAllBalldesigns = function(){
-        var balls = this.getBalls()
+        var balls = myself.getBalls()
         for(var m=0, numBalls = balls.length; m<numBalls; m++){
           balls[m].setColor(ballColor);
         }
@@ -216,10 +218,8 @@ jsPsych.plugins["mot-game"] = (function() {
           this.balls.push(bal)
           this.explodingBalls.push(bal)
         }
-      }
 
 
-      this.getBalls = function(){return this.balls}
 
       /*Not using this inefficient wall type anymore:
       /*MAKE SURE TO NOT MAKE THE WIDTHS NEGATIVE - THE wall.highestPoint, leftestPoint, etc. methods will not work if they
@@ -231,7 +231,8 @@ jsPsych.plugins["mot-game"] = (function() {
        */
 
        /*USING THIS INSTEAD:*/
-       this.wallThickness = 1 //each wall is 1px thick and at an edge of the screen.
+       this.wallThickness = par.wallThickness
+       console.log(this)
 
 
 
@@ -249,7 +250,6 @@ jsPsych.plugins["mot-game"] = (function() {
         this.addNewObstacle = function(){
           this.userObstacles.push(new userObstacle())
           data.numWallsMade++ //NOTE: For data collection, this may cause a problem: it will register a new obstacle even if it's just a point
-          data.savedModelData[data.savedModelData.length - 1].userObstacles.push
          }
 
         this.removeExcessObstacles = function(){
@@ -624,7 +624,8 @@ jsPsych.plugins["mot-game"] = (function() {
           return false
         } else {return "notABall"}
       }
-    }
+}
+
 
 
     //constructor for balls: (x and y are initial position)
@@ -923,7 +924,7 @@ jsPsych.plugins["mot-game"] = (function() {
             ball.setColor("orange")
             //alert(duration)
           }
-        this.update()
+        this.update(mod)
         setTimeout(curLevel.model.resetAllBalldesigns, initialFrameDuration)
 
         }
@@ -966,7 +967,7 @@ jsPsych.plugins["mot-game"] = (function() {
             ctx.beginPath();
             ctx.fillStyle = color
             //ctx.rect(wall.getX(), wall.getY(), wall.getW(), wall.getL())
-            var wallThickness = this.model.wallThickness
+            var wallThickness = mod.wallThickness
             ctx.rect(0,0,wallThickness, h)
             ctx.rect(0,0,w,wallThickness)
             ctx.rect(w-wallThickness,0,wallThickness,h)
@@ -1098,7 +1099,7 @@ jsPsych.plugins["mot-game"] = (function() {
         var can = document.getElementById('selectionCanvas')
         var ctx = can.getContext('2d')
         //iterate through the balls to check whether the mouth is within them:
-        var balls = this.mod.getBalls()
+        var balls = curLevel.model.getBalls()
         for(var n = 0, numBalls = balls.length; n < numBalls; n++){
           var ball = balls[n]
           var selectionRadiusAddOn = 1
@@ -1196,11 +1197,11 @@ jsPsych.plugins["mot-game"] = (function() {
             curLevel.timer.start()
             curLevel.timer.unHide()
             //then start the first update
-            if(par.replayMode){
-              updateGame(0); //beginning time is 0
-            } else{
-              curLevel.replayModeUpdate(0);
-            }
+              //if(par.replayMode){
+              //  replayModeUpdate(0);
+              //} else{}
+                updateGame(0); //beginning time is 0
+              //}
 
             //grab the timestamp via the event loop to know when this piece of code gets executed. Timestamps may be more reliable than the timer class here,
             //and they doesn't get reset unless the document gets reloaded, unlike timers. Hence, timestamps are used for collection of user obstacle
@@ -1209,14 +1210,14 @@ jsPsych.plugins["mot-game"] = (function() {
             var wallCreationEnabledEvent = new Event("wallCreationEnabled")
             document.addEventListener("wallCreationEnabled", function(event){timestampWallCreationEnabled/*this should be global (within the plugin though)*/ = event.timeStamp}, false)
             document.dispatchEvent(wallCreationEnabledEvent)
-            //collect time difference between now:
+            /*//collect time difference between now:
             var theTime = Date.now()
             //and ...(to be continued later, in the par.replayMode == true part of the following if)
 
             //if it's in replay mode, load the first frame
             if(par.replayMode){
               //if it's in replay mode, create the correct points.
-              /*var pts = par.replayModeParameters.createdPoints
+              var pts = par.replayModeParameters.createdPoints
               //iterate through the points
               for(var i = 0, len = pts.length; i < len; i++){
                 //create the point at the right time
@@ -1225,15 +1226,14 @@ jsPsych.plugins["mot-game"] = (function() {
                 var theNewTime = Date.now()
                 var timeTilPointQueued = theNewTime-theTime //this was at most about 1ms on my laptop but may be significant on slower devices for more obstacles
                 addReplayObstaclePointAfterTime(pt, pt.timeCreated-timeTilPointQueued/*subtracting it compensates for miniscule time lost going through all points)
-              }*/
+              }
 
 
-            } else { //if game isn't in replay mode
+            } else { //if game isn't in replay mode*/
               curLevel.controller.getWallsFromUser() //this adds an event listener to get drawn walls from user.
-            }
-
+            /*}*/
         }, initialFrameDuration)
-}
+        }
 
 
 
@@ -1245,7 +1245,7 @@ jsPsych.plugins["mot-game"] = (function() {
       this.getWallsFromUser = function(){
         //first, add the event listener for mouseclicks
         document.addEventListener("mousedown", curLevel.controller.findWallDrawingPath);
-      },
+      }
 
       this.findWallDrawingPath = function(event){
         //first, collect the first pixel:
@@ -1504,32 +1504,27 @@ jsPsych.plugins["mot-game"] = (function() {
       }
 
       this.saveFrame = function(){
-        var frame =
-        {
+        var frame = {
           time: curLevel.timer.timeElapsed(),
           balls: [],
           userObstacles: []
         }
+
         var balls = this.model.getBalls()
         for(var b = 0, sizeOfBalls = balls.length; b < sizeOfBalls; b++){
+          var ball = balls[b]
           frame.balls.push(
             {
-              explosive : ball.explosive,
               x : ball.getX(),
               y : ball.getY(),
-              getX : function(){return this.x},
-              getY : function(){return this.y},
-              radius : par.ballRadius,
-              getRadius : function(){return this.radius}
             }
           )
         }
 
         for(var o = 0, obstacles = model.userObstacles, numObs = obstacles.length; o < numObs; o++){
-          alert("obs: " + obstacles)
           frame.userObstacles.push(
             {
-            //obstacles[o].pixels
+            pixels: obstacles[o].pixels
             })
         }
         data.savedModel.push(frame)
@@ -1538,23 +1533,27 @@ jsPsych.plugins["mot-game"] = (function() {
     }
 
     //currentSavedFrameIndex is incremented after displaying each frame of the saved model
-    replayModeUpdate = function(currentSavedFrameIndex){
-      console.log(currentSavedFrameIndex)
+    function replayModeUpdate(currentSavedFrameIndex, currentTime){
+      console.log([currentSavedFrameIndex, currentTime])
       window.requestAnimationFrame(function(){
-        curLevel.view.update(makeAFakeModelObjectFromGivenReplayFrame(par.savedModel[currentSavedFrameIndex]))
+        curLevel.view.update(makeAFakeModelObjectFromGivenReplayFrame(par.savedModel[currentSavedFrameIndex]), curLevel.timer.getTime())
         window.requestAnimationFrame(replayModeUpdate, currentSavedFrameIndex+1)
       })
       currentSavedFrameIndex++
     }
+    //updates normal game, not replayMode
     function updateGame(currentTime){
       curLevel.curTime = currentTime
       if(!curLevel.gameOver()){
       window.requestAnimationFrame(function(){
           curLevel.update();
+          curLevel.saveFrame();
           window.requestAnimationFrame(updateGame)
       })
     }
     }
+
+    curLevel.beginGame()
 
     function makeAFakeModelObjectFromGivenReplayFrame(replayFrame){
       return {
@@ -1562,11 +1561,10 @@ jsPsych.plugins["mot-game"] = (function() {
         getBalls: function(){return this.balls},
         occluderRects: par.occluderRects,
         getOccluderRects: function(){return this.occluderRects},
-        userObstacles: replayFrame.userObstacles
-
+        userObstacles: replayFrame.userObstacles,
+        wallThickness: par.wallThickness
       }
     }
-    curLevel.beginGame()
-  
+}
   return plugin;
 })();
