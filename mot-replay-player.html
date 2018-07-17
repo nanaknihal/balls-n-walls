@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<head>
+<title>balls-n-walls replay</title>
+</head>
+<body>
+  <div id="replayDiv"></div>
+</body>
+<script>
+  var h = 5, w = 10;
+  document.getElementById("replayDiv").innerHTML = "<!--main canvas where game happens:-->" + "test" +
+  "<canvas id='mainCanvas' height='" + h + "' width = '" + w + "'></canvas>"
+  +
+  "<!--overlay canvas that doesn't need to be refreshed constantly:-->" +
+  //it may be good to not hard-code the top and left value but rather use variables...this will be decided later when we do more styling
+  "<canvas id='overlay' style='position:absolute; left: 0; top: 0; z-index:3' height='" + h + "' width = '" + w + "'></canvas>"
+  +
+  "<!--occluder overlay canvas that doesn't need to be refreshed constantly:-->" +
+  //it may be good to not hard-code the top and left value but rather use variables...this will be decided later when we do more styling
+  "<canvas id='occluderCanvas' style='position:absolute; left: 0; top: 0; z-index:2' height='" + h + "' width = '" + w + "'></canvas>" +
+  "<!--selection canvas for ball selection in defusal mode:-->" +
+  //it may be good to not hard-code the top and left value but rather use variables...this will be decided later when we do more styling
+  "<canvas id='selectionCanvas' style='position:absolute; left: 0; top: 0; z-index:1' height='" + h + "' width = '" + w + "'></canvas>"
+
+
+</script>
