@@ -1560,19 +1560,9 @@ jsPsych.plugins["mot-game"] = (function() {
       })
     }
     }
+    
 
     curLevel.beginGame()
-
-    function makeAFakeModelObjectFromGivenReplayFrame(replayFrame){
-      return {
-        balls: replayFrame.balls,
-        getBalls: function(){return this.balls},
-        occluderRects: par.occluderRects,
-        getOccluderRects: function(){return this.occluderRects},
-        userObstacles: replayFrame.userObstacles,
-        wallThickness: par.wallThickness
-      }
-    }
 }
   return plugin;
 })();

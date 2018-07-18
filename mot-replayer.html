@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<head>
+<title>balls-n-walls replay</title>
+</head>
+<body>
+  <div id="replayDiv"></div>
+</body>
+<script>
+var par = {
+  gameWidth: 650,
+  gameHeight: 650,
+  levelDuration: 1500
+}
+  var h = 5, w = 10;
+  document.getElementById("replayDiv").innerHTML = "<!--main canvas where game happens:-->" + "test" +
+  "<canvas id='mainCanvas' height='" + h + "' width = '" + w + "'></canvas>"
+  +
+  "<!--overlay canvas that doesn't need to be refreshed constantly:-->" +
+  //it may be good to not hard-code the top and left value but rather use variables...this will be decided later when we do more styling
+  "<canvas id='overlay' style='position:absolute; left: 0; top: 0; z-index:3' height='" + h + "' width = '" + w + "'></canvas>"
+  +
+  "<!--occluder overlay canvas that doesn't need to be refreshed constantly:-->" +
+  //it may be good to not hard-code the top and left value but rather use variables...this will be decided later when we do more styling
+  "<canvas id='occluderCanvas' style='position:absolute; left: 0; top: 0; z-index:2' height='" + h + "' width = '" + w + "'></canvas>" +
+  "<!--selection canvas for ball selection in defusal mode:-->" +
+  //it may be good to not hard-code the top and left value but rather use variables...this will be decided later when we do more styling
+  "<canvas id='selectionCanvas' style='position:absolute; left: 0; top: 0; z-index:1' height='" + h + "' width = '" + w + "'></canvas>"
+
+
+  function makeAFakeModelObjectFromGivenReplayFrame(replayFrame){
+    return {
+      balls: replayFrame.balls,
+      getBalls: function(){return this.balls},
+      occluderRects: par.occluderRects,
+      getOccluderRects: function(){return this.occluderRects},
+      userObstacles: replayFrame.userObstacles,
+      wallThickness: par.wallThickness
+    }
+  }
+
+  var replayView = new view()
+  var replayTimer = new timer()
+  function update(currentSavedFrameIndex){
+    console.log([currentSavedFrameIndex, currentTime])
+    window.requestAnimationFrame(function(){
+      replayView.update(makeAFakeModelObjectFromGivenReplayFrame(savedModel[currentSavedFrameIndex]))
+      window.requestAnimationFrame(update, currentSavedFrameIndex+1)
+    })
+    currentSavedFrameIndex++
+  }
+
+  function beginGame(){
+    replayView.init()
+    var initialFrameDuration = 1300 //ms
+    replayTimer.reset(par.levelDuration/1000, "green")
+    replayTimer.start()
+    view.displayTimer(replayTimer)
+
+    //fake model object that has the initial frame and enough variables and functions for view to display it like it does to a normal model.
+    var fakeInitialFrame = {
+      balls: []
+    }
+    var bic = par.replayModeParameters.ballInitialConditions
+    for (var i = 0; i<bic.length; i++){
+      fakeInitialFrame.push({})
+      fakeInitialFrame[i].x = bic[i].position[0]
+      fakeInitialFrame[i].y = bic[i].position[1]
+      fakeInitialFrame[i].radius = bic[i].radius
+    }
+    view.showInitialFrame(fakeInitialFrame,initialFrameDuration) //show the frame where the exploding balls look different
+
+    //now set what happens after the initial frame is over:
+    setTimeout(function(){
+
+        curLevel.timer.reset(levelDuration/1000, "green")
+        curLevel.timer.start()
+        curLevel.timer.unHide()
+        //then start the first update
+        updateGame(0); //beginning frame is 0
+
+  }, initialFrameDuration)
+}
+  //does visualization of the fake models (and other items to be displayed) in the canvases
+  function view(mod) {
+    this.model = mod
+    //get canvas, context
+    this.can = null
+    this.ctx = null
+    this.highlightingSelectedBalls = false
+    this.pointsToShow = new Array(),
+    this.showPoint = function(pt) {this.pointsToShow.push(pt)}
+
+    this.initialized = false
+    this.init = function(){
+      this.can = document.getElementById('mainCanvas')
+      this.ctx = this.can.getContext("2d")
+      this.initialized = true
+    }
+
+    this.showInitialFrame = function(mod, initialFrameDuration){
+      //just call view's update function once. However, the exploding balls' colors must be changed first.
+      //change the exploding balls' colors:
+      for(var j = 0, balls = mod.getBalls(), numBalls = balls.length; j < numBalls; j++){
+        var ball = balls[j];
+          if(ball.explosive){
+
+          ball.setColor("orange")
+          //alert(duration)
+        }
+      this.update(mod)
+      setTimeout(curLevel.model.resetAllBalldesigns, initialFrameDuration)
+
+      }
+
+      //show the occluder images
+      this.showOccluders(mod.getOccluderRects)
+    }
+
+    this.update = function(mod, newTime){
+      var timestepDuration = newTime - this.currentTime
+      this.currentTime = newTime
+
+      if(this.initialized){
+        //var can = this.can;
+        var ctx = this.ctx; //easier to work with than having to write this.ctx each time
+        //clear the context:
+        ctx.clearRect(0,0, w, h);
+        var balls = mod.getBalls();
+
+        //Iterate through the balls and display their current attributes:
+        for(var j = 0, numBalls = balls.length; j < numBalls; j++){
+          var ball = balls[j];
+          var color = ball.getColor()
+          ctx.beginPath();
+          ctx.fillStyle = color
+          ctx.arc(ball.getX(), ball.getY(), ball.getRadius(), 0, 2*Math.PI);
+          ctx.fill();
+    /*    uncomment for displaying an image for a ball
+            var imgElement = new Image();
+            imgElement.src = "ball.png";
+            ctx.drawImage(imgElement, ball.getX(), ball.getY());
+    */
+          ctx.closePath();
+        }
+
+        //not using commented parts anymore:
+        //for(var j = 0, numWalls = 4; j < numWalls; j++){
+          //var wall = model.walls[j];
+          var color = "green"
+          ctx.beginPath();
+          ctx.fillStyle = color
+          //ctx.rect(wall.getX(), wall.getY(), wall.getW(), wall.getL())
+          var wallThickness = mod.wallThickness
+          ctx.rect(0,0,wallThickness, h)
+          ctx.rect(0,0,w,wallThickness)
+          ctx.rect(w-wallThickness,0,wallThickness,h)
+          ctx.rect(0,h-wallThickness,w,wallThickness)
+          ctx.fill();
+          ctx.closePath();
+        //}
+
+        //display the points/pixels in the user-defined wall as circles and draw line segments between them (except for before the first and after the last pixel)
+        for(var j = 0, obs = mod.userObstacles, numObs = obs.length; j<numObs; j++){
+          var ob = obs[j]
+          for(var o = 0, pix = ob.pixels, numPix = pix.length, rad = ob.getRadius(); o<numPix; o++){
+            //get x and y values of the pixel
+            var x = pix[o][0]
+            var y = pix[o][1]
+
+            var color = "maroon"
+            //draw circles of radius rad around each pixel
+            ctx.beginPath()
+            ctx.fillStyle = color
+            ctx.arc(x, y, rad, 0, 2*Math.PI)
+            ctx.fill()
+
+            //then draw a line from the pixel to the next pixel (if the next pixel exists)
+            if(o < numPix-1){
+              ctx.fillStyle = color
+              ctx.moveTo(pix[o][0], pix[o][1])
+              ctx.lineTo(pix[o+1][0], pix[o+1][1])
+              ctx.stroke();
+            }
+
+            ctx.closePath()
+
+          }
+        }
+
+        //show the points:
+        for(var j = 0, pix = this.pointsToShow, numPix = pix.length; j<numPix; j++){
+          var x = pix[j][0]
+          var y = pix[j][1]
+
+          var color = "black"
+          //draw circles of radius rad around each pixel
+          ctx.beginPath()
+          ctx.fillStyle = color
+          ctx.arc(x, y, 3, 0, 2*Math.PI)
+          ctx.fill()
+          ctx.closePath();
+        }
+      }
+
+      //show occluder maybe...
+      //var numFramesInExperiment = par.duration/timestepDuration
+      //this should be true par.avg_occluders_per_level times per level
+      //if(Math.round(Math.random()*numFramesInExperiment/par.avg_occluders_per_level) == 0) {
+      //  var oc = new occluder()
+      //  oc.show()
+      //}
+    },
+
+    //img is a path to the image file. options is an object: {objectToNotifyWhenDoneDisplaying: value, customContext: value}
+    this.showImgAtFor = function(image, x, y, duration, options){
+      var ctx = (options === undefined || options.customContext === undefined) ? document.getElementById("overlay").getContext('2d') : options.customContext
+      console.assert(ctx instanceof CanvasRenderingContext2D)
+      var imgElement = new Image();
+      imgElement.src = image;
+
+      var width = null, height = null;
+      imgElement.onload = function(){
+        width = imgElement.width, height = imgElement.height;
+        ctx.drawImage(imgElement, x-width/2, y-height/2)
+      }
+
+      //clear it after the duration's up:
+      setTimeout(function(){
+        ctx.clearRect(x-width/2,y-height/2,width, height)
+        if(options !== undefined && options.objectToNotifyWhenDoneDisplaying !== undefined){
+
+          options.objectToNotifyWhenDoneDisplaying.respondToImageBeingCleared()
+        }
+
+      }, duration)
+      //imgElement.style.position = "absolute"
+      //imgElement.style.top = "300"
+      //document.body.appendChild(imgElement);
+
+    }
+
+    this.showOccluders = function(occluderRectangles){
+      var ctx = document.getElementById("occluderCanvas").getContext("2d")
+      var occluderPatternImg = new Image();
+      occluderPatternImg.src = "occluders/occluderpattern.png"
+      ctx.drawImage(occluderPatternImg, 100, 100)
+      var occluderPatter = null
+      occluderPatternImg.onload = function(){
+        occluderPattern = ctx.createPattern(occluderPatternImg, "repeat")
+      }
+
+      setTimeout(function(){ //setTimeout used because of onload delay
+      //loop through occluder rectangles:
+      for(var j = 0, rects = occluderRectangles, numRects = rects.length; j < numRects; j++){
+        ctx.beginPath()
+        ctx.fillStyle = occluderPattern
+        ctx.rect(rects[j].x, rects[j].y, rects[j].width, rects[j].height)
+        ctx.fill()
+        //this.showImgAtFor(occs[j].imgPath, occs[j].x, occs[j].y, curLevelreplayTimer.getTime(), {customContext:document.getElementById("occluderCanvas").getContext("2d")})
+      }
+      ctx.closePath()
+    }, 100)}
+    this.hideOccluders = function(){
+      var ctx = document.getElementById("occluderCanvas").getContext("2d")
+      ctx.clearRect(0,0,w,h)
+    }
+
+    //display a message to the player
+    this.message = function(msg){alert(msg)}
+
+    this.displayDefusalMessage = function(defusalTimeLimit){
+      var ocan = document.getElementById("overlay")
+      var octx = ocan.getContext('2d')
+      octx.textAlign = "center"
+      octx.font = "30px Helvetica"
+      octx.strokeText("Defusal Mode", w/2, h/3)
+      octx.font = ("12px Arial")
+      octx.fillText("You have " + defusalTimeLimit/1000 + " seconds to defuse the exploding balls. but don't choose the wrong ball!", w/2, h/2)
+    }
+
+    this.highlightSelectedBalls = function(event){
+      var can = document.getElementById('selectionCanvas')
+      var ctx = can.getContext('2d')
+      //iterate through the balls to check whether the mouth is within them:
+      var balls = curLevel.model.getBalls()
+      for(var n = 0, numBalls = balls.length; n < numBalls; n++){
+        var ball = balls[n]
+        var selectionRadiusAddOn = 1
+        var totalRadius = ball.getRadius()+selectionRadiusAddOn
+
+        if(distanceBetween([event.pageX,event.pageY], [ball.getX(), ball.getY()]) < ball.getRadius()){
+          //display a border around the ball
+          ctx.beginPath()
+          ctx.strokeStyle = "red"
+          ctx.arc(ball.getX(), ball.getY(), totalRadius, 0, 2*Math.PI)
+          ctx.stroke()
+          ctx.closePath();
+
+        } else {
+          //clear the rect aronud the ball
+          var totalDiameter = totalRadius * 2
+          ctx.beginPath()
+          ctx.clearRect(ball.getX()-totalRadius-1, ball.getY()-totalRadius-1, totalDiameter+2, totalDiameter+2)
+          ctx.stroke()
+          ctx.closePath()
+        }
+
+      }
+
+
+    }
+
+    this.displayTimer = function(timer){
+      var octx = document.getElementById("overlay").getContext("2d")
+        if(timer.hidden){
+          return null //exit the function if it's hidden, before the recursive call
+        }
+          //clear previously existing timer displays
+          octx.clearRect(timer.x-timer.fontSize,timer.y-timer.fontSize, timer.fontSize*2, timer.fontSize*2)
+          octx.font = timer.fontSize + "px Arial"
+          //time = Math.round((this.curTime % 60000)/1000)
+          var time = timer.getTime == null ? 0: Math.round(timer.getTime()/1000)
+          octx.fillStyle = timer.color
+          octx.textAlign = "center"
+          octx.fillText(time, timer.x, timer.y) //NOTE: assuming time counter should always be under a minute
+
+
+    }
+
+    //clears all displays:
+    this.clearView = function(){
+      var canvii = document.getElementsByTagName("CANVAS")
+      var ctxes = [];
+      for(var canCounter = 0; canCounter < canvii.length; canCounter++){ctxes.push(canvii[canCounter].getContext('2d'))}
+      for(var conCounter = 0; conCounter < ctxes.length; conCounter++){
+        var ctx = ctxes[conCounter]
+        var canWidth = canvii[conCounter].width
+        var canHeight = canvii[conCounter].height
+        ctx.clearRect(0,0,canWidth,canHeight);
+      }
+    }
+  }
+
+
+
+
+
+  //game timer. can be reset, told to count down, up, set coundtown time.
+  function timer(){
+    this.hidden = false, //toggle whether it's displayed
+    this.hide = function() {this.hidden = true},
+    this.unHide = function() {this.hidden = false}
+    this.paused = true
+    this.color = "red",
+    this.getColor = function(){return this.color},
+    this.fontSize =12,
+    this.x = w/2, // x positioning
+    this.y = h/22,
+    this.countdown = true, //default is countdown-mode, not countup-mode
+    this.ctdwnTime = par.levelDuration,
+    this.setCountdownTime = function(t){this.ctdwnTime = t},
+    this.startTime = 0, //null means it hasn't been set
+    this.curTime = 1000,
+    this.updateCurTime = function(){
+      //startDate must be set already for this to work properly.
+      this.curTime = new Date().valueOf() - this.startTime
+      this.curTimeInSeconds = Math.round(this.curTime % 60000/1000)
+          if(this.curTimeInSeconds == this.ctdwnTime){
+            curLevel.timeHasRunOut()
+            //this.ctdwnTime = -1000 //reset it so it doesn't call timeHasRunOut a million times
+
+          }
+
+    }
+
+    this.reset = function(countdownTime, color) {
+      this.setCountdownTime(countdownTime);
+      this.startTime = new Date().valueOf(); //0
+      this.color = color
+      this.updateCurTime()
+    }
+
+    //this is sensitive to counting up or down
+    this.getTime = function(noupdate/*optional parameter, if true will not update the time before returning the time*/){
+      if(noupdate != true) {this.updateCurTime()}
+      return (this.countdown) ? this.getTimeTilCountdownEnd() : this.timeElapsed(noupdate)
+    }
+
+    //returns how much time has elapsed since the timer has been reset
+    this.timeElapsed = function(noupdate){
+      if(noupdate != true) {this.updateCurTime()}
+      return this.curTime
+    }
+
+    this.getTimeTilCountdownEnd = function(noupdate){
+      if(noupdate != true) {this.updateCurTime()}
+      return this.ctdwnTime*1000 - this.curTime
+    }
+
+    this.start = function(){
+      this.paused = false;
+      this.run()
+    }
+
+    this.run = function(){
+      setTimeout(function(){
+      if(!(curLevel.gameOver() || this.paused)){
+      curLevel.timer.updateCurTime();curLevel.view.displayTimer(curLevel.timer); curLevel.timer.run()}}, 1000) //recursive call
+    }
+    this.pause = function(){this.paused = true}
+}
+</script>
