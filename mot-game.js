@@ -151,21 +151,6 @@ jsPsych.plugins["mot-game"] = (function() {
         return [x,y]
       }
 
-      //takes circle's center and radius as arguments
-      var circleIsInAnOccluder = function(center, radius){
-        for(var j = 0, occs = par.occluderRectangles, numOccs = occs.length; j < numOccs; j++){
-          var occRectPlusBallRadius = {
-            x:occs[j].x - radius,
-            y:occs[j].y - radius,
-            width:occs[j].width + 2*radius,
-            height:occs[j].height + 2*radius
-          }
-          if(pointIsWithinRectangle(center, occRectPlusBallRadius)){return true}
-        }
-
-        return false; //never called if true is returned in the loop
-      }
-
       /*now, initialize the balls. how that is done depends on whether it's replay mode
       if(par.replayMode){
 
@@ -377,7 +362,7 @@ jsPsych.plugins["mot-game"] = (function() {
                 //this is being used though:
                 //Consider the following scenario: the collisionPoint is not actually the closest point on the wall's extension. This happens when the ball collides with
                 // an endpoint of the wall. For these cases, set collisionPoint to the wall's endpoint:
-                var radPad = 0
+                var radPad = par.implodeExplodeMode ? 3:0 //padding of 2 is necessary to compensate for expanding radius at 1px per frame
                 if(distanceBetween(ballPoint, wallPoint) <= rad+radPad) {
                   collisionPoint = wallPoint;
                   //treat the collision point as a small circle and collide off the tangent line. luckily, the vector normal to the tangent line
@@ -391,7 +376,8 @@ jsPsych.plugins["mot-game"] = (function() {
                   wallNormalVector_UnNormalized = [ballPoint[0]-collisionPoint[0], ballPoint[1]-collisionPoint[1]]
                 }
                 //Check whether the collision point is actually within the wall and not just in its extension
-                var obColPad = 0//collision padding - how far away a ball needs to be from an obstacle for it to collide
+                  //collision padding - how far away a ball needs to be from an obstacle for it to collide:
+                  var obColPad = par.implodeExplodeMode ? 3:0 //padding of 2 is necessary to compensate for expanding radius
                 var collisionIsWithinSegment = (collisionPoint[0] >= Math.min(wallPoint[0], nextWallPoint[0])-obColPad) &&
                                            (collisionPoint[0] <= Math.max(wallPoint[0], nextWallPoint[0])+obColPad) &&
                                            (collisionPoint[1] >= Math.min(wallPoint[1], nextWallPoint[1])-obColPad) &&
@@ -631,6 +617,7 @@ jsPsych.plugins["mot-game"] = (function() {
     //constructor for balls: (x and y are initial position)
     function ball(x, y, radius, speed, id, isExplosive) {
       this.id = id
+      this.occluded = false //only used for implosion/explosion/teleportation occlusion
       this.collisionsEnabled = true //collisions allowed
       this.obstacleSegmentsIAmInsideOf = []
       //segment is of form [segmentStart, segmentEnd]
@@ -668,13 +655,21 @@ jsPsych.plugins["mot-game"] = (function() {
         //setTimeout(function(){b.collisionsEnabled = true}, 100)
         //this.color = "#FF0000"
         if(collisionType == "wall") {
-          this.wallCollider.collide(this.x, this.y)
+          this.wallCollideAnimation.showAnimation(this.x, this.y)
         } else if (collisionType == "userObstacle") {
-          this.userObstacleCollider.collide(this.x, this.y)
+          this.wallCollideAnimation.showAnimation(this.x, this.y)
         }
       }
-      this.wallCollider = (this.explosive) ? new wallExplodeAnimation() : new standardWallCollideAnimation();
-      this.userObstacleCollider = new userObstacleCollisionAnimation()
+      this.wallCollideAnimation = (this.explosive) ? new wallExplodeAnimation() : new emptyAnimation();
+      this.userObstacleCollideAnimation = new userObstacleCollideAnimation()
+      this.occluderEnterAnimation = par.classicMode ? new emptyAnimation() : new teleportBeginAnimation()
+      this.occluderExitAnimation = par.classicMode ? new emptyAnimation() : new teleportEndAnimation()
+
+      this.callWallCollideAnimation = function(){this.implodeAnimation.showAnimation(this.x, this.y)}
+      this.callObstacleAnimation = function(){this.explodeAnimation.showAnimation(this.x, this.y)}
+      this.callOccluderEnterAnimation = function(){this.occluderEnterAnimation.showAnimation(this.x, this.y)}
+      this.callOccluderExitAnimation = function(){this.occluderExitAnimation.showAnimation(this.x, this.y)}
+
       this.radius = radius
       this.getRadius = function(){return this.radius}
       //all balls must have the same speed but random direction: therefore their:
@@ -745,34 +740,79 @@ jsPsych.plugins["mot-game"] = (function() {
         //console.log(timestepDuration)
         var newY = this.getY() + dy
         this.setY(newY);
-        //remember, take some of these lines out if you wanna really maximize efficiency
-        //console.assert((this.getX() == new_x) && (this.getY() == new_y))
-        //if(Math.abs(this.getVelocity()[0]) > 2 || Math.abs(this.getVelocity()[1]) > 2){console.log("slow down")}
+
+        //if it's in implode and explode mode, have it implode if it's inside an occluder and explode til it's at the normal radius if it's outside
+        if(par.implodeExplodeMode){
+          if(circleIsInAnOccluder([this.x, this.y], this.radius)){
+            if(!this.occluded){this.callOccluderEnterAnimation(); this.occluded = true} //have it do the occluder enter animation if it's not already occluded
+         }else {
+            if(this.occluded){this.radius++; this.callOccluderExitAnimation(); this.occluded = false}
+         }
       }
     }
-    function standardWallCollideAnimation(){
-        this.collide = function(x,y){ };
+
+  }
+
+
+    function emptyAnimation(){
+        this.showAnimation = function(x,y){ };
     }
 
     /*TODO: make an animation class and subclass these. I don't know enough about JS classes to do that easily*/
     function wallExplodeAnimation(){
         var img = "explosion.png"
         var duration = 2000
-        this.collide = function(x,y) {curLevel.view.showImgAtFor(img, x, y, duration)}
+        this.showAnimation = function(x,y) {curLevel.view.showImgAtFor(img, x, y, duration)}
     }
 
-    function userObstacleCollisionAnimation(){
+    function userObstacleCollideAnimation(){
         this.animationCoolDownTime = 100;
         var img = "obstacoll.png"
         var duration = 200
-        this.collide = function(x,y) {
+        this.animationAlreadyDisplayed = false
+        this.showAnimation = function(x,y) {
           if(!this.animationAlreadyDisplayed){
             //don't allow for simultaneous animations for the same userObstacleCollisionAnimation object
             this.animationAlreadyDisplayed = true
             curLevel.view.showImgAtFor(img, x, y, duration, {objectToNotifyWhenDoneDisplaying: this})
           }
         }
+        //gets called when showImgAtFor is done (this is passed as an argument, objectToNotifyWhenDoneDisplaying, for showImgAtFor)
         this.respondToImageBeingCleared = function(){this.animationAlreadyDisplayed=false}
+    }
+
+    function teleportBeginAnimation(){
+      this.img = "teleportbegin.png"
+      this.animationDuration = 550
+
+      this.animationAlreadyBeingDisplayed = false
+
+      this.showAnimation = function(x,y){
+        if(!this.animationAlreadyDisplayed){
+          //don't allow for simultaneous animations for the same userObstacleCollisionAnimation object
+          this.animationAlreadyDisplayed = true
+          curLevel.view.showImgAtFor(this.img, x, y, this.animationDuration, {objectToNotifyWhenDoneDisplaying: this})
+        }
+      }
+
+      this.respondToImageBeingCleared = function(){this.animationAlreadyDisplayed=false}
+    }
+
+    function teleportEndAnimation(){
+      this.img = "teleportend.png"
+      this.animationDuration = 550
+
+      this.animationAlreadyBeingDisplayed = false
+
+      this.showAnimation = function(x,y){
+        if(!this.animationAlreadyDisplayed){
+          //don't allow for simultaneous animations for the same userObstacleCollisionAnimation object
+          this.animationAlreadyDisplayed = true
+          curLevel.view.showImgAtFor(this.img, x, y, this.animationDuration, {objectToNotifyWhenDoneDisplaying: this})
+        }
+      }
+
+      this.respondToImageBeingCleared = function(){this.animationAlreadyDisplayed=false}
     }
 
   //function wall(x,y/*top left x and y*/, w, l/*length and width*/){
@@ -950,17 +990,19 @@ jsPsych.plugins["mot-game"] = (function() {
           //Iterate through the balls and display their current attributes:
           for(var j = 0, numBalls = balls.length; j < numBalls; j++){
             var ball = balls[j];
-            var color = ball.getColor()
-            ctx.beginPath();
-            ctx.fillStyle = color
-            ctx.arc(ball.getX(), ball.getY(), ball.getRadius(), 0, 2*Math.PI);
-            ctx.fill();
-      /*    uncomment for displaying an image for a ball
-              var imgElement = new Image();
-              imgElement.src = "ball.png";
-              ctx.drawImage(imgElement, ball.getX(), ball.getY());
-      */
-            ctx.closePath();
+            if(!ball.occluded){
+              var color = ball.getColor()
+              ctx.beginPath();
+              ctx.fillStyle = color
+              ctx.arc(ball.getX(), ball.getY(), ball.getRadius(), 0, 2*Math.PI);
+              ctx.fill();
+        /*    uncomment for displaying an image for a ball
+                var imgElement = new Image();
+                imgElement.src = "ball.png";
+                ctx.drawImage(imgElement, ball.getX(), ball.getY());
+        */
+              ctx.closePath();
+            }
           }
 
           //not using commented parts anymore:
@@ -1344,8 +1386,8 @@ jsPsych.plugins["mot-game"] = (function() {
       }
 
       this.guessedBalls = [];
-      this.ballWasAlreadyGuessed = function(ball){return this.guessedBalls.includes(ball)}
-      this.addGuessedBall = function(ball){this.guessedBalls.push(ball)}
+      this.ballWasAlreadyGuessed = function(ball){return this.guessedBalls.includes(ball.id)}
+      this.addGuessedBall = function(ball){this.guessedBalls.push(ball.id)}
       //minimalBallForm is set to true for data collection, when a smaller ball is saved with just the important parts. Ideally,
       //the balls would be made with UUIDs so they could be retrieved individually.
       this.getGuessedBalls = function(minimalBallForm){return this.guessedBalls}
@@ -1364,7 +1406,7 @@ jsPsych.plugins["mot-game"] = (function() {
           case "defusalModeTimeRanOut":
             data.defusalMode = "timeRanOut"
             data.defusalDuration = curLevel.timer.getTime() //this should be the length of defusal mode as long as the timer is reset before defusal mode begins
-            alert("Out of time...restarting at level 0");
+            alert("Out of time!");
             data.correctGuesses = curLevel.controller.correctGuesses
             data.incorrectGuesses = curLevel.controller.incorrectGuesses
             //maybe we can have it restart at the level before?
@@ -1441,11 +1483,14 @@ jsPsych.plugins["mot-game"] = (function() {
       this.setCountdownTime = function(t){this.ctdwnTime = t},
       this.startTime = 0, //null means it hasn't been set
       this.curTime = 1000,
+      this.timeHasRunOut = false,
       this.updateCurTime = function(){
         //startDate must be set already for this to work properly.
         this.curTime = new Date().valueOf() - this.startTime
+
         this.curTimeInSeconds = Math.round(this.curTime % 60000/1000)
-            if(this.curTimeInSeconds == this.ctdwnTime){
+            if(this.curTimeInSeconds == this.ctdwnTime && !this.timeHasRunOut /*time hasn't run out yet*/){
+              this.timeHasRunOut = true
               curLevel.timeHasRunOut()
               //this.ctdwnTime = -1000 //reset it so it doesn't call timeHasRunOut a million times
 
@@ -1491,6 +1536,21 @@ jsPsych.plugins["mot-game"] = (function() {
 }
 
 
+//takes circle's center and radius as arguments. This isn't part of the ball definition because it is used to initialize balls
+function circleIsInAnOccluder(center, radius){
+  for(var j = 0, occs = par.occluderRectangles, numOccs = occs.length; j < numOccs; j++){
+    var occRectPlusBallRadius = {
+      x:occs[j].x - radius,
+      y:occs[j].y - radius,
+      width:occs[j].width + 2*radius,
+      height:occs[j].height + 2*radius
+    }
+    if(pointIsWithinRectangle(center, occRectPlusBallRadius)){return true}
+  }
+
+
+  return false; //never called if true is returned in the loop
+}
 
 
     function level(model, view, controller, levelDuration) {
