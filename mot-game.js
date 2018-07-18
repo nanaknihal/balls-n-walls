@@ -970,8 +970,8 @@ jsPsych.plugins["mot-game"] = (function() {
 
         }
 
-        //show the occluder images if relevant
-        if(par.occluderRectsEnabled){
+        //show the occluder images if relevant. implodeExplodeMode will override occluder showing:
+        if(par.occludersEnabled && !par.implodeExplodeMode){
           this.showOccluders(mod.getOccluderRects());
         }
       }
