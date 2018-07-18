@@ -126,12 +126,12 @@ jsPsych.plugins["mot-game"] = (function() {
       this.getBalls = function(){return this.balls}
       this.explodingBalls = [];
       this.occluderRects = par.occluderRectangles
-      this.getOccluderRects = function(){return this.occluderRectangles}
+      this.getOccluderRects = function(){return this.occluderRects}
       /*this.occluders = [new occluder("occluders/occluder1.png", w/3, h/2), new occluder("occluders/occluder1.png", 2*w/3, h/2)];*/
       this.numExplodingBalls = function(){return this.explodingBalls.length}
 
       var myself = this
-      this.resetAllBalldesigns = function(){
+      this.resetAllBallDesigns = function(){
         var balls = myself.getBalls()
         for(var m=0, numBalls = balls.length; m<numBalls; m++){
           balls[m].setColor(ballColor);
@@ -196,7 +196,7 @@ jsPsych.plugins["mot-game"] = (function() {
               inOcc = circleIsInAnOccluder(coords, ballRadius)
             }
           //make the ball (and add it to this.balls) if it's at a valid position:
-          this.balls.push(new ball(coords[0],coords[1],ballRadius, speed))
+          this.balls.push(new ball(coords[0],coords[1],ballRadius, speed, i/*id is just i*/))
         }
 
 
@@ -214,7 +214,7 @@ jsPsych.plugins["mot-game"] = (function() {
             inOcc = circleIsInAnOccluder(coords, ballRadius)
           }
 
-          var bal = new ball(coords[0], coords[1], ballRadius, speed, "e")
+          var bal = new ball(coords[0], coords[1], ballRadius, speed, numNormalBalls + i/*explosive balls will have highest ids*/, "e")
           this.balls.push(bal)
           this.explodingBalls.push(bal)
         }
@@ -629,7 +629,8 @@ jsPsych.plugins["mot-game"] = (function() {
 
 
     //constructor for balls: (x and y are initial position)
-    function ball(x, y, radius, speed, isExplosive) {
+    function ball(x, y, radius, speed, id, isExplosive) {
+      this.id = id
       this.collisionsEnabled = true //collisions allowed
       this.obstacleSegmentsIAmInsideOf = []
       //segment is of form [segmentStart, segmentEnd]
@@ -925,12 +926,14 @@ jsPsych.plugins["mot-game"] = (function() {
             //alert(duration)
           }
         this.update(mod)
-        setTimeout(curLevel.model.resetAllBalldesigns, initialFrameDuration)
+        setTimeout(curLevel.model.resetAllBallDesigns, initialFrameDuration)
 
         }
 
-        //show the occluder images
-        this.showOccluders(mod.getOccluderRects)
+        //show the occluder images if relevant
+        if(par.occluderRectsEnabled){
+          this.showOccluders(mod.getOccluderRects());
+        }
       }
 
       this.update = function(mod, newTime){
@@ -1172,6 +1175,7 @@ jsPsych.plugins["mot-game"] = (function() {
           //push the important info from this ball to the data
           data.ballInitialConditions.push(
                 {
+                   id: ball.id,
                    explosive: ball.explosive,
                    position: [ball.getX(), ball.getY()],
                    velocity:ball.getVelocity(),
@@ -1339,9 +1343,12 @@ jsPsych.plugins["mot-game"] = (function() {
 
       }
 
-      var guessedBalls = [];
-      this.ballWasAlreadyGuessed = function(ball){return guessedBalls.includes(ball)}
-      this.addGuessedBall = function(ball){guessedBalls.push(ball)}
+      this.guessedBalls = [];
+      this.ballWasAlreadyGuessed = function(ball){return this.guessedBalls.includes(ball)}
+      this.addGuessedBall = function(ball){this.guessedBalls.push(ball)}
+      //minimalBallForm is set to true for data collection, when a smaller ball is saved with just the important parts. Ideally,
+      //the balls would be made with UUIDs so they could be retrieved individually.
+      this.getGuessedBalls = function(minimalBallForm){return this.guessedBalls}
 
       this.endGame = function(howGameEnded){
         curLevel.timer.hide()
@@ -1524,6 +1531,7 @@ jsPsych.plugins["mot-game"] = (function() {
           var ball = balls[b]
           frame.balls.push(
             {
+              id: ball.id,
               pos: [ball.getX(), ball.getY()]
             }
           )
@@ -1560,7 +1568,7 @@ jsPsych.plugins["mot-game"] = (function() {
       })
     }
     }
-    
+
 
     curLevel.beginGame()
 }
