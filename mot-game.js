@@ -415,8 +415,12 @@ jsPsych.plugins["mot-game"] = (function() {
         var timestepDuration = newTime - this.currentTime
         this.currentTime = newTime
 
-
-
+        //every 500ms (with 60ms leeway), give the balls random velocities between __ and __ in each direction - combine this with the next for loop if it works; they're the same thing)
+        if(Math.round(newTime % 500 < 60)){
+          for(var i = 0, numBalls = this.balls.length; i < numBalls; i++){
+            this.balls[i].setVelocity([0.24*(Math.random()-0.5), 0.24*(Math.random()-0.5)])
+          }
+        }
         //Checks for collision with the four walls surrounding the game, NOT user-defined obstacles/walls
         this.executeWallCollisions = function(){
 
@@ -719,6 +723,7 @@ jsPsych.plugins["mot-game"] = (function() {
 
       }
 
+
       this.highestRow = function(){return this.y - this.radius}
       this.lowestRow = function(){return this.y + this.radius}
       this.leftestColumn = function() {return this.x - this.radius}
@@ -746,7 +751,7 @@ jsPsych.plugins["mot-game"] = (function() {
           if(circleIsInAnOccluder([this.x, this.y], this.radius)){
             if(!this.occluded){this.callOccluderEnterAnimation(); this.occluded = true} //have it do the occluder enter animation if it's not already occluded
          }else {
-            if(this.occluded){this.radius++; this.callOccluderExitAnimation(); this.occluded = false}
+            if(this.occluded){this.callOccluderExitAnimation(); this.occluded = false}
          }
       }
     }
