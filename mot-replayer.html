@@ -27,7 +27,7 @@ var par = {
   "<canvas id='selectionCanvas' style='position:absolute; left: 0; top: 0; z-index:1' height='" + h + "' width = '" + w + "'></canvas>"
 
 
-  function makeAFakeModelObjectFromGivenReplayFrame(replayFrame){
+  /*function makeAFakeModelObjectFromGivenReplayFrame(replayFrame){
     return {
       balls: replayFrame.balls,
       getBalls: function(){return this.balls},
@@ -36,7 +36,7 @@ var par = {
       userObstacles: replayFrame.userObstacles,
       wallThickness: par.wallThickness
     }
-  }
+  }*/
 
   var replayView = new view()
   var replayTimer = new timer()
@@ -80,7 +80,8 @@ var par = {
 
   }, initialFrameDuration)
 }
-  //does visualization of the fake models (and other items to be displayed) in the canvases
+
+  /*//does visualization of the fake models (and other items to be displayed) in the canvases
   function view(mod) {
     this.model = mod
     //get canvas, context
@@ -139,7 +140,7 @@ var par = {
             var imgElement = new Image();
             imgElement.src = "ball.png";
             ctx.drawImage(imgElement, ball.getX(), ball.getY());
-    */
+    *
           ctx.closePath();
         }
 
@@ -339,7 +340,7 @@ var par = {
         ctx.clearRect(0,0,canWidth,canHeight);
       }
     }
-  }
+  }*/
 
 
 
@@ -408,5 +409,17 @@ var par = {
       curLevel.timer.updateCurTime();curLevel.view.displayTimer(curLevel.timer); curLevel.timer.run()}}, 1000) //recursive call
     }
     this.pause = function(){this.paused = true}
+}
+
+var showObsPoints = function(){
+  var sm = data.savedModel
+  for(var m = 0, len = sm.length; m < len; m++){
+    var obs = sm[m].userObstacles
+    for(var o = 0, l = obs.length; o < l; o++){
+      for(var p = 0, pix = obs[o].pixels, pl = pix.length; p < pl; p++){
+      curLevel.view.showPoint(pix[p])
+      }
+    }
+  }
 }
 </script>
