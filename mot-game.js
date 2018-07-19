@@ -374,7 +374,7 @@ jsPsych.plugins["mot-game"] = (function() {
                 //this is being used though:
                 //Consider the following scenario: the collisionPoint is not actually the closest point on the wall's extension. This happens when the ball collides with
                 // an endpoint of the wall. For these cases, set collisionPoint to the wall's endpoint:
-                var radPad = par.implodeExplodeMode ? 3:0 //padding of 2 is necessary to compensate for expanding radius at 1px per frame
+                var radPad = 1
                 if(distanceBetween(ballPoint, wallPoint) <= rad+radPad) {
                   collisionPoint = wallPoint;
                   //treat the collision point as a small circle and collide off the tangent line. luckily, the vector normal to the tangent line
@@ -389,7 +389,7 @@ jsPsych.plugins["mot-game"] = (function() {
                 }
                 //Check whether the collision point is actually within the wall and not just in its extension
                   //collision padding - how far away a ball needs to be from an obstacle for it to collide:
-                  var obColPad = par.implodeExplodeMode ? 3:0 //padding of 2 is necessary to compensate for expanding radius
+                  var obColPad = 1
                 var collisionIsWithinSegment = (collisionPoint[0] >= Math.min(wallPoint[0], nextWallPoint[0])-obColPad) &&
                                            (collisionPoint[0] <= Math.max(wallPoint[0], nextWallPoint[0])+obColPad) &&
                                            (collisionPoint[1] >= Math.min(wallPoint[1], nextWallPoint[1])-obColPad) &&
@@ -455,11 +455,16 @@ jsPsych.plugins["mot-game"] = (function() {
             //flip motion in x-direction
             ball.collide("wall")
             ball.setVelocity([-vel[0], vel[1]])
+            ball.move(timestepDuration, {force:true})
           } //IF MULTIPLE COLLISIONS IN ONE UPDATE ARE A PROBLEM, PUT AN ELSE HERE
           if(collisionTopWall || collisionBottomWall) {
             //flip motion in y-direction
             ball.collide("wall")
             ball.setVelocity([vel[0], -vel[1]])
+            ball.move(timestepDuration, {force:true})
+          } else {
+            //no wall collision:
+            ball.move(timestepDuration, {force:false})
           }
 
           /*NOT USING THIS INEFFICIENT WALL-COLLISION DETECTION ALGORITHM:
@@ -584,6 +589,7 @@ jsPsych.plugins["mot-game"] = (function() {
                         var resultingVelocity = [wallNormalVector_Normalized[0]*negativeTwoTimesDotP+velocityVector[0], wallNormalVector_Normalized[1]*negativeTwoTimesDotP+velocityVector[1]]
 
                         ball.setVelocity(resultingVelocity, "userObstacle")
+                        ball.move(timestepDuration, {force:true})
                         //  this.color = "red"//"#"+((1<<24)*Math.random()|0).toString(16)
     /*not using:
                           angleBetweenResultingVelocityAndXAxis = angleBetweenWallAndXAxis - angleBetweenVelocityAndWall
@@ -596,7 +602,10 @@ jsPsych.plugins["mot-game"] = (function() {
                           ball.setVelocity([resultingVelXComponent, resultingVelYComponent])*/
                       }
                       else(console.log(ballToWallClosestDistance, rad))
-                    } else{ball.color = ballColor}
+                    } else{
+                      //no collision
+                      ball.move(timestepDuration, {force:false})
+                    }
 
                       }
                     }
@@ -605,9 +614,9 @@ jsPsych.plugins["mot-game"] = (function() {
         this.executeWallCollisions()
         this.executeObstacleCollisions()
         //move the balls
-        for(var i = 0, numBalls = this.balls.length; i < numBalls; i++){
-          this.balls[i].move(timestepDuration)
-        }
+        //for(var i = 0, numBalls = this.balls.length; i < numBalls; i++){
+        //  this.balls[i].move(timestepDuration)
+        //}
 
       }
      }
@@ -744,24 +753,68 @@ jsPsych.plugins["mot-game"] = (function() {
       this.rightestColumn = function() {return this.x + this.radius}
 
       //move the ball one increment accorsing to its current velocity and position:
-      this.move = function(timestepDuration){
+      this.move = function(timestepDuration, options){
         var td = timestepDuration
         //account for strange timestepDuration values like 0 or very high values:
         if(td == 0 | td > 100){
           td = 30
         }
         //var stuckInWall = this.x-this.radius < 0 || this.x+radius > w || this.y-this.radius < 0 || this.y-this.radius > h
+
+        //only do the following modifications to acceleration and velocity if allowed (they will NOT be allowed after collision with
+        // the ball is registered and the ball will have to follow the natural resulting direction after the collision). To disable them,
+        //use force:true as part of the options argument
+        if(!options.force){
+          if(par.stochasticRobotPaths){
+            pfsrp = par.parametersForStochasticRobotPaths
+            //Equation for velocity taken from Vul, Frank, and Tenenbaum (2009), producing an Ornstein-Uhlenbeck process: (some modifications are here: the
+            //velocity is multiplied by velocityMultipler and force fields such as in Scholl & Pylyshyn (1999))
+            var acceleration = [randGaussian(0,pfsrp.accelerationStandardDeviation), randGaussian(0,pfsrp.accelerationStandardDeviation)]
+            var velocity =[ (pfsrp.inertia*this.velocity[0] - pfsrp.springConstant*(par.gameWidth/2-this.x) + acceleration[0]),
+                            (pfsrp.inertia*this.velocity[1] - pfsrp.springConstant*(par.gameHeight/2-this.y) + acceleration[1])
+                          ]
+            if(par.forceFields){
+              var forceFieldVector = [0,0];
+              //calculate force field by the distance between this robot/ball and other robot/balls. iterate through every ball:
+              for(var r = 0, balls = curLevel.model.getBalls()/*maybe don't hardcode curLevel.model to reduce coupling*/, numBalls = balls.length; r < numBalls; r++){
+                //add the x and y squared distances to their respective components in the vector. At the end of the loop, the resulting vector will be:
+                //[sum of every 1/(x-distances squared), sum of every 1/(y-distances squared)]
+
+                var xDistance = this.x-balls[r].x
+                var yDistance = this.y-balls[r].y
+                //prevent extremely close distances which lead to ridiculously big force fields
+                var distanceForForcefieldLimit = 2
+
+                if(xDistance < distanceForForcefieldLimit){
+                  xDistance = distanceForForcefieldLimit
+                }
+                if(yDistance < distanceForForcefieldLimit){
+                  yDistance = distanceForForcefieldLimit
+                }
+
+                //prevent dividing by zeros:
+                if(!(xDistance == 0 || yDistance == 0)){
+                  forceFieldVector[0] += par.forceFieldStrength/(xDistance*xDistance)
+                  forceFieldVector[1] += par.forceFieldStrength/(yDistance*yDistance)
+                  velocity[0]+=forceFieldVector[0]
+                  velocity[1]+=forceFieldVector[1]
+                  //for performance, forceFieldVector could be elimated and velocity added directly to instead
+                }
+            }
+            console.log(forceFieldVector)
+          }
+            velocity[0]*=pfsrp.velocityMultipler
+            velocity[1]*=pfsrp.velocityMultipler
+            this.setVelocity(velocity)
+          }
+      }
+
         /*update x-axis position using differential equation dx/dt = v_x*/
         var dx = this.getVelocity()[0] * td
         this.setX(this.x+dx)
         var dy = this.getVelocity()[1] * td
         this.setY(this.y+dy);
 
-        if(par.stochasticRobotPaths){
-        //Equation for velocity taken from Vul, Frank, and Tenenbaum (2009), producing an Ornstein-Uhlenbeck process:
-        var acceleration =
-        this.setVelocity([par.robotInertia * this.velocity[0] - par.springConstant])
-        }
         //if it's in implode and explode mode, have it implode if it's inside an occluder and explode til it's at the normal radius if it's outside
         if(par.implodeExplodeMode){
           if(circleIsInAnOccluder([this.x, this.y], this.radius)){
@@ -1573,13 +1626,6 @@ function circleIsInAnOccluder(center, radius){
   return false; //never called if true is returned in the loop
 }
 
-var pts = []
-var numPts = 100
-for(var i=0; i<numPts; i++){
-  pts.push(randGaussian(10,1))
-  curLevel.view.showPoint([i*6.5,pts[i]*10])
-}
-console.log(pts)
 
     function level(model, view, controller, levelDuration) {
       this.timer = new timer()
