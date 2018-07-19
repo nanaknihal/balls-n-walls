@@ -684,10 +684,10 @@ jsPsych.plugins["mot-game"] = (function() {
         if(collisionType == "wall") {
           this.wallCollideAnimation.showAnimation(this.x, this.y)
         } else if (collisionType == "userObstacle") {
-          this.wallCollideAnimation.showAnimation(this.x, this.y)
+          this.userObstacleCollideAnimation.showAnimation(this.x, this.y)
         }
       }
-      this.wallCollideAnimation = (this.explosive) ? new wallExplodeAnimation() : new emptyAnimation();
+      this.wallCollideAnimation = (this.explosive) ? new wallExplodeAnimation() : new emptyAnimation()
       this.userObstacleCollideAnimation = new userObstacleCollideAnimation()
       this.occluderEnterAnimation = par.classicMode ? new emptyAnimation() : new teleportBeginAnimation()
       this.occluderExitAnimation = par.classicMode ? new emptyAnimation() : new teleportEndAnimation()
@@ -741,8 +741,7 @@ jsPsych.plugins["mot-game"] = (function() {
           //now, set the velocity iff it's not within any obstacles (it should smoothly pass through obsacles it's already within, and it should only be
           //within them if they were created on top of it), and if collisions are enabled. Otherwise, if it's not colliding with a user obstacle, it can be set regardless.
           if((this.obstacleSegmentsIAmInsideOf.length < 1 && this.collisionsEnabled) || collisionType != "userObstacle"){
-            this.velocity = v; console.log("setting velocity")} else{console.log("setting velocity blocked" + this.obstacleSegmentsIAmInsideOf.length)
-          }
+            this.velocity = v; /*console.log("setting velocity")*/} /*else{console.log("setting velocity blocked" + this.obstacleSegmentsIAmInsideOf.length)}*/
 
       }
 
@@ -801,7 +800,6 @@ jsPsych.plugins["mot-game"] = (function() {
                   //for performance, forceFieldVector could be elimated and velocity added directly to instead
                 }
             }
-            console.log(forceFieldVector)
           }
             velocity[0]*=pfsrp.velocityMultipler
             velocity[1]*=pfsrp.velocityMultipler
