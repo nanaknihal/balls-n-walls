@@ -58,6 +58,18 @@ jsPsych.plugins["mot-game"] = (function() {
       return Math.sqrt(xdist*xdist + ydist*ydist)
     }
 
+    //generates a random number according to Gaussian distribution with mean 0 and standard deviation SD. It uses the Box-Muller transform method.
+    //From https://stackoverflow.com/a/36481059
+    var randGaussian = function(mean, sd){
+       //they start at 0 so they're randomized anyway
+       var a=0, b=0;
+       //replace any 0 values with a random value becuase the BM transform uses the range (0,1)
+       while(a==0) a=Math.random();
+       while(b==0) b=Math.random();
+       var randWithMeanZeroAnSDOne = Math.sqrt(-2*Math.log(a)) * Math.cos(2*Math.PI*b)
+       return randWithMeanZeroAnSDOne * sd + mean
+    }
+
     //point is in format [x,y]; rect is in format {x: , y: , width: , height: }
     var pointIsWithinRectangle = function(point, rect){
       var furthestRightCoordinate = rect.x + rect.width
@@ -415,12 +427,14 @@ jsPsych.plugins["mot-game"] = (function() {
         var timestepDuration = newTime - this.currentTime
         this.currentTime = newTime
 
+        /*bad motion algorithm:
+        //if it's in stochasticRobotPaths mode,
         //every 500ms (with 60ms leeway), give the balls random velocities between __ and __ in each direction - combine this with the next for loop if it works; they're the same thing)
-        if(Math.round(newTime % 500 < 60)){
+        if((par.stochasticRobotPaths || par.classicMode) && Math.round(newTime % 500 < 60)){
           for(var i = 0, numBalls = this.balls.length; i < numBalls; i++){
             this.balls[i].setVelocity([0.24*(Math.random()-0.5), 0.24*(Math.random()-0.5)])
           }
-        }
+        }*/
         //Checks for collision with the four walls surrounding the game, NOT user-defined obstacles/walls
         this.executeWallCollisions = function(){
 
@@ -736,16 +750,18 @@ jsPsych.plugins["mot-game"] = (function() {
         if(td == 0 | td > 100){
           td = 30
         }
-        var stuckInWall = this.x-this.radius < 0 || this.x+radius > w || this.y-this.radius < 0 || this.y-this.radius > h
+        //var stuckInWall = this.x-this.radius < 0 || this.x+radius > w || this.y-this.radius < 0 || this.y-this.radius > h
         /*update x-axis position using differential equation dx/dt = v_x*/
         var dx = this.getVelocity()[0] * td
-        var newX = this.getX() + dx;
-        this.setX(newX)
+        this.setX(this.x+dx)
         var dy = this.getVelocity()[1] * td
-        //console.log(timestepDuration)
-        var newY = this.getY() + dy
-        this.setY(newY);
+        this.setY(this.y+dy);
 
+        if(par.stochasticRobotPaths){
+        //Equation for velocity taken from Vul, Frank, and Tenenbaum (2009), producing an Ornstein-Uhlenbeck process:
+        var acceleration =
+        this.setVelocity([par.robotInertia * this.velocity[0] - par.springConstant])
+        }
         //if it's in implode and explode mode, have it implode if it's inside an occluder and explode til it's at the normal radius if it's outside
         if(par.implodeExplodeMode){
           if(circleIsInAnOccluder([this.x, this.y], this.radius)){
@@ -951,7 +967,7 @@ jsPsych.plugins["mot-game"] = (function() {
       this.ctx = null
       this.highlightingSelectedBalls = false
       this.pointsToShow = new Array(),
-      this.showPoint = function(pt) {this.pointsToShow.push(pt)}
+      this.showPoint = function(pt) {this.pointsToShow.push(pt); console.log(this.pointsToShow)}
 
       this.initialized = false
       this.init = function(){
@@ -1557,6 +1573,13 @@ function circleIsInAnOccluder(center, radius){
   return false; //never called if true is returned in the loop
 }
 
+var pts = []
+var numPts = 100
+for(var i=0; i<numPts; i++){
+  pts.push(randGaussian(10,1))
+  curLevel.view.showPoint([i*6.5,pts[i]*10])
+}
+console.log(pts)
 
     function level(model, view, controller, levelDuration) {
       this.timer = new timer()
@@ -1637,5 +1660,6 @@ function circleIsInAnOccluder(center, radius){
 
     curLevel.beginGame()
 }
+
   return plugin;
 })();

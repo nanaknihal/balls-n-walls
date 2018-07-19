@@ -49,104 +49,31 @@ var par = {
     currentSavedFrameIndex++
   }
 
-  function beginGame(){
-    replayView.init()
-    var initialFrameDuration = 1300 //ms
-    replayTimer.reset(par.levelDuration/1000, "green")
-    replayTimer.start()
-    view.displayTimer(replayTimer)
 
-    //fake model object that has the initial frame and enough variables and functions for view to display it like it does to a normal model.
-    var fakeInitialFrame = {
-      balls: []
-    }
-    var bic = par.replayModeParameters.ballInitialConditions
-    for (var i = 0; i<bic.length; i++){
-      fakeInitialFrame.push({})
-      fakeInitialFrame[i].x = bic[i].position[0]
-      fakeInitialFrame[i].y = bic[i].position[1]
-      fakeInitialFrame[i].radius = bic[i].radius
-    }
-    view.showInitialFrame(fakeInitialFrame,initialFrameDuration) //show the frame where the exploding balls look different
-
-    //now set what happens after the initial frame is over:
-    setTimeout(function(){
-
-        curLevel.timer.reset(levelDuration/1000, "green")
-        curLevel.timer.start()
-        curLevel.timer.unHide()
-        //then start the first update
-        updateGame(0); //beginning frame is 0
-
-  }, initialFrameDuration)
-}
-
-  /*//does visualization of the fake models (and other items to be displayed) in the canvases
+  //does visualization of the fake models (and other items to be displayed) in the canvases
   function view(mod) {
     this.model = mod
     //get canvas, context
-    this.can = null
-    this.ctx = null
-    this.highlightingSelectedBalls = false
-    this.pointsToShow = new Array(),
+    this.can = document.getElementById("mainCanvas")
+    this.ctx = this.can.getContext("2d")
+    this.pointsToShow = new Array()
     this.showPoint = function(pt) {this.pointsToShow.push(pt)}
 
     this.initialized = false
-    this.init = function(){
-      this.can = document.getElementById('mainCanvas')
-      this.ctx = this.can.getContext("2d")
-      this.initialized = true
-    }
 
-    this.showInitialFrame = function(mod, initialFrameDuration){
-      //just call view's update function once. However, the exploding balls' colors must be changed first.
-      //change the exploding balls' colors:
-      for(var j = 0, balls = mod.getBalls(), numBalls = balls.length; j < numBalls; j++){
-        var ball = balls[j];
-          if(ball.explosive){
 
-          ball.setColor("orange")
-          //alert(duration)
-        }
-      this.update(mod)
-      setTimeout(curLevel.model.resetAllBalldesigns, initialFrameDuration)
-
-      }
-
-      //show the occluder images
-      this.showOccluders(mod.getOccluderRects)
-    }
-
-    this.update = function(mod, newTime){
-      var timestepDuration = newTime - this.currentTime
-      this.currentTime = newTime
-
-      if(this.initialized){
-        //var can = this.can;
-        var ctx = this.ctx; //easier to work with than having to write this.ctx each time
-        //clear the context:
-        ctx.clearRect(0,0, w, h);
-        var balls = mod.getBalls();
-
-        //Iterate through the balls and display their current attributes:
-        for(var j = 0, numBalls = balls.length; j < numBalls; j++){
-          var ball = balls[j];
-          var color = ball.getColor()
-          ctx.beginPath();
-          ctx.fillStyle = color
-          ctx.arc(ball.getX(), ball.getY(), ball.getRadius(), 0, 2*Math.PI);
-          ctx.fill();
     /*    uncomment for displaying an image for a ball
             var imgElement = new Image();
             imgElement.src = "ball.png";
             ctx.drawImage(imgElement, ball.getX(), ball.getY());
     *
           ctx.closePath();
-        }
+        }*/
 
         //not using commented parts anymore:
         //for(var j = 0, numWalls = 4; j < numWalls; j++){
           //var wall = model.walls[j];
+          //display the walls:
           var color = "green"
           ctx.beginPath();
           ctx.fillStyle = color
@@ -203,13 +130,7 @@ var par = {
         }
       }
 
-      //show occluder maybe...
-      //var numFramesInExperiment = par.duration/timestepDuration
-      //this should be true par.avg_occluders_per_level times per level
-      //if(Math.round(Math.random()*numFramesInExperiment/par.avg_occluders_per_level) == 0) {
-      //  var oc = new occluder()
-      //  oc.show()
-      //}
+
     },
 
     //img is a path to the image file. options is an object: {objectToNotifyWhenDoneDisplaying: value, customContext: value}
@@ -266,36 +187,6 @@ var par = {
       ctx.clearRect(0,0,w,h)
     }
 
-    //display a message to the player
-    this.message = function(msg){alert(msg)}
-
-    this.displayDefusalMessage = function(defusalTimeLimit){
-      var ocan = document.getElementById("overlay")
-      var octx = ocan.getContext('2d')
-      octx.textAlign = "center"
-      octx.font = "30px Helvetica"
-      octx.strokeText("Defusal Mode", w/2, h/3)
-      octx.font = ("12px Arial")
-      octx.fillText("You have " + defusalTimeLimit/1000 + " seconds to defuse the exploding balls. but don't choose the wrong ball!", w/2, h/2)
-    }
-
-    this.highlightSelectedBalls = function(event){
-      var can = document.getElementById('selectionCanvas')
-      var ctx = can.getContext('2d')
-      //iterate through the balls to check whether the mouth is within them:
-      var balls = curLevel.model.getBalls()
-      for(var n = 0, numBalls = balls.length; n < numBalls; n++){
-        var ball = balls[n]
-        var selectionRadiusAddOn = 1
-        var totalRadius = ball.getRadius()+selectionRadiusAddOn
-
-        if(distanceBetween([event.pageX,event.pageY], [ball.getX(), ball.getY()]) < ball.getRadius()){
-          //display a border around the ball
-          ctx.beginPath()
-          ctx.strokeStyle = "red"
-          ctx.arc(ball.getX(), ball.getY(), totalRadius, 0, 2*Math.PI)
-          ctx.stroke()
-          ctx.closePath();
 
         } else {
           //clear the rect aronud the ball
@@ -340,7 +231,7 @@ var par = {
         ctx.clearRect(0,0,canWidth,canHeight);
       }
     }
-  }*/
+  }
 
 
 
@@ -411,15 +302,38 @@ var par = {
     this.pause = function(){this.paused = true}
 }
 
-var showObsPoints = function(){
-  var sm = data.savedModel
-  for(var m = 0, len = sm.length; m < len; m++){
-    var obs = sm[m].userObstacles
-    for(var o = 0, l = obs.length; o < l; o++){
-      for(var p = 0, pix = obs[o].pixels, pl = pix.length; p < pl; p++){
-      curLevel.view.showPoint(pix[p])
+displayObstacles(data.savedModel[frame].userObstacles)
+function displayObstacles(obstacles){
+  /*var sm = data.savedModel
+  for(var m = 0, len = sm.length; m < len; m++){*/
+    var obstacles = sm[m].userObstacles
+    for(var o = 0, l = obstacles.length; o < l; o++){
+      var ob = obs[j]
+      for(var o = 0, pix = ob.pixels, numPix = pix.length, rad = ob.getRadius(); o<numPix; o++){
+        //get x and y values of the pixel
+        var x = pix[o][0]
+        var y = pix[o][1]
+
+        var color = "maroon"
+        //draw circles of radius rad around each pixel
+        ctx.beginPath()
+        ctx.fillStyle = color
+        ctx.arc(x, y, rad, 0, 2*Math.PI)
+        ctx.fill()
+
+        //then draw a line from the pixel to the next pixel (if the next pixel exists)
+        if(o < numPix-1){
+          ctx.fillStyle = color
+          ctx.moveTo(pix[o][0], pix[o][1])
+          ctx.lineTo(pix[o+1][0], pix[o+1][1])
+          ctx.stroke();
+        }
+
+        ctx.closePath()
+
+      }
       }
     }
-  }
+  //}
 }
 </script>
