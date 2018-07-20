@@ -85,8 +85,6 @@ jsPsych.plugins["mot-game"] = (function() {
       {
         return true
       } else {
-        var ctx = document.getElementById("occluderCanvas").getContext("2d")
-        ctx.arc(point[0], point[1], 3, 0, 2*Math.PI)
         return false
       }
     }
@@ -119,7 +117,6 @@ jsPsych.plugins["mot-game"] = (function() {
          event.pageX = pt.position[0];
          event.pageY = pt.position[1]
        }
-       curLevel.view.showPoint(pt.position)
        curLevel.model.addPixelsToUserObstacles(event)
        console.log(event)
      }, time) //(the time created is measured after the gameplay part begins so initialFrameDuration is added)
@@ -387,7 +384,7 @@ jsPsych.plugins["mot-game"] = (function() {
                 //this is being used though:
                 //Consider the following scenario: the collisionPoint is not actually the closest point on the wall's extension. This happens when the ball collides with
                 // an endpoint of the wall. For these cases, set collisionPoint to the wall's endpoint:
-                var radPad = 1
+                var radPad = par.userObstacleThickness
                 if(distanceBetween(ballPoint, wallPoint) <= rad+radPad) {
                   collisionPoint = wallPoint;
                   //treat the collision point as a small circle and collide off the tangent line. luckily, the vector normal to the tangent line
@@ -402,7 +399,8 @@ jsPsych.plugins["mot-game"] = (function() {
                 }
                 //Check whether the collision point is actually within the wall and not just in its extension
                   //collision padding - how far away a ball needs to be from an obstacle for it to collide:
-                  var obColPad = 1
+                  var obColPad = par.userObstacleThickness
+                  console.log(obColPad)
                 var collisionIsWithinSegment = (collisionPoint[0] >= Math.min(wallPoint[0], nextWallPoint[0])-obColPad) &&
                                            (collisionPoint[0] <= Math.max(wallPoint[0], nextWallPoint[0])+obColPad) &&
                                            (collisionPoint[1] >= Math.min(wallPoint[1], nextWallPoint[1])-obColPad) &&
@@ -775,9 +773,9 @@ jsPsych.plugins["mot-game"] = (function() {
         if(!this.colliding){
           if(par.stochasticRobotPaths){
             pfsrp = par.parametersForStochasticRobotPaths
-            //Equation for velocity taken from Vul, Frank, and Tenenbaum (2009), producing an Ornstein-Uhlenbeck process: (some modifications are here: the
-            //velocity is multiplied by velocityMultipler and force fields such as in Scholl & Pylyshyn (1999))
-            var acceleration = [randGaussian(0,pfsrp.accelerationStandardDeviation), randGaussian(0,pfsrp.accelerationStandardDeviation)]
+            //Equation for velocity and acceleration taken from Vul, Frank, and Tenenbaum (2009), producing an Ornstein-Uhlenbeck process: (some modifications are here:
+            //the velocity is multiplied by velocityMultipler and force fields such as in Scholl & Pylyshyn (1999)). Acceleration is also disabled upon collision.
+            var acceleration = this.colliding ? 0 : [randGaussian(0,pfsrp.accelerationStandardDeviation), randGaussian(0,pfsrp.accelerationStandardDeviation)]
             var velocity =[ (pfsrp.inertia*this.velocity[0] - pfsrp.springConstant*(par.gameWidth/2-this.x) + acceleration[0]),
                             (pfsrp.inertia*this.velocity[1] - pfsrp.springConstant*(par.gameHeight/2-this.y) + acceleration[1])
                           ]
@@ -926,7 +924,7 @@ jsPsych.plugins["mot-game"] = (function() {
     function userObstacle() {
       this.pixels = new Array(),
       this.maxPixels = par.maxUserDefinedObstacleSegments+1,
-      this.radius = 4,
+      this.radius = par.userObstacleThickness+7,
       this.minDistanceBetweenPixels = par.minDistanceBetweenObstaclePixels,
       this.maxDistanceBetweenPixels = par.maxDistanceBetweenObstaclePixels,
       //minDistanceToCallItSamePixelSquared: 300,
@@ -943,7 +941,7 @@ jsPsych.plugins["mot-game"] = (function() {
         if(event.isFromReplay !== undefined && event.type == "mousemove"){
           pos = [event.x, event.y]
         } else{
-          pos = getPixelPositionRelativeToObject([event.pageX, event.pageY], curLevel.view.can)
+          pos = getPixelPositionRelativeToObject([event.pageX, event.pageY], curLevel.view.mainCan)
         }
         console.log("pos: " + pos)
         //if there are no existing pixels/points, just add it without the for loop
@@ -1040,8 +1038,8 @@ jsPsych.plugins["mot-game"] = (function() {
 
       this.initialized = false
       this.init = function(){
-        this.can = document.getElementById('mainCanvas')
-        this.ctx = this.can.getContext("2d")
+        this.mainCan = document.getElementById('mainCanvas')
+        this.mainCtx = this.mainCan.getContext("2d")
         this.initialized = true
       }
 
@@ -1068,80 +1066,94 @@ jsPsych.plugins["mot-game"] = (function() {
         }
       }
 
+      this.showBalls = function(balls){
+        var ctx = this.mainCtx
+        //Iterate through the balls and display their current attributes:
+        for(var j = 0, numBalls = balls.length; j < numBalls; j++){
+          var ball = balls[j];
+          if(!ball.occluded){
+            var color = ball.getColor()
+            ctx.beginPath();
+            ctx.fillStyle = color
+            ctx.arc(ball.getX(), ball.getY(), ball.getRadius(), 0, 2*Math.PI);
+            ctx.fill();
+      /*    uncomment for displaying an image for a ball
+              var imgElement = new Image();
+              imgElement.src = "ball.png";
+              ctx.drawImage(imgElement, ball.getX(), ball.getY());
+      */
+            ctx.closePath();
+          }
+        }
+      }
+      this.showWalls = function(wallThickness){
+        var ctx = this.mainCtx
+        //not using commented parts anymore:
+        //for(var j = 0, numWalls = 4; j < numWalls; j++){
+          //var wall = model.walls[j];
+          var color = "green"
+          ctx.beginPath();
+          ctx.fillStyle = color
+          //ctx.rect(wall.getX(), wall.getY(), wall.getW(), wall.getL())
+          ctx.rect(0,0,wallThickness, h)
+          ctx.rect(0,0,w,wallThickness)
+          ctx.rect(w-wallThickness,0,wallThickness,h)
+          ctx.rect(0,h-wallThickness,w,wallThickness)
+          ctx.fill();
+          ctx.closePath();
+        //}
+      }
+      this.showObstacles = function(obstacles){
+        var ctx = this.mainCtx
+        //display the points/pixels in the user-defined wall as circles and draw line segments between them (except for before the first and after the last pixel)
+        for(var j = 0, obs = obstacles, numObs = obs.length; j<numObs; j++){
+          var ob = obs[j]
+          for(var o = 0, pix = ob.pixels, numPix = pix.length, rad = ob.getRadius(); o<numPix; o++){
+            //get x and y values of the pixel
+            var x = pix[o][0]
+            var y = pix[o][1]
+
+            var color = "#2CFFCF"
+            //draw circles of radius rad around each pixel
+            ctx.beginPath()
+            ctx.fillStyle = color
+            //ctx.arc(x, y, rad, 0, 2*Math.PI)
+            //ctx.fill()
+            ctx.fillRect(x-rad/2,y-rad/2,rad,rad)
+
+            //then draw a line from the pixel to the next pixel (if the next pixel exists)
+            if(o < numPix-1){
+              var color = "#2CFFCF"
+              ctx.strokeStyle = "#2CFFCF"
+              ctx.lineWidth = par.userObstacleThickness
+              ctx.moveTo(pix[o][0], pix[o][1])
+              ctx.lineTo(pix[o+1][0], pix[o+1][1])
+              ctx.stroke();
+            }
+
+            ctx.closePath()
+
+          }
+        }
+      }
+
       this.update = function(mod, newTime){
         var timestepDuration = newTime - this.currentTime
         this.currentTime = newTime
 
         if(this.initialized){
           //var can = this.can;
-          var ctx = this.ctx; //easier to work with than having to write this.ctx each time
+          var ctx = this.mainCtx; //easier to work with than having to write this.ctx each time
           //clear the context:
           ctx.clearRect(0,0, w, h);
-          var balls = mod.getBalls();
 
-          //Iterate through the balls and display their current attributes:
-          for(var j = 0, numBalls = balls.length; j < numBalls; j++){
-            var ball = balls[j];
-            if(!ball.occluded){
-              var color = ball.getColor()
-              ctx.beginPath();
-              ctx.fillStyle = color
-              ctx.arc(ball.getX(), ball.getY(), ball.getRadius(), 0, 2*Math.PI);
-              ctx.fill();
-        /*    uncomment for displaying an image for a ball
-                var imgElement = new Image();
-                imgElement.src = "ball.png";
-                ctx.drawImage(imgElement, ball.getX(), ball.getY());
-        */
-              ctx.closePath();
-            }
-          }
+          this.showBalls(mod.getBalls())
+          this.showWalls(par.wallThickness)
+          this.showObstacles(mod.userObstacles)
 
-          //not using commented parts anymore:
-          //for(var j = 0, numWalls = 4; j < numWalls; j++){
-            //var wall = model.walls[j];
-            var color = "green"
-            ctx.beginPath();
-            ctx.fillStyle = color
-            //ctx.rect(wall.getX(), wall.getY(), wall.getW(), wall.getL())
-            var wallThickness = mod.wallThickness
-            ctx.rect(0,0,wallThickness, h)
-            ctx.rect(0,0,w,wallThickness)
-            ctx.rect(w-wallThickness,0,wallThickness,h)
-            ctx.rect(0,h-wallThickness,w,wallThickness)
-            ctx.fill();
-            ctx.closePath();
-          //}
 
-          //display the points/pixels in the user-defined wall as circles and draw line segments between them (except for before the first and after the last pixel)
-          for(var j = 0, obs = mod.userObstacles, numObs = obs.length; j<numObs; j++){
-            var ob = obs[j]
-            for(var o = 0, pix = ob.pixels, numPix = pix.length, rad = ob.getRadius(); o<numPix; o++){
-              //get x and y values of the pixel
-              var x = pix[o][0]
-              var y = pix[o][1]
 
-              var color = "maroon"
-              //draw circles of radius rad around each pixel
-              ctx.beginPath()
-              ctx.fillStyle = color
-              ctx.arc(x, y, rad, 0, 2*Math.PI)
-              ctx.fill()
-
-              //then draw a line from the pixel to the next pixel (if the next pixel exists)
-              if(o < numPix-1){
-                ctx.fillStyle = color
-                ctx.moveTo(pix[o][0], pix[o][1])
-                ctx.lineTo(pix[o+1][0], pix[o+1][1])
-                ctx.stroke();
-              }
-
-              ctx.closePath()
-
-            }
-          }
-
-          //show the points:
+          //show the points the showPoint() added to this.pointsToShow:
           for(var j = 0, pix = this.pointsToShow, numPix = pix.length; j<numPix; j++){
             var x = pix[j][0]
             var y = pix[j][1]
