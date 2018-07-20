@@ -455,16 +455,11 @@ jsPsych.plugins["mot-game"] = (function() {
             //flip motion in x-direction
             ball.collide("wall")
             ball.setVelocity([-vel[0], vel[1]])
-            ball.move(timestepDuration, {force:true})
           } //IF MULTIPLE COLLISIONS IN ONE UPDATE ARE A PROBLEM, PUT AN ELSE HERE
           if(collisionTopWall || collisionBottomWall) {
             //flip motion in y-direction
             ball.collide("wall")
             ball.setVelocity([vel[0], -vel[1]])
-            ball.move(timestepDuration, {force:true})
-          } else {
-            //no wall collision:
-            ball.move(timestepDuration, {force:false})
           }
 
           /*NOT USING THIS INEFFICIENT WALL-COLLISION DETECTION ALGORITHM:
@@ -589,7 +584,6 @@ jsPsych.plugins["mot-game"] = (function() {
                         var resultingVelocity = [wallNormalVector_Normalized[0]*negativeTwoTimesDotP+velocityVector[0], wallNormalVector_Normalized[1]*negativeTwoTimesDotP+velocityVector[1]]
 
                         ball.setVelocity(resultingVelocity, "userObstacle")
-                        ball.move(timestepDuration, {force:true})
                         //  this.color = "red"//"#"+((1<<24)*Math.random()|0).toString(16)
     /*not using:
                           angleBetweenResultingVelocityAndXAxis = angleBetweenWallAndXAxis - angleBetweenVelocityAndWall
@@ -602,9 +596,6 @@ jsPsych.plugins["mot-game"] = (function() {
                           ball.setVelocity([resultingVelXComponent, resultingVelYComponent])*/
                       }
                       else(console.log(ballToWallClosestDistance, rad))
-                    } else{
-                      //no collision
-                      ball.move(timestepDuration, {force:false})
                     }
 
                       }
@@ -614,9 +605,9 @@ jsPsych.plugins["mot-game"] = (function() {
         this.executeWallCollisions()
         this.executeObstacleCollisions()
         //move the balls
-        //for(var i = 0, numBalls = this.balls.length; i < numBalls; i++){
-        //  this.balls[i].move(timestepDuration)
-        //}
+        for(var i = 0, numBalls = this.balls.length; i < numBalls; i++){
+          this.balls[i].move(timestepDuration)
+        }
 
       }
      }
@@ -646,6 +637,7 @@ jsPsych.plugins["mot-game"] = (function() {
       this.id = id
       this.occluded = false //only used for implosion/explosion/teleportation occlusion
       this.collisionsEnabled = true //collisions allowed
+      this.colliding = false
       this.obstacleSegmentsIAmInsideOf = []
       //segment is of form [segmentStart, segmentEnd]
       this.isWithinObstacleSegment = function(segment){
@@ -663,6 +655,7 @@ jsPsych.plugins["mot-game"] = (function() {
       this.setColor = function(col) {this.color = col}
       this.explosive = (isExplosive == "e")
       this.collide = function(collisionType){
+        this.colliding = true
         if(!this.collisionsEnabled){
         } else if(collisionType == "wall" && this.explosive){
           curLevel.defusalMode(); //COMMENT THIS TO DISABLE DEFUSAL MODE
@@ -752,7 +745,7 @@ jsPsych.plugins["mot-game"] = (function() {
       this.rightestColumn = function() {return this.x + this.radius}
 
       //move the ball one increment accorsing to its current velocity and position:
-      this.move = function(timestepDuration, options){
+      this.move = function(timestepDuration){
         var td = timestepDuration
         //account for strange timestepDuration values like 0 or very high values:
         if(td == 0 | td > 100){
@@ -760,10 +753,9 @@ jsPsych.plugins["mot-game"] = (function() {
         }
         //var stuckInWall = this.x-this.radius < 0 || this.x+radius > w || this.y-this.radius < 0 || this.y-this.radius > h
 
-        //only do the following modifications to acceleration and velocity if allowed (they will NOT be allowed after collision with
-        // the ball is registered and the ball will have to follow the natural resulting direction after the collision). To disable them,
-        //use force:true as part of the options argument
-        if(!options.force){
+        //only do the following modifications to acceleration and velocity if allowed (they will NOT be allowed in a frame where the ball
+        //is colliding.
+        if(!this.colliding){
           if(par.stochasticRobotPaths){
             pfsrp = par.parametersForStochasticRobotPaths
             //Equation for velocity taken from Vul, Frank, and Tenenbaum (2009), producing an Ornstein-Uhlenbeck process: (some modifications are here: the
@@ -774,13 +766,20 @@ jsPsych.plugins["mot-game"] = (function() {
                           ]
             if(par.forceFields){
               var forceFieldVector = [0,0];
+              var itemsWithFields = []
+              //balls should have fields
+              itemsWithFields.push.apply(curLevel.model.getBalls())
+              if(par.borderWallsHaveForceFields){
+                //add x and y value for walls. these will make the balls avoid walls
+                itemsWithFields.push({x:0,y:0}, {x:w,y:h})
+              }
               //calculate force field by the distance between this robot/ball and other robot/balls. iterate through every ball:
-              for(var r = 0, balls = curLevel.model.getBalls()/*maybe don't hardcode curLevel.model to reduce coupling*/, numBalls = balls.length; r < numBalls; r++){
+              for(var r = 0, numItemsWFields = itemsWithFields.length; r < numItemsWFields; r++){
                 //add the x and y squared distances to their respective components in the vector. At the end of the loop, the resulting vector will be:
                 //[sum of every 1/(x-distances squared), sum of every 1/(y-distances squared)]
 
-                var xDistance = this.x-balls[r].x
-                var yDistance = this.y-balls[r].y
+                var xDistance = this.x-itemsWithFields[r].x
+                var yDistance = this.y-itemsWithFields[r].y
                 //prevent extremely close distances which lead to ridiculously big force fields
                 var distanceForForcefieldLimit = 2
 
@@ -805,6 +804,8 @@ jsPsych.plugins["mot-game"] = (function() {
             velocity[1]*=pfsrp.velocityMultipler
             this.setVelocity(velocity)
           }
+      } else {//if the ball is colliding:
+        this.colliding = false //it's about to uncollide because it's velocity has been set by whatever called move:
       }
 
         /*update x-axis position using differential equation dx/dt = v_x*/
