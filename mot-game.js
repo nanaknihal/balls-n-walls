@@ -384,7 +384,7 @@ jsPsych.plugins["mot-game"] = (function() {
                 //this is being used though:
                 //Consider the following scenario: the collisionPoint is not actually the closest point on the wall's extension. This happens when the ball collides with
                 // an endpoint of the wall. For these cases, set collisionPoint to the wall's endpoint:
-                var radPad = par.userObstacleThickness
+                var radPad = 0//par.userObstacleThickness
                 if(distanceBetween(ballPoint, wallPoint) <= rad+radPad) {
                   collisionPoint = wallPoint;
                   //treat the collision point as a small circle and collide off the tangent line. luckily, the vector normal to the tangent line
@@ -399,7 +399,7 @@ jsPsych.plugins["mot-game"] = (function() {
                 }
                 //Check whether the collision point is actually within the wall and not just in its extension
                   //collision padding - how far away a ball needs to be from an obstacle for it to collide:
-                  var obColPad = par.userObstacleThickness
+                  var obColPad = 0//par.userObstacleThickness
                   console.log(obColPad)
                 var collisionIsWithinSegment = (collisionPoint[0] >= Math.min(wallPoint[0], nextWallPoint[0])-obColPad) &&
                                            (collisionPoint[0] <= Math.max(wallPoint[0], nextWallPoint[0])+obColPad) &&
@@ -462,12 +462,14 @@ jsPsych.plugins["mot-game"] = (function() {
           var collisionBottomWall = ballPoint[1]+collisionRadius >= h
 
           var vel = ball.getVelocity()
-          if(collisionLeftWall || collisionRightWall){
-            //flip motion in x-direction
+          //flip motion in x-direction IF it's touching the left or rigth wall and going towards the respective wall: (sometimes, balls can end up too far inside the wall,
+          //and their velocity gets constantly flipped and they don't escapE
+          if((collisionLeftWall && vel[0] > 0) || (collisionRightWall && vel[0] < 0)){
             ball.collide("wall")
             ball.setVelocity([-vel[0], vel[1]])
-          } //IF MULTIPLE COLLISIONS IN ONE UPDATE ARE A PROBLEM, PUT AN ELSE HERE
-          if(collisionTopWall || collisionBottomWall) {
+          }
+         //IF MULTIPLE COLLISIONS IN ONE UPDATE ARE A PROBLEM, PUT AN ELSE HERE
+          if((collisionTopWall && vel[1] > 0) || (collisionBottomWall && vel[1] < 0)) {
             //flip motion in y-direction
             ball.collide("wall")
             ball.setVelocity([vel[0], -vel[1]])
@@ -1546,6 +1548,7 @@ jsPsych.plugins["mot-game"] = (function() {
             data.defusalDuration = curLevel.timer.getTime(true)
             data.correctGuesses = curLevel.controller.correctGuesses
             data.incorrectGuesses = curLevel.controller.incorrectGuesses
+            curLevel.model.incrementLives(curLevel.view.showLives(curLevel.model.lives))
             alert("Level Passed!");
             break;
         }
