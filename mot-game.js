@@ -23,7 +23,8 @@ jsPsych.plugins["mot-game"] = (function() {
     "<canvas id='occluderCanvas' style='position:absolute; left: 0; top: 0; z-index:2' height='" + h + "' width = '" + w + "'></canvas>" +
     "<!--selection canvas for ball selection in defusal mode:-->" +
     //it may be good to not hard-code the top and left value but rather use variables...this will be decided later when we do more styling
-    "<canvas id='selectionCanvas' style='position:absolute; left: 0; top: 0; z-index:1' height='" + h + "' width = '" + w + "'></canvas>";
+    "<canvas id='selectionCanvas' style='position:absolute; left: 0; top: 0; z-index:1' height='" + h + "' width = '" + w + "'></canvas>" +
+    "<canvas id='livesCanvas' style='position:absolute; left: 0; top: 0; z-index:3' height='" + h + "' width = '" + w + "'></canvas>";
 
     var data = {
       levelDuration: par.duration,
@@ -44,7 +45,9 @@ jsPsych.plugins["mot-game"] = (function() {
       createdPoints:[],
       occluders: par.occluders,
       occluderRectangles: par.occluderRectangles,
-      savedModel: par.savedModel
+      savedModel: par.savedModel,
+      //delete all the above that begin with par. and replace it with:
+      parameters: par
 
     }
 
@@ -141,6 +144,16 @@ jsPsych.plugins["mot-game"] = (function() {
       this.getOccluderRects = function(){return this.occluderRects}
       /*this.occluders = [new occluder("occluders/occluder1.png", w/3, h/2), new occluder("occluders/occluder1.png", 2*w/3, h/2)];*/
       this.numExplodingBalls = function(){return this.explodingBalls.length}
+      this.lives = par.numLives
+      //usually callback is view.showLives()
+      this.decrementLives = function(callback){
+        this.lives--
+        callback();
+      }
+      this.incrementLives = function(callback){
+        this.lives++
+        callback();
+      }
 
       var myself = this
       this.resetAllBallDesigns = function(){
@@ -658,6 +671,10 @@ jsPsych.plugins["mot-game"] = (function() {
         this.colliding = true
         if(!this.collisionsEnabled){
         } else if(collisionType == "wall" && this.explosive){
+          //if it's in lives mode, have it decrement a life.
+          if(par.lives){
+            curLevel.model.decrementLives(/*callback:*/function(){curLevel.view.showLives(curLevel.model.lives)})
+          }
           curLevel.defusalMode(); //COMMENT THIS TO DISABLE DEFUSAL MODE
         } else if(collisionType == "userObstacle"){
 
@@ -1039,6 +1056,8 @@ jsPsych.plugins["mot-game"] = (function() {
             //alert(duration)
           }
         this.update(mod)
+        this.showLives(mod.lives)
+        //set timeout for what happens after the initial frame is over:
         setTimeout(curLevel.model.resetAllBallDesigns, initialFrameDuration)
 
         }
@@ -1174,6 +1193,22 @@ jsPsych.plugins["mot-game"] = (function() {
 
       }
 
+      this.showLives = function(lives){
+        //lives is just a number saying how many lives there are, but it could easily be changed to an array with unique lives
+        var img = new Image();
+        img.src = "life.jpg"
+        var width = null
+        img.onload = function(){
+          //clear the previous rect of lives:
+          var ctx = document.getElementById("livesCanvas").getContext("2d")
+          var topLifeCoordinate = 10
+          ctx.clearRect(w/2-img.width*(lives+1)/2, topLifeCoordinate, (lives+1)*img.width, img.height)
+          for(var j = 0; j < lives; j++){
+            ctx.drawImage(img, w/2-img.width*(lives/2-j), topLifeCoordinate)
+          }
+        }
+      }
+
       this.showOccluders = function(occluderRectangles){
         var ctx = document.getElementById("occluderCanvas").getContext("2d")
         var occluderPatternImg = new Image();
@@ -1183,6 +1218,7 @@ jsPsych.plugins["mot-game"] = (function() {
         occluderPatternImg.onload = function(){
           occluderPattern = ctx.createPattern(occluderPatternImg, "repeat")
         }
+
 
         setTimeout(function(){ //setTimeout used because of onload delay
         //loop through occluder rectangles:
