@@ -28,7 +28,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
     //it may be good to not hard-code the top and left value but rather use variables...this will be decided later when we do more styling
     "<canvas id='selectionCanvas' style='position:absolute; left: 0; top: 0; z-index:1' height='" + h + "' width = '" + w + "'></canvas>" +
     "<canvas id='livesCanvas' style='position:absolute; left: 0; top: 0; z-index:3' height='" + h + "' width = '" + w + "'></canvas>" +
-    "<div id='messageBox' style='display:none; animation-name: messagePopUpAnimation; animation-duration: 4s; position:fixed; z-index:500; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; user-select:none'><image id='messageImg' src='robomb-pngs/alert-box.png' style='display:block; margin-left: auto; margin-right: auto; margin-top: 10%; width: 70%'/><p id='msgText'></div>'" +
+    "<div id='messageBox' style='display:none; animation-name: messagePopUpAnimation; animation-duration: 4s; position:fixed; z-index:500; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; user-select:none'><image id='messageImg' src='robomb-pngs/alert-box.png' style='display:block; margin-left: auto; margin-right: auto; margin-top: 10%; width: 20%; height: 30%; pointer-events:none'/><p id='msgText'></div>'" +
     "</div>" +
     "<div id='bottomScreenText' style='display:none; animation-name: scrollIt; animation-duration: 10s; position:absolute; z-index:500; left: 40%; top: 50%; width: 100%; height: 100%; overflow: auto'><p id='bottomText' style='user-select:none'>You've held out until the robots could be quarantined. +1 life. However, they are set to go off soon. You have 10 seconds to defuse them by clicking the right ones. \nYou have one defusal kit per bomb, so don't waste any</div>'" +
     //message pop-up animation:
@@ -136,13 +136,13 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
       return new level(m, v, c, levelDuration)
     }
     curLevel = theLevel();
-    var button = {
+    /*var button = {
                       imgUp: 'robomb-pngs/btn-okay-up.png',
                       imgDn: 'robomb-pngs/btn-okay-down.png',
                       onClick: curLevel.view.closeAlertBox,
                       activateWhenEnterPressed: true
                     }
-    curLevel.view.showAlertBox('test', [button])
+    curLevel.view.showAlertBox('test', [button])*/
     function model(numNormalBalls, numExplodingBalls, speed) {
       this.frozen = false //game pauses and model freezes
       this.freeze = function(){this.frozen = true}
@@ -790,8 +790,8 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
       this.move = function(timestepDuration){
         var td = Math.abs(timestepDuration)
         //account for strange timestepDuration values like 0 or very high values:
-        if(td <= 0 | td > 700){
-          td = 30
+        if(td == 0 | td > 40){ //above 40 (25fps) can be buggy - balls move through obstacles in one frame
+          td = 33 //maybe it should be set to 40? but 33 looks good on my screen. maybe td > 40 shoudl read td > 33
         }
 
         //var stuckInWall = this.x-this.radius < 0 || this.x+radius > w || this.y-this.radius < 0 || this.y-this.radius > h
@@ -998,8 +998,8 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
           if(ball.isWithinObstacleSegment([this.pixels[this.pixels.length-1]/*last pixel*/, pos/*this pixel*/])){
             validPosition = false;
             if(!this.imageDisplayCooldownPeriod){
-              //curLevel.view.showImgAtFor("x.png", ball.getX(), ball.getY(), 350, {objectToNotifyWhenDoneDisplaying: this})
-              //this.imageDisplayCooldownPeriod = true
+              curLevel.view.showImgAtFor("robomb-pngs/you-cant-draw-through-robots.png", ball.getX(), ball.getY(), 350, {objectToNotifyWhenDoneDisplaying: this})
+              this.imageDisplayCooldownPeriod = true
             }
             break;
           }
@@ -1353,9 +1353,9 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
           butt.innerHTML = 'test'
           butt.style = style='position:absolute; display:inline; margin-left: 50%; margin-right: 50%; width: 10%'
           butt.src = button.imgUp
-          butt.onclick = button.onClick
+          butt.onclick = function(){butt.src = button.imgDn; butt.onload = function(){setTimeout(button.onClick, 90)}}
           messageDiv.appendChild(butt)
-          if(button.activateWhenEnterPressed){document.addEventListener('keypress', function(e){if(e.keyCode == 13){button.onClick()}})}
+          if(button.activateWhenEnterPressed){document.addEventListener('keypress', function(e){if(e.keyCode == 13){butt.onclick()}})}
 
         }
         messageDiv.style.display = 'block'
@@ -1619,7 +1619,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
             case true: //correct guess
               curLevel.controller.correctGuesses++ //this looks like really bad OOP style but keep in mind it's happening within curLevel.controller
               curLevel.controller.guessesRemaining--
-              curLevel.view.showImgAtFor("robomb-pngs/yep.png", event.pageX, event.pageY, 1000)
+              curLevel.view.showImgAtFor("robomb-pngs/yep-medium.png", event.pageX, event.pageY, 1000)
               if(curLevel.controller.guessesRemaining == 0){
                   if(curLevel.controller.incorrectGuesses == 0){
                     curLevel.controller.endGame("defusalModeSuccess")
@@ -1631,7 +1631,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
             case false:
               curLevel.controller.incorrectGuesses++
               curLevel.controller.guessesRemaining-- //-- instead of set to 0 because then we can collect data about how many the got right/wrong
-              curLevel.view.showImgAtFor("incorrect.png", event.pageX, event.pageY, 1000)
+              curLevel.view.showImgAtFor("robomb-pngs/nope-medium.png", event.pageX, event.pageY, 1000)
               //if this was their last guess:
               if(curLevel.controller.guessesRemaining == 0){
                 curLevel.controller.endGame("incorrectGuess")
@@ -1772,6 +1772,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
         this.startTime = new Date().valueOf(); //0
         this.color = color
         this.updateCurTime()
+        this.timeHasRunOut = false
       }
 
       //this is sensitive to counting up or down

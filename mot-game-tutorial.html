@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+</html>
+<head>
+  <title>B a l l s  n'  W a l l s </title>
+  <script src="jspsych-6.0.3/jspsych.js"></script>
+  <script src="jspsych-6.0.3/plugins/jspsych-html-keyboard-response.js"></script>
+  <script src="mot-game-tutorial.js"></script>
+  <script src="mot-game.js"></script>
+  <script src="jspsych-6.0.3/plugins/jspsych-image-keyboard-response.js"></script>
+
+  <link href="jspsych-6.0.3/css/jspsych.css" rel="stylesheet" type="text/css"></link>
+</head>
+
+<body>
+
+</body>
+<script>
+var gameWidth = 960, gameHeight = 600
+var timeline = []
+
+var welcome = {
+  type:"html-keyboard-response",
+  stimulus:"Welcome to the game. Press any key to begin"
+};
+timeline.push(welcome);
+
+var instructionsPt1 = {
+  type:"html-keyboard-response",
+  stimulus:"<img src='robomb-pngs/screen-splash.svg' height='" + gameHeight + "'></img>'"
+};
+timeline.push(instructionsPt1);
+
+
+/*width and height: */
+/*var w=650, h=650;
+var game = {
+  type:"html-keyboard-response",
+  stimulus: "<!--main canvas where game happens:-->" +
+  "<canvas id='mainCanvas' height='" + h + "' width = '" + w + "'></canvas>" + "<button onclick='curLevel.beginGame()'>S T A R T</button>"
+  +
+  "<!--overlay canvas that doesn't need to be refreshed constantly:-->" +
+  //it may be good to not hard-code the top and left value but rather use variables...this will be decided later when we do more styling
+  "<canvas id='overlay' style='position:absolute; left: 0; top: 0; z-index:2' height='" + h + "' width = '" + w + "'></canvas>"
+  +
+  "<!--selection canvas for ball selection in defusal mode:-->" +
+  //it may be good to not hard-code the top and left value but rather use variables...this will be decided later when we do more styling
+  "<canvas id='selectionCanvas' style='position:absolute; left: 0; top: 0; z-index:1' height='" + h + "' width = '" + w + "'></canvas>"
+
+};*/
+
+function generateRandomOccluderXCoordinate(occluderToWallMinDistance){
+  return occluderToWallMinDistance+Math.random()*(gameWidth-2*occluderToWallMinDistance)
+}
+
+console.log(generateRandomOccluderXCoordinate(10))
+var tutorial = {
+  type:"mot-game-tutorial",
+  stimulus:"<p>test</p>",
+  duration: 15000,
+  ballSpeed: 0.07,
+  ballRadius: 20,
+  numRegularBalls: 2,
+  numExplodingBalls: 1,
+  maxUserDefinedObstacles: 1,
+  maxUserDefinedObstacleSegments: 3,
+  maxDistanceBetweenObstaclePixels:300,
+  minDistanceBetweenObstaclePixels: 66,
+  userObstacleThickness: 3,
+  wallThickness:16,  //16px thick border walls
+  occludersEnabled: false,
+  invisibleOccluders: false,
+  implodeExplodeMode: false,
+  stochasticRobotPaths: false,
+  parametersForStochasticRobotPaths: {inertia: 0.95, springConstant: 0, accelerationStandardDeviation: 0.01, velocityMultipler: 1.030},
+  forceFields: false,
+  forceFieldStrength: 0.0006,
+  occluderRectangles:[{x: generateRandomOccluderXCoordinate(/*put minimum occluder distance from wall here*/100), y: 0, width: 45, height: gameHeight},{x: generateRandomOccluderXCoordinate(190), y: 0, width: 45, height: gameHeight}],
+  lives: true, //toggle whether the player has a fixed number of lives and the related gameplay aspects
+  numLives: 5,
+  gameWidth: gameWidth,
+  gameHeight: gameHeight,
+  savedModel: []
+}
+timeline.push(tutorial)
+
+var waitingScreen = {type:"html-keyboard-response", stimulus: "hit any key when you're ready for level 2"}
+timeline.push(waitingScreen)
+
+
+jsPsych.init({
+  timeline: timeline,
+  on_finish: function(){
+    jsPsych.data.displayData();
+  }
+})
+
+</script>
+</html>
