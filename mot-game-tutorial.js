@@ -1,4 +1,4 @@
-jsPsych.plugins["mot-game"] = (function() {
+jsPsych.plugins["mot-game-tutorial"] = (function() {
   var plugin = {};
 
   plugin.info = {
@@ -29,9 +29,9 @@ jsPsych.plugins["mot-game"] = (function() {
     //it may be good to not hard-code the top and left value but rather use variables...this will be decided later when we do more styling
     "<canvas id='selectionCanvas' style='position:absolute; left: 0; top: 0; z-index:1' height='" + h + "' width = '" + w + "'></canvas>" +
     "<canvas id='livesCanvas' style='position:absolute; left: 0; top: 0; z-index:3' height='" + h + "' width = '" + w + "'></canvas>" +
-    "<div id='messageBox' style='display:none; animation-name: messagePopUpAnimation; animation-duration: 4s; position:fixed; z-index:500; left: 0; top: 0; width: 100%; height: 100%; overflow: auto'><image id='messageImg' src='robomb-pngs/alert-box.png' style='display:block; margin-left: auto; margin-right: auto; margin-top: 10%; width: 70%'/><p id='msgText'></div>'" +
+    "<div id='messageBox' style='display:none; animation-name: messagePopUpAnimation; animation-duration: 4s; position:fixed; z-index:500; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; user-select:none'><image id='messageImg' src='robomb-pngs/alert-box.png' style='display:block; margin-left: auto; margin-right: auto; margin-top: 10%; width: 70%'/><p id='msgText'></div>'" +
     "</div>" +
-    "<div id='bottomScreenText' style='display:none; animation-name: scrollIt; animation-duration: 10s; position:absolute; z-index:500; left: 40%; top: 50%; width: 100%; height: 100%; overflow: auto'><p id='topText'>You've held out until the robots could be quarantined. +1 life. However, they are set to go off soon. You have 10 seconds to defuse them by clicking the right ones. \nYou have one defusal kit per bomb, so don't waste any</div>'" +
+    "<div id='bottomScreenText' style='display:none; animation-name: scrollIt; animation-duration: 10s; position:absolute; z-index:500; left: 40%; top: 50%; width: 100%; height: 100%; overflow: auto'><p id='bottomText' style='user-select:none'>You've held out until the robots could be quarantined. +1 life. However, they are set to go off soon. You have 10 seconds to defuse them by clicking the right ones. \nYou have one defusal kit per bomb, so don't waste any</div>'" +
     //message pop-up animation:
     "<style>@keyframes fadeIn{from {opacity:0}; to {opacity:0.5}</style>  <style>@keyframes scrollIt{from {opacity:0}; to {opacity:1}</style>"
 
@@ -63,7 +63,7 @@ jsPsych.plugins["mot-game"] = (function() {
 
     /*GAME CODE*/
     var ballColor = "grey"
-
+    neverMadeAWallYet = true //for tutorial, to congratulate the user upon making the first wall
     var distanceBetween = function(p1, p2){
       var xdist = p2[0]-p1[0]
       var ydist = p2[1]-p1[1]
@@ -127,7 +127,6 @@ jsPsych.plugins["mot-game"] = (function() {
          event.pageY = pt.position[1]
        }
        curLevel.model.addPixelsToUserObstacles(event)
-       console.log(event)
      }, time) //(the time created is measured after the gameplay part begins so initialFrameDuration is added)
   }
     function theLevel() { //now levels are based off parameters passed to jsPsych
@@ -138,10 +137,17 @@ jsPsych.plugins["mot-game"] = (function() {
       return new level(m, v, c, levelDuration)
     }
     curLevel = theLevel();
-
+    var button = {
+                      imgUp: 'robomb-pngs/btn-okay-up.png',
+                      imgDn: 'robomb-pngs/btn-okay-down.png',
+                      onClick: curLevel.view.closeAlertBox,
+                      activateWhenEnterPressed: true
+                    }
+    curLevel.view.showAlertBox('test', [button])
     function model(numNormalBalls, numExplodingBalls, speed) {
       this.frozen = false //game pauses and model freezes
       this.freeze = function(){this.frozen = true}
+      this.unFreeze = function(){this.frozen = false}
       this.currentTime = 0
       this.balls = []; //including exploding balls
       this.getBalls = function(){return this.balls}
@@ -248,7 +254,6 @@ jsPsych.plugins["mot-game"] = (function() {
 
        /*USING THIS INSTEAD:*/
        this.wallThickness = par.wallThickness
-       console.log(this)
 
 
 
@@ -274,7 +279,6 @@ jsPsych.plugins["mot-game"] = (function() {
 
         this.addPixelsToUserObstacles = function(event){
           //if(curLevel.model.userObstacles.length < 1){this.addNewObstacle()} //make a new user obstacle if none exist
-          console.log(event)
           if(event.type == "mousedown"){
             //Make a new user obstacle if it was a mousedown not a mousemove. But first, collect the data.
             data.createdPoints.push(
@@ -409,7 +413,6 @@ jsPsych.plugins["mot-game"] = (function() {
                 //Check whether the collision point is actually within the wall and not just in its extension
                   //collision padding - how far away a ball needs to be from an obstacle for it to collide:
                   var obColPad = 0//par.userObstacleThickness
-                  console.log(obColPad)
                 var collisionIsWithinSegment = (collisionPoint[0] >= Math.min(wallPoint[0], nextWallPoint[0])-obColPad) &&
                                            (collisionPoint[0] <= Math.max(wallPoint[0], nextWallPoint[0])+obColPad) &&
                                            (collisionPoint[1] >= Math.min(wallPoint[1], nextWallPoint[1])-obColPad) &&
@@ -473,12 +476,12 @@ jsPsych.plugins["mot-game"] = (function() {
           var vel = ball.getVelocity()
           //flip motion in x-direction IF it's touching the left or rigth wall and going towards the respective wall: (sometimes, balls can end up too far inside the wall,
           //and their velocity gets constantly flipped and they don't escapE
-          if((collisionLeftWall && vel[0] > 0) || (collisionRightWall && vel[0] < 0)){
+          if((collisionLeftWall && vel[0] < 0) || (collisionRightWall && vel[0] > 0)){
             ball.collide("wall")
             ball.setVelocity([-vel[0], vel[1]])
           }
          //IF MULTIPLE COLLISIONS IN ONE UPDATE ARE A PROBLEM, PUT AN ELSE HERE
-          if((collisionTopWall && vel[1] > 0) || (collisionBottomWall && vel[1] < 0)) {
+          if((collisionTopWall && vel[1] < 0) || (collisionBottomWall && vel[1] > 0)) {
             //flip motion in y-direction
             ball.collide("wall")
             ball.setVelocity([vel[0], -vel[1]])
@@ -617,7 +620,6 @@ jsPsych.plugins["mot-game"] = (function() {
                           resultingVelYComponent = velMagnitude*Math.sin(angleBetweenResultingVelocityAndXAxis)
                           ball.setVelocity([resultingVelXComponent, resultingVelYComponent])*/
                       }
-                      else(console.log(ballToWallClosestDistance, rad))
                     }
 
                       }
@@ -789,9 +791,10 @@ jsPsych.plugins["mot-game"] = (function() {
       this.move = function(timestepDuration){
         var td = Math.abs(timestepDuration)
         //account for strange timestepDuration values like 0 or very high values:
-        if(td <= 0 | td > 53){ //53 seems like a good maximum value, on my computer at least
+        if(td <= 0 | td > 50){ //50 seems like a good maximum value, on my computer at least
           td = 30
         }
+
         //var stuckInWall = this.x-this.radius < 0 || this.x+radius > w || this.y-this.radius < 0 || this.y-this.radius > h
 
         //only do the following modifications to acceleration and velocity if allowed (they will NOT be allowed in a frame where the ball
@@ -969,11 +972,9 @@ jsPsych.plugins["mot-game"] = (function() {
         } else{
           pos = getPixelPositionRelativeToObject([event.pageX, event.pageY], curLevel.view.mainCan)
         }
-        console.log("pos: " + pos)
         //if there are no existing pixels/points, just add it without the for loop
         var numPix = this.pixels.length;
         if(numPix == 0){
-          console.log("First pixel!")
           this.pixels.push(pos)
           return; //break it so the function doesn't try to add the value again
         }
@@ -1022,13 +1023,26 @@ jsPsych.plugins["mot-game"] = (function() {
               secondToLastPixel = (numPix > 1) ? this.pixels[numPix -2] : this.pixels[numPix - 1]
               balls[q].respondToObstacleSegmentCreation([lastPixel, secondToLastPixel])
             }
-          }
+
+            //notify the when they create first obstacle (for the tutorial). The event will be picked by an event listener elsewhere
+            //(likely in showInitialFrame) which will have a little bit more logic on handling the event
+            if(this.pixels.length > 1 && neverMadeAWallYet) {
+              setTimeout(function(){
+                var wallFinished = new CustomEvent('wallFinished')
+                wallFinished.x = pos[0]
+                wallFinished.y = pos[1]
+                document.dispatchEvent(wallFinished)
+                //add some custom properties to the event to tell where the mouseclick was:
+              }, 300)
+            }
+
         while(this.pixels.length > this.maxPixels){
             //console.log(this.pixels)
             this.pixels.shift() //get rid of the first element
             //console.log(this.pixels)
         }
       }
+    }
 
     /*
         if(([event.pageX, event.pageY]){} //if(this.pixels.length == this.maxPixels){
@@ -1060,7 +1074,7 @@ jsPsych.plugins["mot-game"] = (function() {
       this.ctx = null
       this.highlightingSelectedBalls = false
       this.pointsToShow = new Array(),
-      this.showPoint = function(pt) {this.pointsToShow.push(pt); console.log(this.pointsToShow)}
+      this.showPoint = function(pt) {this.pointsToShow.push(pt)}
 
       this.initialized = false
       this.init = function(){
@@ -1080,7 +1094,6 @@ jsPsych.plugins["mot-game"] = (function() {
             ball.setImage("robomb-pngs/robot-bomb.png", function(){thisView.update(mod)})
           } else {
             ball.setImage("robomb-pngs/robot-bomb.png")
-            //alert(duration)
           }
 
         var bdimg = new Image()
@@ -1095,10 +1108,32 @@ jsPsych.plugins["mot-game"] = (function() {
         //this.update(mod)
         this.showLives(mod.lives)
         //set timeout for what happens after the initial frame is over:
-        setTimeout(curLevel.model.resetAllBallDesigns, initialFrameDuration)
 
         }
 
+        setTimeout(curLevel.model.resetAllBallDesigns, initialFrameDuration)
+        setTimeout(function(){
+          var okButton = {
+                            imgUp: 'robomb-pngs/btn-okay-up.png',
+                            imgDn: 'robomb-pngs/btn-okay-down.png',
+                            onClick: function(){
+                              curLevel.view.closeAlertBox(); curLevel.model.unFreeze()
+                              document.addEventListener('wallFinished', function(event){
+                                if(neverMadeAWallYet){
+                                  curLevel.view.showImgAtFor('robomb-pngs/yep-medium.png', event.x, event.y, 333);
+                                }
+                                neverMadeAWallYet = false; curLevel.timer.run()/*resume the timer finally*/})
+                            },
+                            activateWhenEnterPressed: true
+                          }
+          curLevel.model.freeze()
+          curLevel.timer.pause()
+          curLevel.view.showAlertBox('Click and drag to draw force walls. Try to stop the bomb-carrying robots from hitting the real walls and detonating', [okButton])
+          //listen for the wall being finished and notify the user 'good job'
+
+
+        }, initialFrameDuration + 700
+        )
         //show the occluder images:
         if(par.occludersEnabled){
           this.showOccluders(mod.getOccluderRects());
@@ -1300,7 +1335,7 @@ jsPsych.plugins["mot-game"] = (function() {
           var text = "one of the bomb carrying robots hit a wall... message."
           var okButton = {imgUp: 'robomb-pngs/btn-okay-up.png',
                           imgDn: 'robomb-pngs/btn-okay-down.png',
-                          onClick: function(){curLevel.view.closeMessageBox(); curLevel.controller.beginDefusalMode(defusalTimeLimit)},
+                          onClick: function(){curLevel.view.closeAlertBox(); curLevel.controller.beginDefusalMode(defusalTimeLimit)},
                           activateWhenEnterPressed: true}
           //this.showTextOnBottom(text)
           curLevel.controller.beginDefusalMode(defusalTimeLimit)
@@ -1321,18 +1356,20 @@ jsPsych.plugins["mot-game"] = (function() {
           butt.src = button.imgUp
           butt.onclick = button.onClick
           messageDiv.appendChild(butt)
+          if(button.activateWhenEnterPressed){document.addEventListener('keypress', function(e){if(e.keyCode == 13){button.onClick()}})}
+
         }
         messageDiv.style.display = 'block'
       }
 
       this.showTextOnBottom = function(messageTxt){
-        var msgEl = document.getElementById('topText').innerHTML = messageTxt
+        var msgEl = document.getElementById('bottomText').innerHTML = messageTxt
         document.getElementById('bottomScreenText').style.display = 'block'
       }
 
 
 
-      this.closeMessageBox = function(){
+      this.closeAlertBox = function(){
         var messageDiv = document.getElementById('messageBox')
         messageDiv.style.display = 'none'
       }
@@ -1554,10 +1591,8 @@ jsPsych.plugins["mot-game"] = (function() {
           if(balls[b].occluded){
             balls[b].occluded = false
             balls[b].callOccluderExitAnimation()
-            console.log(balls[b])
           }
         }
-        console.log(balls)
         curLevel.view.showBalls(balls)
         //remove the wall drawing listeners
         document.removeEventListener("mousedown", this.findWallDrawingPath)

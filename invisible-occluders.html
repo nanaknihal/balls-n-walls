@@ -4,7 +4,6 @@
   <title>B a l l s  n'  W a l l s </title>
   <script src="jspsych-6.0.3/jspsych.js"></script>
   <script src="jspsych-6.0.3/plugins/jspsych-html-keyboard-response.js"></script>
-  <script src="mot-game-tutorial.js"></script>
   <script src="mot-game.js"></script>
   <script src="jspsych-6.0.3/plugins/jspsych-image-keyboard-response.js"></script>
 
@@ -53,35 +52,6 @@ function generateRandomOccluderXCoordinate(occluderToWallMinDistance){
 }
 
 console.log(generateRandomOccluderXCoordinate(10))
-var tutorial = {
-  type:"mot-game-tutorial",
-  stimulus:"<p>test</p>",
-  duration: 15000,
-  ballSpeed: 0.07,
-  ballRadius: 20,
-  numRegularBalls: 2,
-  numExplodingBalls: 1,
-  maxUserDefinedObstacles: 1,
-  maxUserDefinedObstacleSegments: 3,
-  maxDistanceBetweenObstaclePixels:300,
-  minDistanceBetweenObstaclePixels: 66,
-  userObstacleThickness: 3,
-  wallThickness:16,  //16px thick border walls
-  occludersEnabled: false,
-  invisibleOccluders: false,
-  implodeExplodeMode: false,
-  stochasticRobotPaths: false,
-  parametersForStochasticRobotPaths: {inertia: 0.95, springConstant: 0, accelerationStandardDeviation: 0.01, velocityMultipler: 1.030},
-  forceFields: false,
-  forceFieldStrength: 0.0006,
-  occluderRectangles:[{x: generateRandomOccluderXCoordinate(/*put minimum occluder distance from wall here*/100), y: 0, width: 45, height: gameHeight},{x: generateRandomOccluderXCoordinate(190), y: 0, width: 45, height: gameHeight}],
-  lives: true, //toggle whether the player has a fixed number of lives and the related gameplay aspects
-  numLives: 5,
-  gameWidth: gameWidth,
-  gameHeight: gameHeight,
-  savedModel: []
-}
-timeline.push(tutorial)
 var level1 = {
   type:"mot-game",
   stimulus:"<p>test</p>",
@@ -89,17 +59,17 @@ var level1 = {
   ballSpeed: 0.07,
   ballRadius: 20,
   numRegularBalls: 4,
-  numExplodingBalls: 1,
+  numExplodingBalls: 4,
   maxUserDefinedObstacles: 1,
   maxUserDefinedObstacleSegments: 3,
   maxDistanceBetweenObstaclePixels:300,
   minDistanceBetweenObstaclePixels: 66,
   userObstacleThickness: 3,
   wallThickness:16,  //16px thick border walls
-  occludersEnabled: false,
-  invisibleOccluders: false,
+  occludersEnabled: true,
+  invisibleOccluders: true,
   implodeExplodeMode: false,
-  stochasticRobotPaths: false,
+  stochasticRobotPaths: true,
   parametersForStochasticRobotPaths: {inertia: 0.95, springConstant: 0, accelerationStandardDeviation: 0.01, velocityMultipler: 1.030},
   forceFields: false,
   forceFieldStrength: 0.0006,
