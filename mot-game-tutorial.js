@@ -9,7 +9,6 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
 
   plugin.trial = function(display_element, trial) {
     var par = trial
-
     var w=par.gameWidth, h=par.gameHeight;
     display_element.innerHTML =
     "<div id='gameContainer' height='" + h + "' width='" + w + "'>" +
@@ -791,7 +790,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
       this.move = function(timestepDuration){
         var td = Math.abs(timestepDuration)
         //account for strange timestepDuration values like 0 or very high values:
-        if(td <= 0 | td > 50){ //50 seems like a good maximum value, on my computer at least
+        if(td <= 0 | td > 700){
           td = 30
         }
 

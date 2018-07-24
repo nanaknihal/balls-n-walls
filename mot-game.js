@@ -29,9 +29,9 @@ jsPsych.plugins["mot-game"] = (function() {
     //it may be good to not hard-code the top and left value but rather use variables...this will be decided later when we do more styling
     "<canvas id='selectionCanvas' style='position:absolute; left: 0; top: 0; z-index:1' height='" + h + "' width = '" + w + "'></canvas>" +
     "<canvas id='livesCanvas' style='position:absolute; left: 0; top: 0; z-index:3' height='" + h + "' width = '" + w + "'></canvas>" +
-    "<div id='messageBox' style='display:none; animation-name: messagePopUpAnimation; animation-duration: 4s; position:fixed; z-index:500; left: 0; top: 0; width: 100%; height: 100%; overflow: auto'><image id='messageImg' src='robomb-pngs/alert-box.png' style='display:block; margin-left: auto; margin-right: auto; margin-top: 10%; width: 70%'/><p id='msgText'></div>'" +
+    "<div id='messageBox' style='display:none; animation-name: messagePopUpAnimation; animation-duration: 4s; position:fixed; z-index:500; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; user-select:none'><image id='messageImg' src='robomb-pngs/alert-box.png' style='display:block; margin-left: auto; margin-right: auto; margin-top: 10%; width: 70%'/><p id='msgText'></div>'" +
     "</div>" +
-    "<div id='bottomScreenText' style='display:none; animation-name: scrollIt; animation-duration: 10s; position:absolute; z-index:500; left: 40%; top: 50%; width: 100%; height: 100%; overflow: auto'><p id='topText'>You've held out until the robots could be quarantined. +1 life. However, they are set to go off soon. You have 10 seconds to defuse them by clicking the right ones. \nYou have one defusal kit per bomb, so don't waste any</div>'" +
+    "<div id='bottomScreenText' style='display:none; animation-name: scrollIt; animation-duration: 10s; position:absolute; z-index:500; left: 40%; top: 50%; width: 100%; height: 100%; overflow: auto'><p id='bottomText' style='user-select:none'>You've held out until the robots could be quarantined. +1 life. However, they are set to go off soon. You have 10 seconds to defuse them by clicking the right ones. \nYou have one defusal kit per bomb, so don't waste any</div>'" +
     //message pop-up animation:
     "<style>@keyframes fadeIn{from {opacity:0}; to {opacity:0.5}</style>  <style>@keyframes scrollIt{from {opacity:0}; to {opacity:1}</style>"
 
@@ -97,7 +97,7 @@ jsPsych.plugins["mot-game"] = (function() {
         return false
       }
     }
-
+    console.log(jsPsych.data.get())
     //pix has format [x,y]
     function getPixelPositionRelativeToObject(pix, object) {
       var posx = pix[0]-object.offsetLeft
@@ -473,12 +473,12 @@ jsPsych.plugins["mot-game"] = (function() {
           var vel = ball.getVelocity()
           //flip motion in x-direction IF it's touching the left or rigth wall and going towards the respective wall: (sometimes, balls can end up too far inside the wall,
           //and their velocity gets constantly flipped and they don't escapE
-          if((collisionLeftWall && vel[0] > 0) || (collisionRightWall && vel[0] < 0)){
+          if((collisionLeftWall && vel[0] < 0) || (collisionRightWall && vel[0] > 0)){
             ball.collide("wall")
             ball.setVelocity([-vel[0], vel[1]])
           }
          //IF MULTIPLE COLLISIONS IN ONE UPDATE ARE A PROBLEM, PUT AN ELSE HERE
-          if((collisionTopWall && vel[1] > 0) || (collisionBottomWall && vel[1] < 0)) {
+          if((collisionTopWall && vel[1] < 0) || (collisionBottomWall && vel[1] > 0)) {
             //flip motion in y-direction
             ball.collide("wall")
             ball.setVelocity([vel[0], -vel[1]])
@@ -789,7 +789,7 @@ jsPsych.plugins["mot-game"] = (function() {
       this.move = function(timestepDuration){
         var td = Math.abs(timestepDuration)
         //account for strange timestepDuration values like 0 or very high values:
-        if(td <= 0 | td > 53){ //53 seems like a good maximum value, on my computer at least
+        if(td == 0 | td > 700){ //70 seems like a good maximum value, on my computer at least
           td = 30
         }
         //var stuckInWall = this.x-this.radius < 0 || this.x+radius > w || this.y-this.radius < 0 || this.y-this.radius > h
