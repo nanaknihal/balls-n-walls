@@ -9,8 +9,8 @@ jsPsych.plugins["mot-game"] = (function() {
 
   plugin.trial = function(display_element, trial) {
     var par = trial
-
     var w=par.gameWidth, h=par.gameHeight;
+
     display_element.innerHTML =
     "<div id='gameContainer' height='" + h + "' width='" + w + "'>" +
     "<!-background image:--><img src='robomb-pngs/floor.png' height='" + h + "' width='" + w + "' style='position:absolute; margin:auto; z-index:-100'></img>" +
@@ -97,7 +97,7 @@ jsPsych.plugins["mot-game"] = (function() {
         return false
       }
     }
-    console.log(jsPsych.data.get())
+
     //pix has format [x,y]
     function getPixelPositionRelativeToObject(pix, object) {
       var posx = pix[0]-object.offsetLeft
@@ -127,7 +127,6 @@ jsPsych.plugins["mot-game"] = (function() {
          event.pageY = pt.position[1]
        }
        curLevel.model.addPixelsToUserObstacles(event)
-       console.log(event)
      }, time) //(the time created is measured after the gameplay part begins so initialFrameDuration is added)
   }
     function theLevel() { //now levels are based off parameters passed to jsPsych
@@ -150,7 +149,11 @@ jsPsych.plugins["mot-game"] = (function() {
       this.getOccluderRects = function(){return this.occluderRects}
       /*this.occluders = [new occluder("occluders/occluder1.png", w/3, h/2), new occluder("occluders/occluder1.png", 2*w/3, h/2)];*/
       this.numExplodingBalls = function(){return this.explodingBalls.length}
-      this.lives = par.numLives
+
+      //set the number of lives as the number of lives from the second to last trial (last trial was waiting scren)
+      var numLives = jsPsych.data.get().last(2).first(1).values()[0].numLives
+      console.log(jsPsych.data.get().last(2).first(1).values())
+      this.lives = (numLives === undefined) ? par.numLives : numLives
       //usually callback is view.showLives()
       this.decrementLives = function(callback){
         this.lives--
@@ -248,7 +251,6 @@ jsPsych.plugins["mot-game"] = (function() {
 
        /*USING THIS INSTEAD:*/
        this.wallThickness = par.wallThickness
-       console.log(this)
 
 
 
@@ -274,7 +276,6 @@ jsPsych.plugins["mot-game"] = (function() {
 
         this.addPixelsToUserObstacles = function(event){
           //if(curLevel.model.userObstacles.length < 1){this.addNewObstacle()} //make a new user obstacle if none exist
-          console.log(event)
           if(event.type == "mousedown"){
             //Make a new user obstacle if it was a mousedown not a mousemove. But first, collect the data.
             data.createdPoints.push(
@@ -409,7 +410,6 @@ jsPsych.plugins["mot-game"] = (function() {
                 //Check whether the collision point is actually within the wall and not just in its extension
                   //collision padding - how far away a ball needs to be from an obstacle for it to collide:
                   var obColPad = 0//par.userObstacleThickness
-                  console.log(obColPad)
                 var collisionIsWithinSegment = (collisionPoint[0] >= Math.min(wallPoint[0], nextWallPoint[0])-obColPad) &&
                                            (collisionPoint[0] <= Math.max(wallPoint[0], nextWallPoint[0])+obColPad) &&
                                            (collisionPoint[1] >= Math.min(wallPoint[1], nextWallPoint[1])-obColPad) &&
@@ -617,7 +617,6 @@ jsPsych.plugins["mot-game"] = (function() {
                           resultingVelYComponent = velMagnitude*Math.sin(angleBetweenResultingVelocityAndXAxis)
                           ball.setVelocity([resultingVelXComponent, resultingVelYComponent])*/
                       }
-                      else(console.log(ballToWallClosestDistance, rad))
                     }
 
                       }
@@ -969,11 +968,9 @@ jsPsych.plugins["mot-game"] = (function() {
         } else{
           pos = getPixelPositionRelativeToObject([event.pageX, event.pageY], curLevel.view.mainCan)
         }
-        console.log("pos: " + pos)
         //if there are no existing pixels/points, just add it without the for loop
         var numPix = this.pixels.length;
         if(numPix == 0){
-          console.log("First pixel!")
           this.pixels.push(pos)
           return; //break it so the function doesn't try to add the value again
         }
@@ -1060,7 +1057,7 @@ jsPsych.plugins["mot-game"] = (function() {
       this.ctx = null
       this.highlightingSelectedBalls = false
       this.pointsToShow = new Array(),
-      this.showPoint = function(pt) {this.pointsToShow.push(pt); console.log(this.pointsToShow)}
+      this.showPoint = function(pt) {this.pointsToShow.push(pt)}
 
       this.initialized = false
       this.init = function(){
@@ -1422,10 +1419,11 @@ jsPsych.plugins["mot-game"] = (function() {
       this.setDefusalModeOff = function(){this.defusalModeOn = false;}
       this.isGameOver = function(){return this.gameOver} //overdoing it on the getters, setters, and LoD? maybe
       this.beginGame = function(){
+
         var balls = curLevel.model.getBalls()
         for(var i = 0, l = balls.length; i<l; i++){
           var ball = balls[i]
-          //push the important info from this ball to the data
+          //push the important info from this ball to the data (so the replay can be constructed from initial conditions and interactions - note: this is not how replays will work anymore)
           data.ballInitialConditions.push(
                 {
                    id: ball.id,
@@ -1555,10 +1553,8 @@ jsPsych.plugins["mot-game"] = (function() {
           if(balls[b].occluded){
             balls[b].occluded = false
             balls[b].callOccluderExitAnimation()
-            console.log(balls[b])
           }
         }
-        console.log(balls)
         curLevel.view.showBalls(balls)
         //remove the wall drawing listeners
         document.removeEventListener("mousedown", this.findWallDrawingPath)
@@ -1652,6 +1648,7 @@ jsPsych.plugins["mot-game"] = (function() {
             data.correctGuesses = curLevel.controller.correctGuesses
             data.incorrectGuesses = curLevel.controller.incorrectGuesses
             alert("defusal mode failed. not all the guesses were correct; you wasted time trying to defuse the innocuous balls")
+            curLevel.model.decrementLives(function(){curLevel.view.showLives(curLevel.model.lives)})
             //alert("Incorrect guess. Level failed.")
             //maybe we can have it restart at the level before?
             break;
@@ -1660,10 +1657,12 @@ jsPsych.plugins["mot-game"] = (function() {
             data.defusalDuration = curLevel.timer.getTime(true)
             data.correctGuesses = curLevel.controller.correctGuesses
             data.incorrectGuesses = curLevel.controller.incorrectGuesses
-            curLevel.model.incrementLives(function(){curLevel.view.showLives(curLevel.model.lives)})
             alert("Level Passed!");
             break;
         }
+        alert(curLevel.model)
+        alert(curLevel.model.lives)
+        data.numLives = curLevel.model.lives
         curLevel.controller.endDefusalMode()
         curLevel.controller.gameOver = true
         jsPsych.finishTrial(data);
@@ -1812,11 +1811,10 @@ function circleIsInAnOccluder(center, radius){
       }
       this.defusalModeOn = function(){return this.controller.defusalModeOn}
       this.timeHasRunOut = function(){
-        alert('a')
         if(this.defusalModeOn()){
           this.controller.endGame("defusalModeTimeRanOut")
         }else{
-          model.incrementLives(function(){curLevel.controller.defusalMode({deflectionSuccessful: true})})
+          model.incrementLives(function(){curLevel.view.showLives(curLevel.model.lives);curLevel.controller.defusalMode({deflectionSuccessful: true})})
         }
       }
 
@@ -1851,7 +1849,6 @@ function circleIsInAnOccluder(center, radius){
 
     //currentSavedFrameIndex is incremented after displaying each frame of the saved model
     function replayModeUpdate(currentSavedFrameIndex, currentTime){
-      console.log([currentSavedFrameIndex, currentTime])
       window.requestAnimationFrame(function(){
         curLevel.view.update(makeAFakeModelObjectFromGivenReplayFrame(par.savedModel[currentSavedFrameIndex]), curLevel.timer.getTime())
         window.requestAnimationFrame(replayModeUpdate, currentSavedFrameIndex+1)
