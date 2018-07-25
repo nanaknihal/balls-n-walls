@@ -152,7 +152,6 @@ jsPsych.plugins["mot-game"] = (function() {
 
       //set the number of lives as the number of lives from the second to last trial (last trial was waiting scren)
       var numLives = jsPsych.data.get().last(2).first(1).values()[0].numLives
-      console.log(jsPsych.data.get().last(2).first(1).values())
       this.lives = (numLives === undefined) ? par.numLives : numLives
       //usually callback is view.showLives()
       this.decrementLives = function(callback){
@@ -326,6 +325,45 @@ jsPsych.plugins["mot-game"] = (function() {
                                                                   //just checking whether both equations give the same y value for the x value
           return [x,y]
       }
+
+
+      //returns the dot product of vectors (in the form of arrays) a and b
+      function dot(a,b){
+        var length = a.length
+        if(length == b.length){
+          dotp = 0
+          for(var i = 0; i < length; i++){
+            dotp += a[i]*b[i]
+          }
+          return dotp
+        } else {
+          return null
+        }
+      }
+      //returns the norm of an n-dimensional vector a
+      function norm(a){
+        var s = 0
+        var length = a.length
+        for(var i=0; i<length; i++){
+          s+=a[i]*a[i]
+        }
+        return Math.sqrt(s)
+      }
+      /*//normalizes vector a (a is a js array)
+      function normalize(a){
+        var s = 0
+        var norm = norm(a)
+        var length = a.length
+        for(var i=0; i<length; i++){
+          s.push(a[i]/norm)
+        }
+        return s
+      }*/
+
+      //returns the cosine between two vectors (as arrays) of n dimensions
+      function nDimCosine(a,b) {
+        return dot(a,b)/(norm(a)*norm(b))
+      }
       this.ballAndObstacleCollisionStatus = function(ball,ob){
         var ballAndObSegmentCollision = {collisionHappening: false} //default value, if there's no collision just return this
         for(var r = 0, pix = ob.getPixels(), numPix = pix.length; r<numPix-1; r++){
@@ -364,81 +402,93 @@ jsPsych.plugins["mot-game"] = (function() {
                 var shortestLineFromBallToWall = equationFromPointAndSlope(ballPoint, slopeOfWallNormal)
                 var collisionPoint = intersectionOf2Equations(shortestLineFromBallToWall, wallExtensionEquation)
 
+                //see whether the ball is traveling toward the collision point or away:
+                var ballToCollisionPointVec = [collisionPoint[0]-ballPoint[0], collisionPoint[1]-ballPoint[1]]
+                var ballVecLength = norm(ballVec)
+                var cos = (nDimCosine(ballVec, ballToCollisionPointVec))
+                var travellingTowardsWall = (cos > 0)
+                if(travellingTowardsWall){ //only collide if it's traveling towards the wall - there's a bug that in rare situations, balls moving away can collide and get stuck inside the obstacle.
+                  //curLevel.view.showPoint(collisionPoint)
+                  //curLevel.view.showPoint([ballPoint[0]+ballVec[0]*1000, ballPoint[1]+ballVec[1]*1000])
+                  //console.log(towardsWall)
+                  //Normal in the sense of perpendicular, UnNormalized  in the sense of retaining its length
+                  var wallNormalVector_UnNormalized = [ballPoint[0]-collisionPoint[0], ballPoint[1]-collisionPoint[1]]
 
-                var wallNormalVector_UnNormalized = [ballPoint[0]-collisionPoint[0], ballPoint[1]-collisionPoint[1]]
-
-                //not using this:
-                /*Now that the intersection has been found, find the angle between the velocity and the wall*/
-                /*Make sure the SIGNS OF ALL THESE ANGLES ARE CORRECT:*/
-                /*
-                angleBetweenVelocityAndXAxis = -Math.atan2(ballTrajectoryEquation.rise, ballTrajectoryEquation.run)
-                angleBetweenWallAndYAxis = Math.PI/2 - Math.atan2(wallExtensionEquation.rise, wallExtensionEquation.run)
-                angleBetweenWallAndXAxis = -Math.atan2(wallExtensionEquation.rise, wallExtensionEquation.run)
-                angleBetweenVelocityAndWall = angleBetweenVelocityAndXAxis-angleBetweenWallAndXAxis//Math.PI/2 - angleBetweenVelocityAndXAxis - angleBetweenWallAndYAxis
-                //angleBetweenWallAndXAxis = Math.PI/2 - angleBetweenWallAndYAxis
-                ballToIntersectionDistance = distanceBetween(ballPoint, intersection)
-
-
-                //console.log(angleBetweenVelocityAndWall*57.3)
-                 //See diagrams //NOTE: ADD DIAGRAMS
-                 distanceBetweenCollisionAndIntersection = ballToIntersectionDistance * Math.sin(Math.PI/2 + angleBetweenVelocityAndWall)
-
-                 HoriDistanceBetweenCollisionAndIntersection = Math.sqrt(distanceBetweenCollisionAndIntersection*distanceBetweenCollisionAndIntersection /
-                                                                        (wallExtensionEquation.m*wallExtensionEquation.m + 1))
-                 //slope (m) = vertical-distance/horizontal-distance
-                 VertDistanceBetweenCollisionAndIntersection = /*-/ABS?*/ /*wallExtensionEquation.m*HoriDistanceBetweenCollisionAndIntersection
-
-                 collisionPoint = [intersection[0]-HoriDistanceBetweenCollisionAndIntersection, intersection[1]-VertDistanceBetweenCollisionAndIntersection]*/
+                  //not using this:
+                  /*Now that the intersection has been found, find the angle between the velocity and the wall*/
+                  /*Make sure the SIGNS OF ALL THESE ANGLES ARE CORRECT:*/
+                  /*
+                  angleBetweenVelocityAndXAxis = -Math.atan2(ballTrajectoryEquation.rise, ballTrajectoryEquation.run)
+                  angleBetweenWallAndYAxis = Math.PI/2 - Math.atan2(wallExtensionEquation.rise, wallExtensionEquation.run)
+                  angleBetweenWallAndXAxis = -Math.atan2(wallExtensionEquation.rise, wallExtensionEquation.run)
+                  angleBetweenVelocityAndWall = angleBetweenVelocityAndXAxis-angleBetweenWallAndXAxis//Math.PI/2 - angleBetweenVelocityAndXAxis - angleBetweenWallAndYAxis
+                  //angleBetweenWallAndXAxis = Math.PI/2 - angleBetweenWallAndYAxis
+                  ballToIntersectionDistance = distanceBetween(ballPoint, intersection)
 
 
-                //this is being used though:
-                //Consider the following scenario: the collisionPoint is not actually the closest point on the wall's extension. This happens when the ball collides with
-                // an endpoint of the wall. For these cases, set collisionPoint to the wall's endpoint:
-                var radPad = 0//par.userObstacleThickness
-                if(distanceBetween(ballPoint, wallPoint) <= rad+radPad) {
-                  collisionPoint = wallPoint;
-                  //treat the collision point as a small circle and collide off the tangent line. luckily, the vector normal to the tangent line
-                  //has the same direction as that between the ballPoint and wallPoint(the collision point). it's magnitute doesn't matter because
-                  //it will be normalized!
-                  wallNormalVector_UnNormalized = [ballPoint[0]-collisionPoint[0], ballPoint[1]-collisionPoint[1]]
-                }
-                if(distanceBetween(ballPoint, nextWallPoint) <= rad+radPad) {
-                  collisionPoint = nextWallPoint;
-                  //get the new normal
-                  wallNormalVector_UnNormalized = [ballPoint[0]-collisionPoint[0], ballPoint[1]-collisionPoint[1]]
-                }
-                //Check whether the collision point is actually within the wall and not just in its extension
-                  //collision padding - how far away a ball needs to be from an obstacle for it to collide:
-                  var obColPad = 0//par.userObstacleThickness
-                var collisionIsWithinSegment = (collisionPoint[0] >= Math.min(wallPoint[0], nextWallPoint[0])-obColPad) &&
-                                           (collisionPoint[0] <= Math.max(wallPoint[0], nextWallPoint[0])+obColPad) &&
-                                           (collisionPoint[1] >= Math.min(wallPoint[1], nextWallPoint[1])-obColPad) &&
-                                           (collisionPoint[1] <= Math.max(wallPoint[1], nextWallPoint[1])+obColPad)
+                  //console.log(angleBetweenVelocityAndWall*57.3)
+                   //See diagrams //NOTE: ADD DIAGRAMS
+                   distanceBetweenCollisionAndIntersection = ballToIntersectionDistance * Math.sin(Math.PI/2 + angleBetweenVelocityAndWall)
+
+                   HoriDistanceBetweenCollisionAndIntersection = Math.sqrt(distanceBetweenCollisionAndIntersection*distanceBetweenCollisionAndIntersection /
+                                                                          (wallExtensionEquation.m*wallExtensionEquation.m + 1))
+                   //slope (m) = vertical-distance/horizontal-distance
+                   VertDistanceBetweenCollisionAndIntersection = /*-/ABS?*/ /*wallExtensionEquation.m*HoriDistanceBetweenCollisionAndIntersection
+
+                   collisionPoint = [intersection[0]-HoriDistanceBetweenCollisionAndIntersection, intersection[1]-VertDistanceBetweenCollisionAndIntersection]*/
 
 
-                //The ball can be touching the wall even if it doesn't intersect, so we need to find the distance to the closest point on the wall:
-                //The line between this and the ball is always pi/2 radians from the ball, so we can use the sin:
+                  //this is being used though:
+                  //Consider the following scenario: the collisionPoint is not actually the closest point on the wall's extension. This happens when the ball collides with
+                  // an endpoint of the wall. For these cases, set collisionPoint to the wall's endpoint:
+                  var radPad = 0//par.userObstacleThickness
+                  if(distanceBetween(ballPoint, wallPoint) <= rad+radPad) {
+                    collisionPoint = wallPoint;
+                    //treat the collision point as a small circle and collide off the tangent line. luckily, the vector normal to the tangent line
+                    //has the same direction as that between the ballPoint and wallPoint(the collision point). it's magnitute doesn't matter because
+                    //it will be normalized!
+                    wallNormalVector_UnNormalized = [ballPoint[0]-collisionPoint[0], ballPoint[1]-collisionPoint[1]]
+                  }
+                  if(distanceBetween(ballPoint, nextWallPoint) <= rad+radPad) {
+                    collisionPoint = nextWallPoint;
+                    //get the new normal
+                    wallNormalVector_UnNormalized = [ballPoint[0]-collisionPoint[0], ballPoint[1]-collisionPoint[1]]
+                  }
+                  //Check whether the collision point is actually within the wall and not just in its extension
+                    //collision padding - how far away a ball needs to be from an obstacle for it to collide:
+                    var obColPad = 0//par.userObstacleThickness
+                  var collisionIsWithinSegment = (collisionPoint[0] >= Math.min(wallPoint[0], nextWallPoint[0])-obColPad) &&
+                                             (collisionPoint[0] <= Math.max(wallPoint[0], nextWallPoint[0])+obColPad) &&
+                                             (collisionPoint[1] >= Math.min(wallPoint[1], nextWallPoint[1])-obColPad) &&
+                                             (collisionPoint[1] <= Math.max(wallPoint[1], nextWallPoint[1])+obColPad)
 
-                var ballToWallClosestDistance = distanceBetween(collisionPoint, ballPoint)
+
+                  //The ball can be touching the wall even if it doesn't intersect, so we need to find the distance to the closest point on the wall:
+                  //The line between this and the ball is always pi/2 radians from the ball, so we can use the sin:
+
+                  var ballToWallClosestDistance = distanceBetween(collisionPoint, ballPoint)
 
 
-                var ballWithinLineRange = false
-                if(Math.abs(ballToWallClosestDistance) < rad){
-                  ballWithinLineRange = true
-                }
+                  var ballWithinLineRange = false
+                  if(Math.abs(ballToWallClosestDistance) < rad){
+                    ballWithinLineRange = true
+                  }
 
-                //view.showPoint(collisionPoint)
-                //console.log(angleBetweenVelocityAndWall*57.3)
-                //alert(ballToWallClosestDistance + ", " + collisionIsWithinSegmentPlusBallRadius + ", " + ballWithinLineRange + ", " + collisionPoint)
-                //if(!collisionIsWithinSegment && ballWithinLineRange){console.log(collisionPoint)}
-
-                if(collisionIsWithinSegment && ballWithinLineRange){
                   //view.showPoint(collisionPoint)
-                  return {collisionHappening: true, wallVector: wallVec, ballVector: ballVec, wallNormal: wallNormalVector_UnNormalized}
-                } else {
-                  return {collisionHappening: false, wallVector: wallVec, ballVector: ballVec, wallNormal: wallNormalVector_UnNormalized}
-                }
+                  //console.log(angleBetweenVelocityAndWall*57.3)
+                  //alert(ballToWallClosestDistance + ", " + collisionIsWithinSegmentPlusBallRadius + ", " + ballWithinLineRange + ", " + collisionPoint)
+                  //if(!collisionIsWithinSegment && ballWithinLineRange){console.log(collisionPoint)}
 
+
+                  if(collisionIsWithinSegment && ballWithinLineRange){
+                    //view.showPoint(collisionPoint)
+                    return {collisionHappening: true, wallVector: wallVec, ballVector: ballVec, wallNormal: wallNormalVector_UnNormalized}
+                  } else {
+                    return {collisionHappening: false, wallVector: wallVec, ballVector: ballVec, wallNormal: wallNormalVector_UnNormalized}
+                  }
+                } else { //if it's not traveling towards the wall:
+                  return {collisionHappening: false, wallVector: wallVec, ballVector: ballVec, wallNormal: wallNormalVector_UnNormalized}
+              }
 
       }
 
@@ -601,8 +651,7 @@ jsPsych.plugins["mot-game"] = (function() {
                         //According to https://www.3dkingdoms.com/weekly/weekly.php?a=2, resulting velocity vector = -2*(V dot N)*N + V, where V is the velocity and N is the normalized normal vector
                         var wallNormalVector_Normalized = [wallNormalVector_UnNormalized[0]/wallNormalVectorUnNormalizedMagnitude, wallNormalVector_UnNormalized[1]/wallNormalVectorUnNormalizedMagnitude]
                         var velocityVector = collisionData.ballVector
-                        var VelocityAndWallNormalNormalizedDotProduct = velocityVector[0]*wallNormalVector_Normalized[0] + velocityVector[1]*wallNormalVector_Normalized[1]
-                        var negativeTwoTimesDotP = -2*VelocityAndWallNormalNormalizedDotProduct
+                        var negativeTwoTimesDotP = -2*dot(velocityVector, wallNormalVector_Normalized)
                         var resultingVelocity = [wallNormalVector_Normalized[0]*negativeTwoTimesDotP+velocityVector[0], wallNormalVector_Normalized[1]*negativeTwoTimesDotP+velocityVector[1]]
 
                         ball.setVelocity(resultingVelocity, "userObstacle")
@@ -1660,8 +1709,6 @@ jsPsych.plugins["mot-game"] = (function() {
             alert("Level Passed!");
             break;
         }
-        alert(curLevel.model)
-        alert(curLevel.model.lives)
         data.numLives = curLevel.model.lives
         curLevel.controller.endDefusalMode()
         curLevel.controller.gameOver = true
