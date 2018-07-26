@@ -29,7 +29,7 @@ jsPsych.plugins["mot-game"] = (function() {
     //it may be good to not hard-code the top and left value but rather use variables...this will be decided later when we do more styling
     "<canvas id='selectionCanvas' style='position:absolute; left: 0; top: 0; z-index:1' height='" + h + "' width = '" + w + "'></canvas>" +
     "<canvas id='livesCanvas' style='position:absolute; left: 0; top: 0; z-index:3' height='" + h + "' width = '" + w + "'></canvas>" +
-    "<div id='messageBox' style='width: 66%;top:50%; margin-left:50%; transform: translate(-50%, -50%); display:none; animation-name: messagePopUpAnimation; animation-duration: 4s; position:absolute; z-index:500; overflow: auto; user-select:none;'><img id='messageImg' src='robomb-pngs/alert-box.png' style='display:block; width:100%; margin: auto; pointer-events:none; user-select:none'></img><div id='msgText' style='position:absolute; top: 50%; margin-left:50%; transform: translate(-50%,-100%); font:37px verdana, sans-serif; color: white; display:block'></div><div id='buttonDiv'></div>" +
+    "<div id='messageBox' style='width: 66%;top:50%; margin-left:50%; transform: translate(-50%, -50%); -moz-transform: translate(-50%, -50%); -webkit-transform: translate(-50%, -50%); -ms-transform: translate(-50%, -50%); -o-transform: translate(-50%, -50%); display:none; animation-name: messagePopUpAnimation; animation-duration: 4s; position:absolute; z-index:500; overflow: auto; user-select:none;'><img id='messageImg' src='robomb-pngs/alert-box.png' style='display:block; width:100%; margin: auto; pointer-events:none; user-select:none'></img><div id='msgText' style='position:absolute; top: 50%; margin-left:50%; transform: translate(-50%,-100%); -moz-transform: translate(-50%,-100%); -webkit-transform: translate(-50%,-100%); -ms-transform: translate(-50%,-100%); -o-transform: translate(-50%,-100%); font:37px verdana, sans-serif; color: white; display:block'></div><div id='buttonDiv'></div>" +
     "</div>" +
     "<div id='bottomScreenText' style='display:none; animation-name: scrollIt; animation-duration: 12s; position:absolute; z-index:500; left: 40%; top: 50%; width: 100%; height: 100%; overflow: auto'><p id='bottomText' style='user-select:none'>You've held out until the robots could be quarantined. +1 life. However, they are set to go off soon. You have 10 seconds to defuse them by clicking the right ones. \nYou have one defusal kit per bomb, so don't waste any</div>'" +
     "</div>" +
@@ -37,6 +37,11 @@ jsPsych.plugins["mot-game"] = (function() {
     "<style>@keyframes fadeIn{from {opacity:0}; to {opacity:0.5}}</style>  <style>@keyframes scrollIt{from {opacity:0}; to {opacity:0.1}}</style>"
 
     document.body.style.backgroundColor = "black"
+    document.body.style.userSelect = "none"
+    document.body.style.MozUserSelect = 'none'
+    document.body.style.webkitUserSelect = 'none'
+    document.body.style.msUserSelect = 'none'
+
     var data = {
       levelDuration: par.duration,
       timeDefusalStarted: 0,
@@ -144,13 +149,14 @@ jsPsych.plugins["mot-game"] = (function() {
       return new level(m, v, c, levelDuration)
     }
     curLevel = theLevel();
-    var button = {
+    //alertbox testing code
+    /*var button = {
                       imgUp: 'robomb-pngs/btn-okay-up.png',
                       imgDn: 'robomb-pngs/btn-okay-down.png',
                       onClick: curLevel.view.closeAlertBox,
                       activateWhenEnterPressed: true
                     }
-    curLevel.view.showAlertBox('Test', [button])
+    curLevel.view.showAlertBox('Test', [button])*/
     function model(numNormalBalls, numExplodingBalls, speed) {
       this.frozen = false //game pauses and model freezes
       this.freeze = function(){this.frozen = true}
@@ -1361,19 +1367,10 @@ jsPsych.plugins["mot-game"] = (function() {
                           imgDn: 'robomb-pngs/btn-okay-down.png',
                           onClick: function(){curLevel.view.closeAlertBox(); curLevel.controller.beginDefusalMode(defusalTimeLimit)},
                           activateWhenEnterPressed: true}
-          var okButton2 = {imgUp: 'robomb-pngs/btn-okay-up.png',
-                          imgDn: 'robomb-pngs/btn-okay-down.png',
-                          onClick: function(){curLevel.view.closeAlertBox(); curLevel.controller.beginDefusalMode(defusalTimeLimit)},
-                          activateWhenEnterPressed: true}
-
-                          var okButton3 = {imgUp: 'robomb-pngs/btn-okay-up.png',
-                                          imgDn: 'robomb-pngs/btn-okay-down.png',
-                                          onClick: function(){curLevel.view.closeAlertBox(); curLevel.controller.beginDefusalMode(defusalTimeLimit)},
-                                          activateWhenEnterPressed: true}
 
           //this.showTextOnBottom(text)
           curLevel.controller.beginDefusalMode(defusalTimeLimit)
-          this.showAlertBox(text, [okButton, okButton2, okButton3])
+          this.showAlertBox(text, [okButton])
         }
 
       }
@@ -1393,6 +1390,9 @@ jsPsych.plugins["mot-game"] = (function() {
         buttonDiv.style = style='position:absolute; display:flex; justify-content: space-around; margin-left: 50%; margin-right: 50%; width:' + messImgEl.offsetWidth + 'px;font: 3px arial'
         buttonDiv.style.top = '90%'
         buttonDiv.style.transform = 'translate(-50%, -50%)'
+        buttonDiv.style.MozTransform = 'translate(-50%, -50%)'
+        buttonDiv.style.WebkitTransform = 'translate(-50%, -50%)'
+        buttonDiv.style.OTransform = 'translate(-50%, -50%)'
         for(var i=0, l=buttons.length; i<l; i++){
           var button = buttons[i]
           var butt = document.createElement("img")
