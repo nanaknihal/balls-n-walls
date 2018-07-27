@@ -29,12 +29,12 @@ jsPsych.plugins["mot-game"] = (function() {
     //it may be good to not hard-code the top and left value but rather use variables...this will be decided later when we do more styling
     "<canvas id='selectionCanvas' style='position:absolute; left: 0; top: 0; z-index:1' height='" + h + "' width = '" + w + "'></canvas>" +
     "<canvas id='livesCanvas' style='position:absolute; left: 0; top: 0; z-index:3' height='" + h + "' width = '" + w + "'></canvas>" +
-    "<div id='messageBox' style='width: 66%;top:50%; margin-left:50%; transform: translate(-50%, -50%); -moz-transform: translate(-50%, -50%); -webkit-transform: translate(-50%, -50%); -ms-transform: translate(-50%, -50%); -o-transform: translate(-50%, -50%); display:none; animation-name: messagePopUpAnimation; animation-duration: 4s; position:absolute; z-index:500; overflow: auto; user-select:none;'><img id='messageImg' src='robomb-pngs/alert-box.png' style='display:block; width:100%; margin: auto; pointer-events:none; user-select:none'></img><div id='msgText' style='position:absolute; top: 50%; margin-left:50%; transform: translate(-50%,-100%); -moz-transform: translate(-50%,-100%); -webkit-transform: translate(-50%,-100%); -ms-transform: translate(-50%,-100%); -o-transform: translate(-50%,-100%); font:37px verdana, sans-serif; color: white; display:block'></div><div id='buttonDiv'></div>" +
+    "<div id='messageBox' style='width: 66%;top:50%; margin-left:50%; transform: translate(-50%, -50%); -moz-transform: translate(-50%, -50%); -webkit-transform: translate(-50%, -50%); -ms-transform: translate(-50%, -50%); -o-transform: translate(-50%, -50%); display:none; animation-name: messagePopUpAnimation; animation-duration: 4s; position:absolute; z-index:500; overflow: auto; user-select:none;'><img id='messageImg' src='robomb-pngs/alert-box.png' style='display:block; width:100%; margin: auto; pointer-events:none; user-select:none'></img><div id='msgText' style='position:absolute; width: 95%; top: 50%; margin-left:50%; transform: translate(-50%,-50%); -moz-transform: translate(-50%,-50%); -webkit-transform: translate(-50%,-50%); -ms-transform: translate(-50%,-50%); -o-transform: translate(-50%,-50%); font:37px verdana, sans-serif; color: white; text-align: center; display:block'></div><div id='buttonDiv'></div>" +
     "</div>" +
-    "<div id='bottomScreenText' style='display:none; animation-name: scrollIt; animation-duration: 12s; position:absolute; z-index:500; left: 40%; top: 50%; width: 100%; height: 100%; overflow: auto'><p id='bottomText' style='user-select:none'>You've held out until the robots could be quarantined. +1 life. However, they are set to go off soon. You have 10 seconds to defuse them by clicking the right ones. \nYou have one defusal kit per bomb, so don't waste any</div>'" +
+    "<div id='bottomScreenText' style='display:none; animation-name: scrollIt; animation-duration: 12s; position:absolute; top: 87%; width: 80%; margin-left: 10%; z-index:500; overflow: auto'><p id='bottomText' style='color: #AABBCD; font: 14px verdana, sans serif'>You've held out until the robots could be quarantined. +1 life. However, they are set to go off soon. You have 10 seconds to defuse them by clicking the right ones. \nYou have one defusal kit per bomb, so don't waste any</div>'" +
     "</div>" +
     //message pop-up animation:
-    "<style>@keyframes fadeIn{from {opacity:0}; to {opacity:0.5}}</style>  <style>@keyframes scrollIt{from {opacity:0}; to {opacity:0.1}}</style>"
+    "<style>@keyframes fadeIn{from {opacity:0}; to {opacity:0.5}}</style>  <style>@keyframes scrollIt{from {margin-left:0px}; to {margin-left:330px}}</style>"
 
     document.body.style.backgroundColor = "black"
     document.body.style.userSelect = "none"
@@ -110,10 +110,8 @@ jsPsych.plugins["mot-game"] = (function() {
       //noTranslate is for when the object is not translated via CSS. Translation is used to center elements by doing transform: translate(-50,-50), offsetting them by -width/2, -height/2
       translateLeft = (noTranslate === undefined || noTranslate == true) ? object.offsetWidth/2 : 0
       translateTop = (noTranslate === undefined || noTranslate == true) ? object.offsetHeight/2 : 0
-      console.log(translateLeft, translateTop)
       var posx = pix[0]-object.offsetLeft + translateLeft
       var posy = pix[1]-object.offsetTop + translateTop
-      console.log(posx)
       //this resets any out-of-bounds pixels to within-bounds
       if(posx >= object.width){posx = object.width-1}
       if(posx <= 0){posx = 1}
@@ -170,7 +168,7 @@ jsPsych.plugins["mot-game"] = (function() {
       this.numExplodingBalls = function(){return this.explodingBalls.length}
 
       //set the number of lives as the number of lives from the second to last trial (last trial was waiting scren)
-      var numLives = jsPsych.data.get().last(2).first(1).values()[0].numLives
+      var numLives = jsPsych.data.get().last(1).values()[0].numLives
       this.lives = (numLives === undefined) ? par.numLives : numLives
       //usually callback is view.showLives()
       this.decrementLives = function(callback){
@@ -297,7 +295,7 @@ jsPsych.plugins["mot-game"] = (function() {
           if(event.type == "mousedown"){
             //Make a new user obstacle if it was a mousedown not a mousemove. But first, collect the data.
             data.createdPoints.push(
-              {position: [event.pageX, event.pageY],
+              {position: getPixelPositionRelativeToObject([event.pageX, event.pageY], document.getElementById('gameContainer')),
                timeCreated: event.timeStamp - timestampWallCreationEnabled,//make timeCreated the event's time relative to the time wall creation was initially enabled
                eventType:event.type //mousedown events create new obstacles; mousemove events add points to them
             })
@@ -1355,22 +1353,20 @@ jsPsych.plugins["mot-game"] = (function() {
       //args is an object. Currently, it has one option: deflectionSuccessful (true or false), which if true will let defusal mode know to give a different message
       //since it displayed
       this.displayDefusalMessage = function(defusalTimeLimit, args){
-        var ocan = document.getElementById("overlay")
-        var octx = ocan.getContext('2d')
         if(args !== undefined && args.deflectionSuccessful){
           this.showTextOnBottom("You've held out until the robots could be quarantined. +1 life. However, they are set to go off soon. You have 10 seconds to defuse them by clicking the right ones. You have one defusal kit per bomb, so don't waste any.")
           curLevel.model.freeze()
           curLevel.controller.beginDefusalMode(defusalTimeLimit)
         } else {
-          var text = "one of the bomb carrying robots hit a wall... message."
-          var okButton = {imgUp: 'robomb-pngs/btn-okay-up.png',
+          var text = "One of the bomb carrying robots hit a wall! The bombs in all sabotaged robots have been activated, and you have ten seconds to defuse them. Click all the bomb-carrying bots to defuse them."
+          /*var okButton = {imgUp: 'robomb-pngs/btn-okay-up.png',
                           imgDn: 'robomb-pngs/btn-okay-down.png',
                           onClick: function(){curLevel.view.closeAlertBox(); curLevel.controller.beginDefusalMode(defusalTimeLimit)},
-                          activateWhenEnterPressed: true}
+                          activateWhenEnterPressed: true}*/
 
-          //this.showTextOnBottom(text)
+          this.showTextOnBottom(text)
           curLevel.controller.beginDefusalMode(defusalTimeLimit)
-          this.showAlertBox(text, [okButton])
+          //this.showAlertBox(text, [okButton])
         }
 
       }
@@ -1380,6 +1376,8 @@ jsPsych.plugins["mot-game"] = (function() {
         var messImgEl = document.getElementById('messageImg')
         var buttonDiv = document.getElementById('buttonDiv')
         var textDiv = document.getElementById('msgText')
+        var fontsize = textDiv.style.fontSize
+        if(messageTxt.length > 200){textDiv.style.fontSize = messageTxt.length/10 + 'px';}//handle overflow text. the formula might need to be changed
         textDiv.innerHTML = messageTxt
 
         //adjust image width and height to fit the text:
@@ -1400,7 +1398,7 @@ jsPsych.plugins["mot-game"] = (function() {
           //butt.style.transform = 'translate(-50%, -50%)'
           butt.style.height='50px'
           butt.style.margin= 160/buttons.length/buttons.length + 'px'
-          butt.onclick = function(){butt.src = button.imgDn; butt.onload = function(){setTimeout(button.onClick, 90)}}
+          butt.onclick = function(){butt.src = button.imgDn; butt.onload = function(){setTimeout(button.onClick, 90); /*now that the alert's over, reset the font size of the text in case it changed due to overflow:*/textDiv.style.fontSize = fontsize + 'px';}}
           butt.onload = function(){
             buttonDiv.height = butt.height
           }
@@ -1425,21 +1423,20 @@ jsPsych.plugins["mot-game"] = (function() {
       this.highlightSelectedBalls = function(event){
         var can = document.getElementById('selectionCanvas')
         var ctx = can.getContext('2d')
-        //iterate through the balls to check whether the mouth is within them:
+        //iterate through the balls to check whether the pointer is within them:
         var balls = curLevel.model.getBalls()
         for(var n = 0, numBalls = balls.length; n < numBalls; n++){
           var ball = balls[n]
           var selectionRadiusAddOn = 1
           var totalRadius = ball.getRadius()+selectionRadiusAddOn
-
-          if(distanceBetween([event.pageX,event.pageY], [ball.getX(), ball.getY()]) < ball.getRadius()){
+          //if they hover over the ball:
+          if(distanceBetween(getPixelPositionRelativeToObject([event.pageX,event.pageY], document.getElementById('gameContainer')), [ball.getX(), ball.getY()]) < ball.getRadius()){
             //display a border around the ball
             ctx.beginPath()
             ctx.strokeStyle = "red"
             ctx.arc(ball.getX(), ball.getY(), totalRadius, 0, 2*Math.PI)
             ctx.stroke()
             ctx.closePath();
-
           } else {
             //clear the rect aronud the ball
             var totalDiameter = totalRadius * 2
@@ -1665,12 +1662,13 @@ jsPsych.plugins["mot-game"] = (function() {
       this.incorrectGuesses = 0
       this.registerDefusalGuess = function(event){
         if(curLevel.controller.guessesRemaining > 0){
-          var result = model.checkDefusalGuess([event.pageX, event.pageY])
+          var pos = getPixelPositionRelativeToObject([event.pageX, event.pageY], document.getElementById('gameContainer'))
+          var result = model.checkDefusalGuess(pos)
           switch(result){
             case true: //correct guess
               curLevel.controller.correctGuesses++ //this looks like really bad OOP style but keep in mind it's happening within curLevel.controller
               curLevel.controller.guessesRemaining--
-              curLevel.view.showImgAtFor("robomb-pngs/yep-medium.png", event.pageX, event.pageY, 1000)
+              curLevel.view.showImgAtFor("robomb-pngs/yep-medium.png", pos[0], pos[1], 1000)
               if(curLevel.controller.guessesRemaining == 0){
                   if(curLevel.controller.incorrectGuesses == 0){
                     curLevel.controller.endGame("defusalModeSuccess")
@@ -1712,22 +1710,54 @@ jsPsych.plugins["mot-game"] = (function() {
       this.getGuessedBalls = function(minimalBallForm){return this.guessedBalls}
 
       this.endGame = function(howGameEnded){
+        curLevel.timer.pause()
         curLevel.timer.hide()
         document.removeEventListener("mousedown", curLevel.controller.findWallDrawingPath)
         document.removeEventListener("mousemove", curLevel.model.addPixelsToUserObstacles)
+        //button to be displayed in alert:
+        var buttons = [/*uncomment for less rigorous experiments where the user can choose to exit after a level {
+                          imgUp: 'robomb-pngs/btn-exit-up.png',
+                          imgDn: 'robomb-pngs/btn-exit-down.png',
+                          onClick: function(){
+                            curLevel.view.closeAlertBox()
+                            //make sure number of lives are changed first before saving this
+                            data.numLives = curLevel.model.lives
+                            curLevel.controller.endDefusalMode()
+                            curLevel.controller.gameOver = true
+                            jsPsych.finishTrial(data)
+                            //figure out a line here to quit the game and return to title screen
+                          },
+                          activateWhenEnterPressed: true
+                        },*/
+                        {
+                          imgUp: 'robomb-pngs/btn-play-up.png',
+                          imgDn: 'robomb-pngs/btn-play-down.png',
+                          onClick: function(){
+                            curLevel.view.closeAlertBox()
+                            //make sure number of lives are changed first before saving this
+                            data.numLives = curLevel.model.lives
+                            curLevel.controller.endDefusalMode()
+                            curLevel.controller.gameOver = true
+                            jsPsych.finishTrial(data)
+                          },
+                          activateWhenEnterPressed: true
+                        }]
+
         //maybe someday change to the state pattern
         switch(howGameEnded){
           case "defusalModeNeverHappened":
             data.defusalMode = "neverNeeded"
             data.defusalDuration = 0
-            alert("Level Passed!");
+            //curLevel.model.incrementLives(function(){curLevel.view.showLives(curLevel.model.lives)})
+            curLevel.view.showAlertBox("Level Passed! On to the next one?", buttons);
             break;
           case "defusalModeTimeRanOut":
             data.defusalMode = "timeRanOut"
             data.defusalDuration = curLevel.timer.getTime() //this should be the length of defusal mode as long as the timer is reset before defusal mode begins
-            alert("Out of time!");
             data.correctGuesses = curLevel.controller.correctGuesses
             data.incorrectGuesses = curLevel.controller.incorrectGuesses
+            curLevel.model.decrementLives(function(){curLevel.view.showLives(curLevel.model.lives)})
+            curLevel.view.showAlertBox("Out of time! Level failed. On to the next?", buttons);
             //maybe we can have it restart at the level before?
             break;
           case "incorrectGuess":
@@ -1735,8 +1765,8 @@ jsPsych.plugins["mot-game"] = (function() {
             data.defusalDuration = curLevel.timer.getTime()
             data.correctGuesses = curLevel.controller.correctGuesses
             data.incorrectGuesses = curLevel.controller.incorrectGuesses
-            alert("defusal mode failed. not all the guesses were correct; you wasted time trying to defuse the innocuous balls")
             curLevel.model.decrementLives(function(){curLevel.view.showLives(curLevel.model.lives)})
+            curLevel.view.showAlertBox("Defusal Mode failed. Not all the guesses were correct. You wasted your kit on harmless robots. Poor robots. Go to next level?", buttons);
             //alert("Incorrect guess. Level failed.")
             //maybe we can have it restart at the level before?
             break;
@@ -1745,13 +1775,11 @@ jsPsych.plugins["mot-game"] = (function() {
             data.defusalDuration = curLevel.timer.getTime(true)
             data.correctGuesses = curLevel.controller.correctGuesses
             data.incorrectGuesses = curLevel.controller.incorrectGuesses
-            alert("Level Passed!");
+            curLevel.model.incrementLives(function(){curLevel.view.showLives(curLevel.model.lives)})
+            curLevel.view.showAlertBox("Level Passed! +1 Life. Would you like to try the next level?", buttons);
             break;
         }
         data.numLives = curLevel.model.lives
-        curLevel.controller.endDefusalMode()
-        curLevel.controller.gameOver = true
-        jsPsych.finishTrial(data);
         //curLevel.beginGame()
       }
 
@@ -1806,6 +1834,7 @@ jsPsych.plugins["mot-game"] = (function() {
       this.curTime = 1000,
       this.timeHasRunOut = false,
       this.updateCurTime = function(){
+        if(!this.paused){
         //startDate must be set already for this to work properly.
         this.curTime = new Date().valueOf() - this.startTime
 
@@ -1817,7 +1846,7 @@ jsPsych.plugins["mot-game"] = (function() {
 
             }
 
-      }
+      }}
 
       this.reset = function(countdownTime, color) {
         this.setCountdownTime(countdownTime);

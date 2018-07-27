@@ -11,7 +11,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
     var par = trial
     var w=par.gameWidth, h=par.gameHeight;
     display_element.innerHTML =
-    "<div id='gameContainer' height='" + h + "' width='" + w + "'>" +
+    "<div id='gameContainer' style='position: absolute; top: 50%; left: 50%; margin-right:50%; transform: translate(-50%, -50%); height: " + h + "px; width: " + w + "px; vertical-align: middle'>" +
     "<!-background image:--><img src='robomb-pngs/floor.png' height='" + h + "' width='" + w + "' style='position:absolute; margin:auto; z-index:-100'></img>" +
     "<!--main canvas where game happens:-->" +
     "<canvas id='mainCanvas' height='" + h + "' width = '" + w + "'></canvas>"
@@ -28,11 +28,18 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
     //it may be good to not hard-code the top and left value but rather use variables...this will be decided later when we do more styling
     "<canvas id='selectionCanvas' style='position:absolute; left: 0; top: 0; z-index:1' height='" + h + "' width = '" + w + "'></canvas>" +
     "<canvas id='livesCanvas' style='position:absolute; left: 0; top: 0; z-index:3' height='" + h + "' width = '" + w + "'></canvas>" +
-    "<div id='messageBox' style='display:none; animation-name: messagePopUpAnimation; animation-duration: 4s; position:fixed; z-index:500; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; user-select:none'><image id='messageImg' src='robomb-pngs/alert-box.png' style='display:block; margin-left: auto; margin-right: auto; margin-top: 10%; width: 20%; height: 30%; pointer-events:none'/><p id='msgText'></div>'" +
+    "<div id='messageBox' style='width: 66%;top:50%; margin-left:50%; transform: translate(-50%, -50%); -moz-transform: translate(-50%, -50%); -webkit-transform: translate(-50%, -50%); -ms-transform: translate(-50%, -50%); -o-transform: translate(-50%, -50%); display:none; animation-name: messagePopUpAnimation; animation-duration: 4s; position:absolute; z-index:500; overflow: auto; user-select:none;'><img id='messageImg' src='robomb-pngs/alert-box.png' style='display:block; width:100%; margin: auto; pointer-events:none; user-select:none'></img><div id='msgText' style='position:absolute; width: 95%; top: 50%; margin-left:50%; transform: translate(-50%,-50%); -moz-transform: translate(-50%,-50%); -webkit-transform: translate(-50%,-50%); -ms-transform: translate(-50%,-50%); -o-transform: translate(-50%,-50%); font:37px verdana, sans-serif; color: white; text-align: center; display:block'></div><div id='buttonDiv'></div>" +
     "</div>" +
-    "<div id='bottomScreenText' style='display:none; animation-name: scrollIt; animation-duration: 10s; position:absolute; z-index:500; left: 40%; top: 50%; width: 100%; height: 100%; overflow: auto'><p id='bottomText' style='user-select:none'>You've held out until the robots could be quarantined. +1 life. However, they are set to go off soon. You have 10 seconds to defuse them by clicking the right ones. \nYou have one defusal kit per bomb, so don't waste any</div>'" +
+    "<div id='bottomScreenText' style='display:none; animation-name: scrollIt; animation-duration: 12s; position:absolute; top: 87%; width: 80%; margin-left: 10%; z-index:500; overflow: auto'><p id='bottomText' style='color: #AABBCD; font: 14px verdana, sans serif'>You've held out until the robots could be quarantined. +1 life. However, they are set to go off soon. You have 10 seconds to defuse them by clicking the right ones. \nYou have one defusal kit per bomb, so don't waste any</div>'" +
+    "</div>" +
     //message pop-up animation:
-    "<style>@keyframes fadeIn{from {opacity:0}; to {opacity:0.5}</style>  <style>@keyframes scrollIt{from {opacity:0}; to {opacity:1}</style>"
+    "<style>@keyframes fadeIn{from {opacity:0}; to {opacity:0.5}}</style>  <style>@keyframes scrollIt{from {margin-left:0px}; to {margin-left:330px}}</style>"
+
+    document.body.style.backgroundColor = "black"
+    document.body.style.userSelect = "none"
+    document.body.style.MozUserSelect = 'none'
+    document.body.style.webkitUserSelect = 'none'
+    document.body.style.msUserSelect = 'none'
 
     var data = {
       levelDuration: par.duration,
@@ -98,9 +105,12 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
     }
 
     //pix has format [x,y]
-    function getPixelPositionRelativeToObject(pix, object) {
-      var posx = pix[0]-object.offsetLeft
-      var posy = pix[1]-object.offsetTop
+    function getPixelPositionRelativeToObject(pix, object, noTranslate) {
+      //noTranslate is for when the object is not translated via CSS. Translation is used to center elements by doing transform: translate(-50,-50), offsetting them by -width/2, -height/2
+      translateLeft = (noTranslate === undefined || noTranslate == true) ? object.offsetWidth/2 : 0
+      translateTop = (noTranslate === undefined || noTranslate == true) ? object.offsetHeight/2 : 0
+      var posx = pix[0]-object.offsetLeft + translateLeft
+      var posy = pix[1]-object.offsetTop + translateTop
       //this resets any out-of-bounds pixels to within-bounds
       if(posx >= object.width){posx = object.width-1}
       if(posx <= 0){posx = 1}
@@ -281,7 +291,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
           if(event.type == "mousedown"){
             //Make a new user obstacle if it was a mousedown not a mousemove. But first, collect the data.
             data.createdPoints.push(
-              {position: [event.pageX, event.pageY],
+              {position: getPixelPositionRelativeToObject([event.pageX, event.pageY], document.getElementById('gameContainer')),
                timeCreated: event.timeStamp - timestampWallCreationEnabled,//make timeCreated the event's time relative to the time wall creation was initially enabled
                eventType:event.type //mousedown events create new obstacles; mousemove events add points to them
             })
@@ -328,6 +338,45 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
                                                                   //just checking whether both equations give the same y value for the x value
           return [x,y]
       }
+
+      //returns the dot product of vectors (in the form of arrays) a and b
+      function dot(a,b){
+        var length = a.length
+        if(length == b.length){
+          dotp = 0
+          for(var i = 0; i < length; i++){
+            dotp += a[i]*b[i]
+          }
+          return dotp
+        } else {
+          return null
+        }
+      }
+      //returns the norm of an n-dimensional vector a
+      function norm(a){
+        var s = 0
+        var length = a.length
+        for(var i=0; i<length; i++){
+          s+=a[i]*a[i]
+        }
+        return Math.sqrt(s)
+      }
+      /*//normalizes vector a (a is a js array)
+      function normalize(a){
+        var s = 0
+        var norm = norm(a)
+        var length = a.length
+        for(var i=0; i<length; i++){
+          s.push(a[i]/norm)
+        }
+        return s
+      }*/
+
+      //returns the cosine between two vectors (as arrays) of n dimensions
+      function nDimCosine(a,b) {
+        return dot(a,b)/(norm(a)*norm(b))
+      }
+
       this.ballAndObstacleCollisionStatus = function(ball,ob){
         var ballAndObSegmentCollision = {collisionHappening: false} //default value, if there's no collision just return this
         for(var r = 0, pix = ob.getPixels(), numPix = pix.length; r<numPix-1; r++){
@@ -366,81 +415,93 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
                 var shortestLineFromBallToWall = equationFromPointAndSlope(ballPoint, slopeOfWallNormal)
                 var collisionPoint = intersectionOf2Equations(shortestLineFromBallToWall, wallExtensionEquation)
 
+                //see whether the ball is traveling toward the collision point or away:
+                var ballToCollisionPointVec = [collisionPoint[0]-ballPoint[0], collisionPoint[1]-ballPoint[1]]
+                var ballVecLength = norm(ballVec)
+                var cos = (nDimCosine(ballVec, ballToCollisionPointVec))
+                var travellingTowardsWall = (cos > 0)
+                if(travellingTowardsWall){ //only collide if it's traveling towards the wall - there's a bug that in rare situations, balls moving away can collide and get stuck inside the obstacle.
+                  //curLevel.view.showPoint(collisionPoint)
+                  //curLevel.view.showPoint([ballPoint[0]+ballVec[0]*1000, ballPoint[1]+ballVec[1]*1000])
+                  //console.log(towardsWall)
+                  //Normal in the sense of perpendicular, UnNormalized  in the sense of retaining its length
+                  var wallNormalVector_UnNormalized = [ballPoint[0]-collisionPoint[0], ballPoint[1]-collisionPoint[1]]
 
-                var wallNormalVector_UnNormalized = [ballPoint[0]-collisionPoint[0], ballPoint[1]-collisionPoint[1]]
-
-                //not using this:
-                /*Now that the intersection has been found, find the angle between the velocity and the wall*/
-                /*Make sure the SIGNS OF ALL THESE ANGLES ARE CORRECT:*/
-                /*
-                angleBetweenVelocityAndXAxis = -Math.atan2(ballTrajectoryEquation.rise, ballTrajectoryEquation.run)
-                angleBetweenWallAndYAxis = Math.PI/2 - Math.atan2(wallExtensionEquation.rise, wallExtensionEquation.run)
-                angleBetweenWallAndXAxis = -Math.atan2(wallExtensionEquation.rise, wallExtensionEquation.run)
-                angleBetweenVelocityAndWall = angleBetweenVelocityAndXAxis-angleBetweenWallAndXAxis//Math.PI/2 - angleBetweenVelocityAndXAxis - angleBetweenWallAndYAxis
-                //angleBetweenWallAndXAxis = Math.PI/2 - angleBetweenWallAndYAxis
-                ballToIntersectionDistance = distanceBetween(ballPoint, intersection)
-
-
-                //console.log(angleBetweenVelocityAndWall*57.3)
-                 //See diagrams //NOTE: ADD DIAGRAMS
-                 distanceBetweenCollisionAndIntersection = ballToIntersectionDistance * Math.sin(Math.PI/2 + angleBetweenVelocityAndWall)
-
-                 HoriDistanceBetweenCollisionAndIntersection = Math.sqrt(distanceBetweenCollisionAndIntersection*distanceBetweenCollisionAndIntersection /
-                                                                        (wallExtensionEquation.m*wallExtensionEquation.m + 1))
-                 //slope (m) = vertical-distance/horizontal-distance
-                 VertDistanceBetweenCollisionAndIntersection = /*-/ABS?*/ /*wallExtensionEquation.m*HoriDistanceBetweenCollisionAndIntersection
-
-                 collisionPoint = [intersection[0]-HoriDistanceBetweenCollisionAndIntersection, intersection[1]-VertDistanceBetweenCollisionAndIntersection]*/
+                  //not using this:
+                  /*Now that the intersection has been found, find the angle between the velocity and the wall*/
+                  /*Make sure the SIGNS OF ALL THESE ANGLES ARE CORRECT:*/
+                  /*
+                  angleBetweenVelocityAndXAxis = -Math.atan2(ballTrajectoryEquation.rise, ballTrajectoryEquation.run)
+                  angleBetweenWallAndYAxis = Math.PI/2 - Math.atan2(wallExtensionEquation.rise, wallExtensionEquation.run)
+                  angleBetweenWallAndXAxis = -Math.atan2(wallExtensionEquation.rise, wallExtensionEquation.run)
+                  angleBetweenVelocityAndWall = angleBetweenVelocityAndXAxis-angleBetweenWallAndXAxis//Math.PI/2 - angleBetweenVelocityAndXAxis - angleBetweenWallAndYAxis
+                  //angleBetweenWallAndXAxis = Math.PI/2 - angleBetweenWallAndYAxis
+                  ballToIntersectionDistance = distanceBetween(ballPoint, intersection)
 
 
-                //this is being used though:
-                //Consider the following scenario: the collisionPoint is not actually the closest point on the wall's extension. This happens when the ball collides with
-                // an endpoint of the wall. For these cases, set collisionPoint to the wall's endpoint:
-                var radPad = 0//par.userObstacleThickness
-                if(distanceBetween(ballPoint, wallPoint) <= rad+radPad) {
-                  collisionPoint = wallPoint;
-                  //treat the collision point as a small circle and collide off the tangent line. luckily, the vector normal to the tangent line
-                  //has the same direction as that between the ballPoint and wallPoint(the collision point). it's magnitute doesn't matter because
-                  //it will be normalized!
-                  wallNormalVector_UnNormalized = [ballPoint[0]-collisionPoint[0], ballPoint[1]-collisionPoint[1]]
-                }
-                if(distanceBetween(ballPoint, nextWallPoint) <= rad+radPad) {
-                  collisionPoint = nextWallPoint;
-                  //get the new normal
-                  wallNormalVector_UnNormalized = [ballPoint[0]-collisionPoint[0], ballPoint[1]-collisionPoint[1]]
-                }
-                //Check whether the collision point is actually within the wall and not just in its extension
-                  //collision padding - how far away a ball needs to be from an obstacle for it to collide:
-                  var obColPad = 0//par.userObstacleThickness
-                var collisionIsWithinSegment = (collisionPoint[0] >= Math.min(wallPoint[0], nextWallPoint[0])-obColPad) &&
-                                           (collisionPoint[0] <= Math.max(wallPoint[0], nextWallPoint[0])+obColPad) &&
-                                           (collisionPoint[1] >= Math.min(wallPoint[1], nextWallPoint[1])-obColPad) &&
-                                           (collisionPoint[1] <= Math.max(wallPoint[1], nextWallPoint[1])+obColPad)
+                  //console.log(angleBetweenVelocityAndWall*57.3)
+                   //See diagrams //NOTE: ADD DIAGRAMS
+                   distanceBetweenCollisionAndIntersection = ballToIntersectionDistance * Math.sin(Math.PI/2 + angleBetweenVelocityAndWall)
+
+                   HoriDistanceBetweenCollisionAndIntersection = Math.sqrt(distanceBetweenCollisionAndIntersection*distanceBetweenCollisionAndIntersection /
+                                                                          (wallExtensionEquation.m*wallExtensionEquation.m + 1))
+                   //slope (m) = vertical-distance/horizontal-distance
+                   VertDistanceBetweenCollisionAndIntersection = /*-/ABS?*/ /*wallExtensionEquation.m*HoriDistanceBetweenCollisionAndIntersection
+
+                   collisionPoint = [intersection[0]-HoriDistanceBetweenCollisionAndIntersection, intersection[1]-VertDistanceBetweenCollisionAndIntersection]*/
 
 
-                //The ball can be touching the wall even if it doesn't intersect, so we need to find the distance to the closest point on the wall:
-                //The line between this and the ball is always pi/2 radians from the ball, so we can use the sin:
+                  //this is being used though:
+                  //Consider the following scenario: the collisionPoint is not actually the closest point on the wall's extension. This happens when the ball collides with
+                  // an endpoint of the wall. For these cases, set collisionPoint to the wall's endpoint:
+                  var radPad = 0//par.userObstacleThickness
+                  if(distanceBetween(ballPoint, wallPoint) <= rad+radPad) {
+                    collisionPoint = wallPoint;
+                    //treat the collision point as a small circle and collide off the tangent line. luckily, the vector normal to the tangent line
+                    //has the same direction as that between the ballPoint and wallPoint(the collision point). it's magnitute doesn't matter because
+                    //it will be normalized!
+                    wallNormalVector_UnNormalized = [ballPoint[0]-collisionPoint[0], ballPoint[1]-collisionPoint[1]]
+                  }
+                  if(distanceBetween(ballPoint, nextWallPoint) <= rad+radPad) {
+                    collisionPoint = nextWallPoint;
+                    //get the new normal
+                    wallNormalVector_UnNormalized = [ballPoint[0]-collisionPoint[0], ballPoint[1]-collisionPoint[1]]
+                  }
+                  //Check whether the collision point is actually within the wall and not just in its extension
+                    //collision padding - how far away a ball needs to be from an obstacle for it to collide:
+                    var obColPad = 0//par.userObstacleThickness
+                  var collisionIsWithinSegment = (collisionPoint[0] >= Math.min(wallPoint[0], nextWallPoint[0])-obColPad) &&
+                                             (collisionPoint[0] <= Math.max(wallPoint[0], nextWallPoint[0])+obColPad) &&
+                                             (collisionPoint[1] >= Math.min(wallPoint[1], nextWallPoint[1])-obColPad) &&
+                                             (collisionPoint[1] <= Math.max(wallPoint[1], nextWallPoint[1])+obColPad)
 
-                var ballToWallClosestDistance = distanceBetween(collisionPoint, ballPoint)
+
+                  //The ball can be touching the wall even if it doesn't intersect, so we need to find the distance to the closest point on the wall:
+                  //The line between this and the ball is always pi/2 radians from the ball, so we can use the sin:
+
+                  var ballToWallClosestDistance = distanceBetween(collisionPoint, ballPoint)
 
 
-                var ballWithinLineRange = false
-                if(Math.abs(ballToWallClosestDistance) < rad){
-                  ballWithinLineRange = true
-                }
+                  var ballWithinLineRange = false
+                  if(Math.abs(ballToWallClosestDistance) < rad){
+                    ballWithinLineRange = true
+                  }
 
-                //view.showPoint(collisionPoint)
-                //console.log(angleBetweenVelocityAndWall*57.3)
-                //alert(ballToWallClosestDistance + ", " + collisionIsWithinSegmentPlusBallRadius + ", " + ballWithinLineRange + ", " + collisionPoint)
-                //if(!collisionIsWithinSegment && ballWithinLineRange){console.log(collisionPoint)}
-
-                if(collisionIsWithinSegment && ballWithinLineRange){
                   //view.showPoint(collisionPoint)
-                  return {collisionHappening: true, wallVector: wallVec, ballVector: ballVec, wallNormal: wallNormalVector_UnNormalized}
-                } else {
-                  return {collisionHappening: false, wallVector: wallVec, ballVector: ballVec, wallNormal: wallNormalVector_UnNormalized}
-                }
+                  //console.log(angleBetweenVelocityAndWall*57.3)
+                  //alert(ballToWallClosestDistance + ", " + collisionIsWithinSegmentPlusBallRadius + ", " + ballWithinLineRange + ", " + collisionPoint)
+                  //if(!collisionIsWithinSegment && ballWithinLineRange){console.log(collisionPoint)}
 
+
+                  if(collisionIsWithinSegment && ballWithinLineRange){
+                    //view.showPoint(collisionPoint)
+                    return {collisionHappening: true, wallVector: wallVec, ballVector: ballVec, wallNormal: wallNormalVector_UnNormalized}
+                  } else {
+                    return {collisionHappening: false, wallVector: wallVec, ballVector: ballVec, wallNormal: wallNormalVector_UnNormalized}
+                  }
+                } else { //if it's not traveling towards the wall:
+                  return {collisionHappening: false, wallVector: wallVec, ballVector: ballVec, wallNormal: wallNormalVector_UnNormalized}
+              }
 
       }
 
@@ -969,7 +1030,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
         if(event.isFromReplay !== undefined && event.type == "mousemove"){
           pos = [event.x, event.y]
         } else{
-          pos = getPixelPositionRelativeToObject([event.pageX, event.pageY], curLevel.view.mainCan)
+          pos = getPixelPositionRelativeToObject([event.pageX, event.pageY], document.getElementById('gameContainer'))
         }
         //if there are no existing pixels/points, just add it without the for loop
         var numPix = this.pixels.length;
@@ -992,10 +1053,10 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
           }
         }
         //don't allow a wall being drawn through a ball:
-        for(var l=0, balls = curLevel.model.getBalls(), numBalls = balls.length; l<numBalls; l++){
+        /*for(var l=0, balls = curLevel.model.getBalls(), numBalls = balls.length; l<numBalls; l++){
           var ball = balls[l]
           var mostRecentPixel = (this.pixels.length == 0) ? pos : this.pixels[this.pixels.length-1]
-          if(ball.isWithinObstacleSegment([this.pixels[this.pixels.length-1]/*last pixel*/, pos/*this pixel*/])){
+          if(ball.isWithinObstacleSegment([this.pixels[this.pixels.length-1]/*last pixel*, pos/*this pixel*])){
             validPosition = false;
             if(!this.imageDisplayCooldownPeriod){
               curLevel.view.showImgAtFor("robomb-pngs/you-cant-draw-through-robots.png", ball.getX(), ball.getY(), 350, {objectToNotifyWhenDoneDisplaying: this})
@@ -1003,7 +1064,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
             }
             break;
           }
-        }
+        }*/
 
         if(validPosition){
             this.pixels.push(pos)
@@ -1112,16 +1173,28 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
 
         setTimeout(curLevel.model.resetAllBallDesigns, initialFrameDuration)
         setTimeout(function(){
-          var okButton = {
+          var secondOkButton =
+                          {
                             imgUp: 'robomb-pngs/btn-okay-up.png',
                             imgDn: 'robomb-pngs/btn-okay-down.png',
                             onClick: function(){
-                              curLevel.view.closeAlertBox(); curLevel.model.unFreeze()
+
+                              curLevel.view.closeAlertBox(); curLevel.model.unFreeze(); curLevel.timer.resume()
                               document.addEventListener('wallFinished', function(event){
                                 if(neverMadeAWallYet){
                                   curLevel.view.showImgAtFor('robomb-pngs/yep-medium.png', event.x, event.y, 333);
                                 }
                                 neverMadeAWallYet = false; curLevel.timer.run()/*resume the timer finally*/})
+                            },
+                            activateWhenEnterPressed: true
+                          }
+
+          var okButton = {
+                            imgUp: 'robomb-pngs/btn-okay-up.png',
+                            imgDn: 'robomb-pngs/btn-okay-down.png',
+                            onClick: function(){
+                              curLevel.view.closeAlertBox();
+                              curLevel.view.showAlertBox("Force walls drawn through robots will not affect them while they're inside the force", [secondOkButton])
                             },
                             activateWhenEnterPressed: true
                           }
@@ -1324,39 +1397,59 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
       //args is an object. Currently, it has one option: deflectionSuccessful (true or false), which if true will let defusal mode know to give a different message
       //since it displayed
       this.displayDefusalMessage = function(defusalTimeLimit, args){
-        var ocan = document.getElementById("overlay")
-        var octx = ocan.getContext('2d')
+        curLevel.model.freeze()
+
+        //set up the alert box:
+        var okButton = {imgUp: 'robomb-pngs/btn-okay-up.png',
+                        imgDn: 'robomb-pngs/btn-okay-down.png',
+                        onClick: function(){curLevel.view.closeAlertBox(); curLevel.controller.beginDefusalMode(defusalTimeLimit)},
+                        activateWhenEnterPressed: true}
+        var text = ""
         if(args !== undefined && args.deflectionSuccessful){
-          this.showTextOnBottom("You've held out until the robots could be quarantined. +1 life. However, they are set to go off soon. You have 10 seconds to defuse them by clicking the right ones. You have one defusal kit per bomb, so don't waste any.")
-          curLevel.model.freeze()
-          curLevel.controller.beginDefusalMode(defusalTimeLimit)
+          text = "You've held out until the robots could be quarantined. +1 life. However, they are set to go off soon. You have 10 seconds to defuse them by clicking the right ones. You have one defusal kit per bomb, so don't waste any."
         } else {
-          var text = "one of the bomb carrying robots hit a wall... message."
-          var okButton = {imgUp: 'robomb-pngs/btn-okay-up.png',
-                          imgDn: 'robomb-pngs/btn-okay-down.png',
-                          onClick: function(){curLevel.view.closeAlertBox(); curLevel.controller.beginDefusalMode(defusalTimeLimit)},
-                          activateWhenEnterPressed: true}
-          //this.showTextOnBottom(text)
-          curLevel.controller.beginDefusalMode(defusalTimeLimit)
-          this.showAlertBox(text, [okButton])
+          text = "One of the bomb carrying robots hit a wall! The bombs in all sabotaged robots have been activated, and you have ten seconds to defuse them. Click all the bomb-carrying bots to defuse them."
         }
+        this.showAlertBox(text, [okButton])
 
       }
 
       this.showAlertBox = function(messageTxt, buttons){
         var messageDiv = document.getElementById('messageBox') //there's already an element; it's properties just have to be adjusted and then it needs to be displayed
         var messImgEl = document.getElementById('messageImg')
-        document.getElementById('msgText').innerHTML = messageTxt
+        var buttonDiv = document.getElementById('buttonDiv')
+        var textDiv = document.getElementById('msgText')
+        var fontsize = textDiv.style.fontSize//store the current font size in case it changed
+
+        if(messageTxt.length > 200){textDiv.style.fontSize = messageTxt.length/10 + 'px';}//handle overflow text. the formula might need to be changed
+
+        textDiv.innerHTML = messageTxt
+
+        //adjust image width and height to fit the text:
+        messImgEl.width = textDiv.width + 10 + 'px'
+
+        //get rid of all buttons:
+        buttonDiv.innerHTML = ''
+        buttonDiv.style = style='position:absolute; display:flex; justify-content: space-around; margin-left: 50%; margin-right: 50%; width:' + messImgEl.offsetWidth + 'px;font: 3px arial'
+        buttonDiv.style.top = '90%'
+        buttonDiv.style.transform = 'translate(-50%, -50%)'
+        buttonDiv.style.MozTransform = 'translate(-50%, -50%)'
+        buttonDiv.style.WebkitTransform = 'translate(-50%, -50%)'
+        buttonDiv.style.OTransform = 'translate(-50%, -50%)'
         for(var i=0, l=buttons.length; i<l; i++){
           var button = buttons[i]
           var butt = document.createElement("img")
-          butt.innerHTML = 'test'
-          butt.style = style='position:absolute; display:inline; margin-left: 50%; margin-right: 50%; width: 10%'
           butt.src = button.imgUp
-          butt.onclick = function(){butt.src = button.imgDn; butt.onload = function(){setTimeout(button.onClick, 90)}}
-          messageDiv.appendChild(butt)
-          if(button.activateWhenEnterPressed){document.addEventListener('keypress', function(e){if(e.keyCode == 13){butt.onclick()}})}
+          //butt.style.transform = 'translate(-50%, -50%)'
+          butt.style.height='50px'
+          butt.style.margin= 160/buttons.length/buttons.length + 'px'
+          butt.onclick = function(){butt.src = button.imgDn; butt.onload = function(){setTimeout(button.onClick, 90); /*now that the alert's over, reset the font size of the text in case it changed due to overflow:*/textDiv.style.display = 'none'; textDiv.style.fontSize = fontsize; setTimeout(function(){textDiv.style.display = 'block';},130)}}
+          butt.onload = function(){
+            buttonDiv.height = butt.height
+          }
+          buttonDiv.appendChild(butt)
 
+          if(button.activateWhenEnterPressed){document.addEventListener('keypress', function(e){if(e.keyCode == 13){butt.onclick()}})}
         }
         messageDiv.style.display = 'block'
       }
@@ -1382,7 +1475,8 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
           var selectionRadiusAddOn = 1
           var totalRadius = ball.getRadius()+selectionRadiusAddOn
 
-          if(distanceBetween([event.pageX,event.pageY], [ball.getX(), ball.getY()]) < ball.getRadius()){
+          //if they hover over the ball:
+          if(distanceBetween(getPixelPositionRelativeToObject([event.pageX,event.pageY], document.getElementById('gameContainer')), [ball.getX(), ball.getY()]) < ball.getRadius()){
             //display a border around the ball
             ctx.beginPath()
             ctx.strokeStyle = "red"
@@ -1614,7 +1708,8 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
       this.incorrectGuesses = 0
       this.registerDefusalGuess = function(event){
         if(curLevel.controller.guessesRemaining > 0){
-          var result = model.checkDefusalGuess([event.pageX, event.pageY])
+          var pos = getPixelPositionRelativeToObject([event.pageX, event.pageY], document.getElementById('gameContainer'))
+          var result = model.checkDefusalGuess(pos)
           switch(result){
             case true: //correct guess
               curLevel.controller.correctGuesses++ //this looks like really bad OOP style but keep in mind it's happening within curLevel.controller
@@ -1661,22 +1756,54 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
       this.getGuessedBalls = function(minimalBallForm){return this.guessedBalls}
 
       this.endGame = function(howGameEnded){
+        curLevel.timer.pause()
         curLevel.timer.hide()
         document.removeEventListener("mousedown", curLevel.controller.findWallDrawingPath)
         document.removeEventListener("mousemove", curLevel.model.addPixelsToUserObstacles)
+        //button to be displayed in alert:
+        var buttons = [/*uncomment for less rigorous experiments where the user can choose to exit after a level {
+                          imgUp: 'robomb-pngs/btn-exit-up.png',
+                          imgDn: 'robomb-pngs/btn-exit-down.png',
+                          onClick: function(){
+                            curLevel.view.closeAlertBox()
+                            //make sure number of lives are changed first before saving this
+                            data.numLives = curLevel.model.lives
+                            curLevel.controller.endDefusalMode()
+                            curLevel.controller.gameOver = true
+                            jsPsych.finishTrial(data)
+                            //figure out a line here to quit the game and return to title screen
+                          },
+                          activateWhenEnterPressed: true
+                        },*/
+                        {
+                          imgUp: 'robomb-pngs/btn-play-up.png',
+                          imgDn: 'robomb-pngs/btn-play-down.png',
+                          onClick: function(){
+                            curLevel.view.closeAlertBox()
+                            //make sure number of lives are changed first before saving this
+                            data.numLives = curLevel.model.lives
+                            curLevel.controller.endDefusalMode()
+                            curLevel.controller.gameOver = true
+                            jsPsych.finishTrial(data)
+                          },
+                          activateWhenEnterPressed: true
+                        }]
+
         //maybe someday change to the state pattern
         switch(howGameEnded){
           case "defusalModeNeverHappened":
             data.defusalMode = "neverNeeded"
             data.defusalDuration = 0
-            alert("Level Passed!");
+            //curLevel.model.incrementLives(function(){curLevel.view.showLives(curLevel.model.lives)})
+            curLevel.view.showAlertBox("Level Passed!", buttons);
             break;
           case "defusalModeTimeRanOut":
             data.defusalMode = "timeRanOut"
             data.defusalDuration = curLevel.timer.getTime() //this should be the length of defusal mode as long as the timer is reset before defusal mode begins
-            alert("Out of time!");
             data.correctGuesses = curLevel.controller.correctGuesses
             data.incorrectGuesses = curLevel.controller.incorrectGuesses
+            curLevel.model.decrementLives(function(){curLevel.view.showLives(curLevel.model.lives)})
+            curLevel.view.showAlertBox("Out of time!", buttons);
             //maybe we can have it restart at the level before?
             break;
           case "incorrectGuess":
@@ -1684,7 +1811,8 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
             data.defusalDuration = curLevel.timer.getTime()
             data.correctGuesses = curLevel.controller.correctGuesses
             data.incorrectGuesses = curLevel.controller.incorrectGuesses
-            alert("defusal mode failed. not all the guesses were correct; you wasted time trying to defuse the innocuous balls")
+            curLevel.model.decrementLives(function(){curLevel.view.showLives(curLevel.model.lives)})
+            curLevel.view.showAlertBox("Defusal Mode failed. not all the guesses were correct; you wasted your kit on harmless robots. Poor robots.", buttons);
             //alert("Incorrect guess. Level failed.")
             //maybe we can have it restart at the level before?
             break;
@@ -1694,13 +1822,9 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
             data.correctGuesses = curLevel.controller.correctGuesses
             data.incorrectGuesses = curLevel.controller.incorrectGuesses
             curLevel.model.incrementLives(function(){curLevel.view.showLives(curLevel.model.lives)})
-            alert("Level Passed!");
+            curLevel.view.showAlertBox("Level Passed! +1 Life. Would you like to try the next level?", buttons);
             break;
         }
-        curLevel.controller.endDefusalMode()
-        curLevel.controller.gameOver = true
-        jsPsych.finishTrial(data);
-        //curLevel.beginGame()
       }
 
 
@@ -1754,6 +1878,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
       this.curTime = 1000,
       this.timeHasRunOut = false,
       this.updateCurTime = function(){
+        if(!this.paused){
         //startDate must be set already for this to work properly.
         this.curTime = new Date().valueOf() - this.startTime
 
@@ -1766,6 +1891,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
             }
 
       }
+    }
 
       this.reset = function(countdownTime, color) {
         this.setCountdownTime(countdownTime);
@@ -1796,6 +1922,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
         this.paused = false;
         this.run()
       }
+      this.resume = function(){this.start()}//basically another name for start function. timer.pause(); timer.start() makes less sense thatn timer.pause(); timer.resume()
 
       this.run = function(){
         setTimeout(function(){

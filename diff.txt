@@ -1,0 +1,176 @@
+1c1
+< jsPsych.plugins["mot-game"] = (function() {
+---
+> jsPsych.plugins["mot-game-tutorial"] = (function() {
+13d12
+< 
+32c31
+<     "<div id='messageBox' style='width: 66%;top:50%; margin-left:50%; transform: translate(-50%, -50%); -moz-transform: translate(-50%, -50%); -webkit-transform: translate(-50%, -50%); -ms-transform: translate(-50%, -50%); -o-transform: translate(-50%, -50%); display:none; animation-name: messagePopUpAnimation; animation-duration: 4s; position:absolute; z-index:500; overflow: auto; user-select:none;'><img id='messageImg' src='robomb-pngs/alert-box.png' style='display:block; width:100%; margin: auto; pointer-events:none; user-select:none'></img><div id='msgText' style='position:absolute; width: 95%; top: 50%; margin-left:50%; transform: translate(-50%,-50%); -moz-transform: translate(-50%,-50%); -webkit-transform: translate(-50%,-50%); -ms-transform: translate(-50%,-50%); -o-transform: translate(-50%,-50%); font:37px verdana, sans-serif; color: white; text-align: center; display:block'></div><div id='buttonDiv'></div>" +
+---
+>     "<div id='messageBox' style='width: 66%;top:50%; margin-left:50%; transform: translate(-50%, -50%); -moz-transform: translate(-50%, -50%); -webkit-transform: translate(-50%, -50%); -ms-transform: translate(-50%, -50%); -o-transform: translate(-50%, -50%); display:none; animation-name: messagePopUpAnimation; animation-duration: 4s; position:absolute; z-index:500; overflow: auto; user-select:none;'><img id='messageImg' src='robomb-pngs/alert-box.png' style='display:block; width:100%; margin: auto; pointer-events:none; user-select:none'></img><div id='msgText' style='position:absolute; top: 50%; margin-left:50%; transform: translate(-50%,-100%); -moz-transform: translate(-50%,-100%); -webkit-transform: translate(-50%,-100%); -ms-transform: translate(-50%,-100%); -o-transform: translate(-50%,-100%); font:37px verdana, sans-serif; color: white; text-align: center; display:block'></div><div id='buttonDiv'></div>" +
+73c72
+< 
+---
+>     neverMadeAWallYet = true //for tutorial, to congratulate the user upon making the first wall
+150d148
+<     //alertbox testing code
+157c155
+<     curLevel.view.showAlertBox('Test', [button])*/
+---
+>     curLevel.view.showAlertBox('test', [button])*/
+160a159
+>       this.unFreeze = function(){this.frozen = false}
+169,172c168
+< 
+<       //set the number of lives as the number of lives from the second to last trial (last trial was waiting scren)
+<       var numLives = jsPsych.data.get().last(2).first(1).values()[0].numLives
+<       this.lives = (numLives === undefined) ? par.numLives : numLives
+---
+>       this.lives = par.numLives
+346d341
+< 
+383a379
+> 
+671c667,668
+<                         var negativeTwoTimesDotP = -2*dot(velocityVector, wallNormalVector_Normalized)
+---
+>                         var VelocityAndWallNormalNormalizedDotProduct = velocityVector[0]*wallNormalVector_Normalized[0] + velocityVector[1]*wallNormalVector_Normalized[1]
+>                         var negativeTwoTimesDotP = -2*VelocityAndWallNormalNormalizedDotProduct
+859a857
+> 
+1035c1033
+<           pos = getPixelPositionRelativeToObject([event.pageX, event.pageY], document.getElementById('gameContainer'))
+---
+>           pos = getPixelPositionRelativeToObject([event.pageX, event.pageY], curLevel.view.mainCan)
+1064,1065c1062,1063
+<               //curLevel.view.showImgAtFor("x.png", ball.getX(), ball.getY(), 350, {objectToNotifyWhenDoneDisplaying: this})
+<               //this.imageDisplayCooldownPeriod = true
+---
+>               curLevel.view.showImgAtFor("robomb-pngs/you-cant-draw-through-robots.png", ball.getX(), ball.getY(), 350, {objectToNotifyWhenDoneDisplaying: this})
+>               this.imageDisplayCooldownPeriod = true
+1088c1086,1098
+<           }
+---
+> 
+>             //notify the when they create first obstacle (for the tutorial). The event will be picked by an event listener elsewhere
+>             //(likely in showInitialFrame) which will have a little bit more logic on handling the event
+>             if(this.pixels.length > 1 && neverMadeAWallYet) {
+>               setTimeout(function(){
+>                 var wallFinished = new CustomEvent('wallFinished')
+>                 wallFinished.x = pos[0]
+>                 wallFinished.y = pos[1]
+>                 document.dispatchEvent(wallFinished)
+>                 //add some custom properties to the event to tell where the mouseclick was:
+>               }, 300)
+>             }
+> 
+1094a1105
+>     }
+1146d1156
+<             //alert(duration)
+1159a1170,1171
+>         //set timeout for what happens after the initial frame is over:
+> 
+1162d1173
+<         //set timeout for what happens after the initial frame is over:
+1163a1175,1194
+>         setTimeout(function(){
+>           var okButton = {
+>                             imgUp: 'robomb-pngs/btn-okay-up.png',
+>                             imgDn: 'robomb-pngs/btn-okay-down.png',
+>                             onClick: function(){
+>                               curLevel.view.closeAlertBox(); curLevel.model.unFreeze()
+>                               document.addEventListener('wallFinished', function(event){
+>                                 if(neverMadeAWallYet){
+>                                   curLevel.view.showImgAtFor('robomb-pngs/yep-medium.png', event.x, event.y, 333);
+>                                 }
+>                                 neverMadeAWallYet = false; curLevel.timer.run()/*resume the timer finally*/})
+>                             },
+>                             activateWhenEnterPressed: true
+>                           }
+>           curLevel.model.freeze()
+>           curLevel.timer.pause()
+>           curLevel.view.showAlertBox('Click and drag to draw force walls. Try to stop the bomb-carrying robots from hitting the real walls and detonating', [okButton])
+>           curLevel.view.showAlertBox("Force walls drawn through robots will not affect them while they're inside the force", [okButton])
+>           //listen for the wall being finished and notify the user 'good job'
+> 
+1164a1196,1197
+>         }, initialFrameDuration + 700
+>         )
+1355a1389,1396
+>         curLevel.model.freeze()
+> 
+>         //set up the alert box:
+>         var okButton = {imgUp: 'robomb-pngs/btn-okay-up.png',
+>                         imgDn: 'robomb-pngs/btn-okay-down.png',
+>                         onClick: function(){curLevel.view.closeAlertBox(); curLevel.controller.beginDefusalMode(defusalTimeLimit)},
+>                         activateWhenEnterPressed: true}
+>         var text = ""
+1357,1359c1398
+<           this.showTextOnBottom("You've held out until the robots could be quarantined. +1 life. However, they are set to go off soon. You have 10 seconds to defuse them by clicking the right ones. You have one defusal kit per bomb, so don't waste any.")
+<           curLevel.model.freeze()
+<           curLevel.controller.beginDefusalMode(defusalTimeLimit)
+---
+>           text = "You've held out until the robots could be quarantined. +1 life. However, they are set to go off soon. You have 10 seconds to defuse them by clicking the right ones. You have one defusal kit per bomb, so don't waste any."
+1361,1369c1400
+<           var text = "One of the bomb carrying robots hit a wall! The bombs in all sabotaged robots have been activated, and you have ten seconds to defuse them. Click all the bomb-carrying bots to defuse them."
+<           /*var okButton = {imgUp: 'robomb-pngs/btn-okay-up.png',
+<                           imgDn: 'robomb-pngs/btn-okay-down.png',
+<                           onClick: function(){curLevel.view.closeAlertBox(); curLevel.controller.beginDefusalMode(defusalTimeLimit)},
+<                           activateWhenEnterPressed: true}*/
+< 
+<           this.showTextOnBottom(text)
+<           curLevel.controller.beginDefusalMode(defusalTimeLimit)
+<           //this.showAlertBox(text, [okButton])
+---
+>           text = "One of the bomb carrying robots hit a wall! The bombs in all sabotaged robots have been activated, and you have ten seconds to defuse them. Click all the bomb-carrying bots to defuse them."
+1370a1402
+>         this.showAlertBox(text, [okButton])
+1379d1410
+<         //if(messageTxt.length > )
+1425c1456
+<         //iterate through the balls to check whether the pointer is within them:
+---
+>         //iterate through the balls to check whether the mouth is within them:
+1430a1462
+> 
+1438a1471
+> 
+1506d1538
+< 
+1510c1542
+<           //push the important info from this ball to the data (so the replay can be constructed from initial conditions and interactions - note: this is not how replays will work anymore)
+---
+>           //push the important info from this ball to the data
+1664,1665c1696
+<           var pos = getPixelPositionRelativeToObject([event.pageX, event.pageY], document.getElementById('gameContainer'))
+<           var result = model.checkDefusalGuess(pos)
+---
+>           var result = model.checkDefusalGuess([event.pageX, event.pageY])
+1670c1701
+<               curLevel.view.showImgAtFor("robomb-pngs/yep-medium.png", pos[0], pos[1], 1000)
+---
+>               curLevel.view.showImgAtFor("robomb-pngs/yep-medium.png", event.pageX, event.pageY, 1000)
+1712d1742
+<         curLevel.timer.pause()
+1768c1798
+<             curLevel.view.showAlertBox("Defusal Mode failed. Not all the guesses were correct. You wasted your kit on harmless robots. Poor robots.", buttons);
+---
+>             curLevel.view.showAlertBox("Defusal Mode failed. not all the guesses were correct; you wasted your kit on harmless robots. Poor robots.", buttons);
+1781,1782d1810
+<         data.numLives = curLevel.model.lives
+<         //curLevel.beginGame()
+1836d1863
+<         if(!this.paused){
+1848c1875
+<       }}
+---
+>       }
+1854a1882
+>         this.timeHasRunOut = false
+1931c1959
+<           model.incrementLives(function(){curLevel.view.showLives(curLevel.model.lives);curLevel.controller.defusalMode({deflectionSuccessful: true})})
+---
+>           model.incrementLives(function(){curLevel.controller.defusalMode({deflectionSuccessful: true})})
+1965a1994
+>       console.log([currentSavedFrameIndex, currentTime])
