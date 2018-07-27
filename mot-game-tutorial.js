@@ -32,6 +32,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
     "</div>" +
     "<div id='bottomScreenText' style='display:none; animation-name: scrollIt; animation-duration: 12s; position:absolute; top: 87%; width: 80%; margin-left: 10%; z-index:500; overflow: auto'><p id='bottomText' style='color: #AABBCD; font: 14px verdana, sans serif'>You've held out until the robots could be quarantined. +1 life. However, they are set to go off soon. You have 10 seconds to defuse them by clicking the right ones. \nYou have one defusal kit per bomb, so don't waste any</div>'" +
     "</div>" +
+    "<audio id='a-wallCreate' src='sounds/wall-create.wav'></audio>"
     //message pop-up animation:
     "<style>@keyframes fadeIn{from {opacity:0}; to {opacity:0.5}}</style>  <style>@keyframes scrollIt{from {margin-left:0px}; to {margin-left:330px}}</style>"
 
@@ -40,7 +41,6 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
     document.body.style.MozUserSelect = 'none'
     document.body.style.webkitUserSelect = 'none'
     document.body.style.msUserSelect = 'none'
-
     var data = {
       levelDuration: par.duration,
       timeDefusalStarted: 0,
@@ -278,6 +278,9 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
         this.userObstacles = [];
         this.mostRecentObstacle = function(){return this.userObstacles[this.userObstacles.length-1]} //last element in the array
         this.addNewObstacle = function(){
+          //play the wall creation sound:
+          document.getElementById('a-wallCreate').load()
+          document.getElementById('a-wallCreate').play()
           this.userObstacles.push(new userObstacle())
           data.numWallsMade++ //NOTE: For data collection, this may cause a problem: it will register a new obstacle even if it's just a point
          }
@@ -1020,7 +1023,6 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
       this.pixelLimitExceeded = false,
 
       this.addPixels = function(event){
-
         //TRICK: in replay mode, a custom fake event object is passed to this fuction. The fake event object doesn't have all the parameters of a mousemove event,
         //but it has an x and y coordinate and an additional isFromReplay: true. These x and y (from mousemove events at least, not mousedown because the mousedown
         //coordinates are collected before getting the point's relative position to the canvas) are not pageX and pageY; they are coordinates relative to the canvas

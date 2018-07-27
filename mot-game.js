@@ -282,6 +282,9 @@ jsPsych.plugins["mot-game"] = (function() {
         this.userObstacles = [];
         this.mostRecentObstacle = function(){return this.userObstacles[this.userObstacles.length-1]} //last element in the array
         this.addNewObstacle = function(){
+          //play the wall creation sound:
+          document.getElementById('a-wallCreate').load()
+          document.getElementById('a-wallCreate').play()
           this.userObstacles.push(new userObstacle())
           data.numWallsMade++ //NOTE: For data collection, this may cause a problem: it will register a new obstacle even if it's just a point
          }
@@ -1022,7 +1025,6 @@ jsPsych.plugins["mot-game"] = (function() {
       this.pixelLimitExceeded = false,
 
       this.addPixels = function(event){
-
         //TRICK: in replay mode, a custom fake event object is passed to this fuction. The fake event object doesn't have all the parameters of a mousemove event,
         //but it has an x and y coordinate and an additional isFromReplay: true. These x and y (from mousemove events at least, not mousedown because the mousedown
         //coordinates are collected before getting the point's relative position to the canvas) are not pageX and pageY; they are coordinates relative to the canvas
@@ -1040,6 +1042,7 @@ jsPsych.plugins["mot-game"] = (function() {
           this.pixels.push(pos)
           return; //break it so the function doesn't try to add the value again
         }
+
 
         var validPosition = true
         //add them if they're far enough from the previous pixels.
