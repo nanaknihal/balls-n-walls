@@ -29,10 +29,14 @@ jsPsych.plugins["mot-game"] = (function() {
     //it may be good to not hard-code the top and left value but rather use variables...this will be decided later when we do more styling
     "<canvas id='selectionCanvas' style='position:absolute; left: 0; top: 0; z-index:1' height='" + h + "' width = '" + w + "'></canvas>" +
     "<canvas id='livesCanvas' style='position:absolute; left: 0; top: 0; z-index:3' height='" + h + "' width = '" + w + "'></canvas>" +
-    "<div id='messageBox' style='width: 66%;top:50%; margin-left:50%; transform: translate(-50%, -50%); -moz-transform: translate(-50%, -50%); -webkit-transform: translate(-50%, -50%); -ms-transform: translate(-50%, -50%); -o-transform: translate(-50%, -50%); display:none; animation-name: messagePopUpAnimation; animation-duration: 4s; position:absolute; z-index:500; overflow: auto; user-select:none;'><img id='messageImg' src='robomb-pngs/alert-box.png' style='display:block; width:100%; margin: auto; pointer-events:none; user-select:none'></img><div id='msgText' style='position:absolute; width: 95%; top: 50%; margin-left:50%; transform: translate(-50%,-50%); -moz-transform: translate(-50%,-50%); -webkit-transform: translate(-50%,-50%); -ms-transform: translate(-50%,-50%); -o-transform: translate(-50%,-50%); font:37px verdana, sans-serif; color: white; text-align: center; display:block'></div><div id='buttonDiv'></div>" +
+    "<div id='messageBox' style='width: 66%;top:50%; margin-left:50%; transform: translate(-50%, -50%); -moz-transform: translate(-50%, -50%); -webkit-transform: translate(-50%, -50%); -ms-transform: translate(-50%, -50%); -o-transform: translate(-50%, -50%); display:none; animation-name: messagePopUpAnimation; animation-duration: 4s; position:absolute; z-index:500; overflow: auto; user-select:none;'><img id='messageImg' src='robomb-pngs/alert-box.png' style='display:block; width:100%; margin: auto; pointer-events:none; user-select:none'></img><div id='msgText' style='position:absolute; width: 95%; top: 50%; margin-left:50%; transform: translate(-50%,-50%); -moz-transform: translate(-50%,-50%); -webkit-transform: translate(-50%,-50%); -ms-transform: translate(-50%,-50%); -o-transform: translate(-50%,-50%); font:37px Overpass, sans-serif; color: white; text-align: center; display:block'></div><div id='buttonDiv'></div>" +
     "</div>" +
-    "<div id='bottomScreenText' style='display:none; animation-name: scrollIt; animation-duration: 12s; position:absolute; top: 87%; width: 80%; margin-left: 10%; z-index:500; overflow: auto'><p id='bottomText' style='color: #AABBCD; font: 14px verdana, sans serif'>You've held out until the robots could be quarantined. +1 life. However, they are set to go off soon. You have 10 seconds to defuse them by clicking the right ones. \nYou have one defusal kit per bomb, so don't waste any</div>'" +
+    "<div id='bottomScreenText' style='display:none; animation-name: scrollIt; animation-duration: 12s; position:absolute; top: 87%; width: 80%; margin-left: 10%; z-index:500; overflow: auto'><p id='bottomText' style='color: #AABBCD; font: 14px Overpass, sans serif'>You've held out until the robots could be quarantined. +1 life. However, they are set to go off soon. You have 10 seconds to defuse them by clicking the right ones. \nYou have one defusal kit per bomb, so don't waste any</div>'" +
     "</div>" +
+    "<audio id='a-wallCreate' src='sounds/wall-create.wav'></audio>" + //wall creation sound. from: https://freesound.org/people/xixishi/sounds/265210/
+    "<audio id='a-collisionBwop' src='sounds/collision-bwop.mp3'></audio>"//https://freesound.org/people/willy_ineedthatapp_com/sounds/167338/
+    //font:
+    "<link rel='stylesheet' href='https://fonts.googleapis.com/css?family=Overpass+Mono:300,400,600,700|Overpass:100,100i,200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i&subset=latin-ext'> </link>" +
     //message pop-up animation:
     "<style>@keyframes fadeIn{from {opacity:0}; to {opacity:0.5}}</style>  <style>@keyframes scrollIt{from {margin-left:0px}; to {margin-left:330px}}</style>"
 
@@ -791,8 +795,12 @@ jsPsych.plugins["mot-game"] = (function() {
       }
       this.wallCollideAnimation = (this.explosive) ? new wallExplodeAnimation() : new emptyAnimation()
       this.userObstacleCollideAnimation = new userObstacleCollideAnimation()
-      this.occluderEnterAnimation = par.classicMode ? new emptyAnimation() : new teleportBeginAnimation()
-      this.occluderExitAnimation = par.classicMode ? new emptyAnimation() : new teleportEndAnimation()
+      this.occluderEnterAnimation = par.implodeExplodeMode ? new teleportBeginAnimation() : new emptyAnimation()
+      this.occluderExitAnimation = par.implodeExplodeMode ? new teleportEndAnimation() : new emptyAnimation()
+      this.wallCollideAudio = (this.explosive) ? new wallExplodeAudio() : new standardWallHitAudio()
+      this.userObstacleCollideAudio = new userObstacleCollideAudio()
+      this.occluderEnterAudio = par.implodeExplodeMode ? new teleportBeginAudio() : new emptyAudio()
+      this.occluderExitAudio = par.implodeExplodeMode ? new teleportEndAudio() : new emptyAudio()
 
       this.callWallCollideAnimation = function(){this.implodeAnimation.showAnimation(this.x, this.y)}
       this.callObstacleAnimation = function(){this.explodeAnimation.showAnimation(this.x, this.y)}
@@ -995,6 +1003,36 @@ jsPsych.plugins["mot-game"] = (function() {
       }
 
       this.respondToImageBeingCleared = function(){this.animationAlreadyDisplayed=false}
+    }
+
+
+    function emptyAudio(){
+        this.play = function(){ };
+    }
+
+    function userObstacleCollideAudio(){
+        this.el = document.getElementById('a-collisionBwop')
+        this.play = function(){this.el.load(); this.el.play()}
+    }
+
+    function wallExplodeAudio(){
+        this.el = document.getElementById('a-explosion')
+        this.play = function(){this.el.load(); this.el.play()}
+    }
+
+    function standardWallHitAudio(){
+        this.el = document.getElementById('a-collisionBwop')
+        this.play = function(){this.el.load(); this.el.play()}
+    }
+
+    function teleportBeginAudio(){
+        this.el = document.getElementById('a-collisionBwop')
+        this.play = function(){this.el.load(); this.el.play()}
+    }
+
+    function teleportEndAudio(){
+        this.el = document.getElementById('a-collisionBwop')
+        this.play = function(){this.el.load(); this.el.play()}
     }
 
   //function wall(x,y/*top left x and y*/, w, l/*length and width*/){
@@ -1375,6 +1413,8 @@ jsPsych.plugins["mot-game"] = (function() {
       }
 
       this.showAlertBox = function(messageTxt, buttons){
+        //don't allow wall drawing while the alerts's on
+        document.removeEventListener("mousedown", curLevel.controller.findWallDrawingPath);
         var messageDiv = document.getElementById('messageBox') //there's already an element; it's properties just have to be adjusted and then it needs to be displayed
         var messImgEl = document.getElementById('messageImg')
         var buttonDiv = document.getElementById('buttonDiv')
@@ -1388,7 +1428,7 @@ jsPsych.plugins["mot-game"] = (function() {
 
         //get rid of all buttons:
         buttonDiv.innerHTML = ''
-        buttonDiv.style = style='position:absolute; display:flex; justify-content: space-around; margin-left: 50%; margin-right: 50%; width:' + messImgEl.offsetWidth + 'px;font: 3px arial'
+        buttonDiv.style = style='position:absolute; display:flex; justify-content: space-around; margin-left: 50%; margin-right: 50%; width:' + messImgEl.offsetWidth + 'px;font: 3px Overpass'
         buttonDiv.style.top = '90%'
         buttonDiv.style.transform = 'translate(-50%, -50%)'
         buttonDiv.style.MozTransform = 'translate(-50%, -50%)'
@@ -1401,7 +1441,16 @@ jsPsych.plugins["mot-game"] = (function() {
           //butt.style.transform = 'translate(-50%, -50%)'
           butt.style.height='50px'
           butt.style.margin= 160/buttons.length/buttons.length + 'px'
-          butt.onclick = function(){butt.src = button.imgDn; butt.onload = function(){setTimeout(button.onClick, 90); /*now that the alert's over, reset the font size of the text in case it changed due to overflow:*/textDiv.style.fontSize = fontsize + 'px';}}
+          butt.onclick = function(){
+            butt.src = button.imgDn;
+            setTimeout(button.onClick, 90);
+            //now that the alert's over, reset the font size of the text in case it changed due to overflow:
+            textDiv.style.fontSize = fontsize + 'px';
+            //start listening for walls again:
+            if(!curLevel.defusalModeOn()){
+              document.addEventListener("mousedown", function(event){curLevel.controller.findWallDrawingPath(event)});
+            }
+          }
           butt.onload = function(){
             buttonDiv.height = butt.height
           }
@@ -1669,7 +1718,7 @@ jsPsych.plugins["mot-game"] = (function() {
           var result = model.checkDefusalGuess(pos)
           switch(result){
             case true: //correct guess
-              curLevel.controller.correctGuesses++ //this looks like really bad OOP style but keep in mind it's happening within curLevel.controller
+              curLevel.controller.correctGuesses++
               curLevel.controller.guessesRemaining--
               curLevel.view.showImgAtFor("robomb-pngs/yep-medium.png", pos[0], pos[1], 1000)
               if(curLevel.controller.guessesRemaining == 0){
@@ -1683,7 +1732,7 @@ jsPsych.plugins["mot-game"] = (function() {
             case false:
               curLevel.controller.incorrectGuesses++
               curLevel.controller.guessesRemaining-- //-- instead of set to 0 because then we can collect data about how many the got right/wrong
-              curLevel.view.showImgAtFor("robomb-pngs/nope-medium.png", event.pageX, event.pageY, 1000)
+              curLevel.view.showImgAtFor("robomb-pngs/nope-medium.png", pos[0], pos[1], 1000)
               //if this was their last guess:
               if(curLevel.controller.guessesRemaining == 0){
                 curLevel.controller.endGame("incorrectGuess")

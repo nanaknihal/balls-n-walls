@@ -788,8 +788,12 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
       }
       this.wallCollideAnimation = (this.explosive) ? new wallExplodeAnimation() : new emptyAnimation()
       this.userObstacleCollideAnimation = new userObstacleCollideAnimation()
-      this.occluderEnterAnimation = par.classicMode ? new emptyAnimation() : new teleportBeginAnimation()
-      this.occluderExitAnimation = par.classicMode ? new emptyAnimation() : new teleportEndAnimation()
+      this.occluderEnterAnimation = par.implodeExplodeMode ? new teleportBeginAnimation() : new emptyAnimation()
+      this.occluderExitAnimation = par.implodeExplodeMode ? new teleportEndAnimation() : new emptyAnimation()
+      this.wallCollideAudio = (this.explosive) ? new wallExplodeAudio() : new standardWallHitAudio()
+      this.userObstacleCollideAudio = new userObstacleCollideAudio()
+      this.occluderEnterAudio = par.implodeExplodeMode ? new teleportBeginAudio() : new emptyAudio()
+      this.occluderExitAudio = par.implodeExplodeMode ? new teleportEndAudio() : new emptyAudio()
 
       this.callWallCollideAnimation = function(){this.implodeAnimation.showAnimation(this.x, this.y)}
       this.callObstacleAnimation = function(){this.explodeAnimation.showAnimation(this.x, this.y)}
@@ -922,7 +926,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
         this.setY(this.y+dy);
 
         //if it's in implode and explode mode, have it implode if it's inside an occluder and explode til it's at the normal radius if it's outside
-        if(par.implodeExplodeMode && !curLevel.defusalModeOn){
+        if(par.implodeExplodeMode && !curLevel.defusalModeOn()){
           if(circleIsInAnOccluder([this.x, this.y], this.radius)){
             if(!this.occluded){this.callOccluderEnterAnimation(); this.occluded = true} //have it do the occluder enter animation if it's not already occluded
          }else {
@@ -1417,6 +1421,8 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
       }
 
       this.showAlertBox = function(messageTxt, buttons){
+        //don't allow wall drawing while the alerts's on
+        document.removeEventListener("mousedown", curLevel.controller.findWallDrawingPath);
         var messageDiv = document.getElementById('messageBox') //there's already an element; it's properties just have to be adjusted and then it needs to be displayed
         var messImgEl = document.getElementById('messageImg')
         var buttonDiv = document.getElementById('buttonDiv')
@@ -1445,7 +1451,16 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
           //butt.style.transform = 'translate(-50%, -50%)'
           butt.style.height='50px'
           butt.style.margin= 160/buttons.length/buttons.length + 'px'
-          butt.onclick = function(){butt.src = button.imgDn; butt.onload = function(){setTimeout(button.onClick, 90); /*now that the alert's over, reset the font size of the text in case it changed due to overflow:*/textDiv.style.display = 'none'; textDiv.style.fontSize = fontsize; setTimeout(function(){textDiv.style.display = 'block';},130)}}
+          butt.onclick = function(){
+            butt.src = button.imgDn;
+              setTimeout(button.onClick, 90);
+              //now that the alert's over, reset the font size of the text in case it changed due to overflow:
+              textDiv.style.display = 'none'; textDiv.style.fontSize = fontsize; setTimeout(function(){textDiv.style.display = 'block';},130)
+              //start listening for walls again:
+              if(!curLevel.defusalModeOn()){
+              document.addEventListener("mousedown", function(event){curLevel.controller.findWallDrawingPath(event)});
+            }
+          }
           butt.onload = function(){
             buttonDiv.height = butt.height
           }
@@ -1714,9 +1729,9 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
           var result = model.checkDefusalGuess(pos)
           switch(result){
             case true: //correct guess
-              curLevel.controller.correctGuesses++ //this looks like really bad OOP style but keep in mind it's happening within curLevel.controller
+              curLevel.controller.correctGuesses++
               curLevel.controller.guessesRemaining--
-              curLevel.view.showImgAtFor("robomb-pngs/yep-medium.png", event.pageX, event.pageY, 1000)
+              curLevel.view.showImgAtFor("robomb-pngs/yep-medium.png",pos[0], pos[1], 1000)
               if(curLevel.controller.guessesRemaining == 0){
                   if(curLevel.controller.incorrectGuesses == 0){
                     curLevel.controller.endGame("defusalModeSuccess")
@@ -1728,7 +1743,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
             case false:
               curLevel.controller.incorrectGuesses++
               curLevel.controller.guessesRemaining-- //-- instead of set to 0 because then we can collect data about how many the got right/wrong
-              curLevel.view.showImgAtFor("robomb-pngs/nope-medium.png", event.pageX, event.pageY, 1000)
+              curLevel.view.showImgAtFor("robomb-pngs/nope-medium.png", pos[0], pos[1], 1000)
               //if this was their last guess:
               if(curLevel.controller.guessesRemaining == 0){
                 curLevel.controller.endGame("incorrectGuess")
