@@ -10,7 +10,7 @@ jsPsych.plugins["mot-game"] = (function() {
   plugin.trial = function(display_element, trial) {
     var par = trial
     var w=par.gameWidth, h=par.gameHeight;
-
+    var obstacleZIndex = par.invisibleOccluders ? 4 : 3
     display_element.innerHTML =
     "<div id='gameContainer' style='position: absolute; top: 50%; left: 50%; margin-right:50%; transform: translate(-50%, -50%); height: " + h + "px; width: " + w + "px; vertical-align: middle'>" +
     "<!-background image:--><img src='robomb-pngs/floor.png' height='" + h + "' width='" + w + "' style='position:absolute; margin:auto; z-index:-100'></img>" +
@@ -18,15 +18,13 @@ jsPsych.plugins["mot-game"] = (function() {
     "<canvas id='mainCanvas' height='" + h + "' width = '" + w + "'></canvas>"
     +
     "<!--overlay canvas that doesn't need to be refreshed constantly:-->" +
-    //it may be good to not hard-code the top and left value but rather use variables...this will be decided later when we do more styling
-    "<canvas id='overlay' style='position:absolute; left: 0; top: 0; z-index:3' height='" + h + "' width = '" + w + "'></canvas>"
+    "<canvas id='overlay' style='position:absolute; left: 0; top: 0; z-index:4' height='" + h + "' width = '" + w + "'></canvas>"
     +
-    //it may be good to not hard-code the top and left value but rather use variables...this will be decided later when we do more styling
-    "<canvas id='occluderCanvas' style='position:absolute; left: 0; top: 0; z-index:2' height='" + h + "' width = '" + w + "'></canvas>" +
+    "<canvas id='occluderCanvas' style='position:absolute; left: 0; top: 0; z-index:3' height='" + h + "' width = '" + w + "'></canvas>" +
+    "<canvas id='obstacleCanvas' style='position:absolute; left: 0; top: 0; z-index:" + obstacleZIndex + "' height='" + h + "' width = '" + w + "'></canvas>" +
     //canvas for timer display
     "<canvas id='timerCanvas' style='position:absolute; left: 0; top: 0; z-index:5' height='" + h + "' width = '" + w + "'></canvas>" +
     "<!--selection canvas for ball selection in defusal mode:-->" +
-    //it may be good to not hard-code the top and left value but rather use variables...this will be decided later when we do more styling
     "<canvas id='selectionCanvas' style='position:absolute; left: 0; top: 0; z-index:1' height='" + h + "' width = '" + w + "'></canvas>" +
     "<canvas id='livesCanvas' style='position:absolute; left: 0; top: 0; z-index:3' height='" + h + "' width = '" + w + "'></canvas>" +
     "<div id='messageBox' style='width: 66%;top:50%; margin-left:50%; transform: translate(-50%, -50%); -moz-transform: translate(-50%, -50%); -webkit-transform: translate(-50%, -50%); -ms-transform: translate(-50%, -50%); -o-transform: translate(-50%, -50%); display:none; animation-name: messagePopUpAnimation; animation-duration: 4s; position:absolute; z-index:500; overflow: auto; user-select:none;'><img id='messageImg' src='robomb-pngs/alert-box.png' style='display:block; width:100%; margin: auto; pointer-events:none; user-select:none'></img><div id='msgText' style='position:absolute; width: 95%; top: 50%; margin-left:50%; transform: translate(-50%,-50%); -moz-transform: translate(-50%,-50%); -webkit-transform: translate(-50%,-50%); -ms-transform: translate(-50%,-50%); -o-transform: translate(-50%,-50%); font:37px Overpass, sans-serif; color: white; text-align: center; display:block'></div><div id='buttonDiv'></div>" +
@@ -34,7 +32,14 @@ jsPsych.plugins["mot-game"] = (function() {
     "<div id='bottomScreenText' style='display:none; animation-name: scrollIt; animation-duration: 12s; position:absolute; top: 87%; width: 80%; margin-left: 10%; z-index:500; overflow: auto'><p id='bottomText' style='color: #AABBCD; font: 14px Overpass, sans serif'>You've held out until the robots could be quarantined. +1 life. However, they are set to go off soon. You have 10 seconds to defuse them by clicking the right ones. \nYou have one defusal kit per bomb, so don't waste any</div>'" +
     "</div>" +
     "<audio id='a-wallCreate' src='sounds/wall-create.wav'></audio>" + //wall creation sound. from: https://freesound.org/people/xixishi/sounds/265210/
-    "<audio id='a-collisionBwop' src='sounds/collision-bwop.mp3'></audio>"//https://freesound.org/people/willy_ineedthatapp_com/sounds/167338/
+    "<audio id='a-collisionBwop' src='sounds/collision-bwop.mp3'></audio>" + //https://freesound.org/people/willy_ineedthatapp_com/sounds/167338/
+    "<audio id='a-correct' src='sounds/correct.wav'></audio>" + //https://freesound.org/people/Eponn/sounds/421002/
+    "<audio id='a-incorrect' src='sounds/incorrect.wav'></audio>" +//https://freesound.org/people/KevinVG207/sounds/331912/
+    "<audio id='a-wallHit' src='sounds/wall-hit.wav'></audio>" +//https://freesound.org/people/jeckkech/sounds/391668/
+    "<audio id='a-explosion' src='sounds/explosion.wav'></audio>" + //
+    "<audio id='a-teleport' src='sounds/teleport.wav'></audio>" + //https://freesound.org/people/fins/sounds/172206/
+    "<audio id='a-unteleport' src='sounds/unteleport.wav'></audio>" +// https://freesound.org/people/fins/sounds/172207/
+
     //font:
     "<link rel='stylesheet' href='https://fonts.googleapis.com/css?family=Overpass+Mono:300,400,600,700|Overpass:100,100i,200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i&subset=latin-ext'> </link>" +
     //message pop-up animation:
@@ -46,6 +51,7 @@ jsPsych.plugins["mot-game"] = (function() {
     document.body.style.webkitUserSelect = 'none'
     document.body.style.msUserSelect = 'none'
 
+    //document.getElementById('music').play()
     var data = {
       levelDuration: par.duration,
       timeDefusalStarted: 0,
@@ -162,20 +168,31 @@ jsPsych.plugins["mot-game"] = (function() {
     function model(numNormalBalls, numExplodingBalls, speed) {
       this.frozen = false //game pauses and model freezes
       this.freeze = function(){this.frozen = true}
+      this.unFreeze = function(){this.frozen = false}
       this.currentTime = 0
       this.balls = []; //including exploding balls
       this.getBalls = function(){return this.balls}
+      this.removeBall = function(ball){
+        //remove it from explodingballs too if it's exploding:
+        if(ball.explosive){
+          if(this.explodingBalls.length <= 1){curLevel.controller.endGame("defusalModeNeverHappened")} else {
+            this.explodingBalls.splice(this.balls.indexOf(ball),1)
+          }
+        }
+        this.balls.splice(this.balls.indexOf(ball),1)
+      }
       this.explodingBalls = [];
       this.occluderRects = par.occluderRectangles
       this.getOccluderRects = function(){return this.occluderRects}
       /*this.occluders = [new occluder("occluders/occluder1.png", w/3, h/2), new occluder("occluders/occluder1.png", 2*w/3, h/2)];*/
       this.numExplodingBalls = function(){return this.explodingBalls.length}
 
-      //set the number of lives as the number of lives from the second to last trial (last trial was waiting scren)
+      //set the number of lives as the number of lives from the last trial (last trial was waiting scren)
       var numLives = jsPsych.data.get().last(1).values()[0].numLives
       this.lives = (numLives === undefined) ? par.numLives : numLives
       //usually callback is view.showLives()
       this.decrementLives = function(callback){
+        if(par.exitWhenOutOfLives && this.lives <= 0){ jsPsych.finishTrial(data) }
         this.lives--
         callback();
       }
@@ -200,8 +217,8 @@ jsPsych.plugins["mot-game"] = (function() {
       }
 
       var randomCoordinatesForExplodingBall = function(){
-        var x = Math.round(10*ballRadius + Math.random()*(w-20*ballRadius));
-        var y = Math.round(10*ballRadius + Math.random()*(h-20*ballRadius));
+        var x = Math.round(15*ballRadius + Math.random()*(w-30*ballRadius));
+        var y = Math.round(15*ballRadius + Math.random()*(h-30*ballRadius));
         return [x,y]
       }
 
@@ -227,12 +244,12 @@ jsPsych.plugins["mot-game"] = (function() {
         for(var i = 0; i<numNormalBalls; i++){
           //random x-y coordinates of a new ball:
           var coords = randomCoordinatesForNormalBall()
-          //make sure the ball isn't inside any occluders:
-            var inOcc = circleIsInAnOccluder(coords, ballRadius)
-            while(inOcc){
+          //make sure the ball is in an acceptable place:
+            var badPosition = circleIsInAnOccluder(coords, ballRadius) || (par.forceFields && collidingWithBalls(coords, ballRadius, this.balls))
+            while(badPosition){
               //reset the coordinates until the piwr and the coordinates are therefore valid
               coords = randomCoordinatesForNormalBall()
-              inOcc = circleIsInAnOccluder(coords, ballRadius)
+              badPosition = circleIsInAnOccluder(coords, ballRadius) || (par.forceFields && collidingWithBalls(coords, ballRadius, this.balls))
             }
           //make the ball (and add it to this.balls) if it's at a valid position:
           this.balls.push(new ball(coords[0],coords[1],ballRadius, speed, i/*id is just i*/))
@@ -246,11 +263,11 @@ jsPsych.plugins["mot-game"] = (function() {
         //random x-y coordinates of a new exploding ball:
         var coords = randomCoordinatesForExplodingBall()
         //make sure the ball isn't inside any occluders:
-          var inOcc = circleIsInAnOccluder(coords, ballRadius)
-          while(inOcc){
+          var badPosition = circleIsInAnOccluder(coords, ballRadius) || (par.forceFields && collidingWithBalls(coords, ballRadius, this.balls))
+          while(badPosition){
             //reset the coordinates until they're not in the occluder
             coords = randomCoordinatesForExplodingBall()
-            inOcc = circleIsInAnOccluder(coords, ballRadius)
+            badPosition = circleIsInAnOccluder(coords, ballRadius) || (par.forceFields && collidingWithBalls(coords, ballRadius, this.balls))
           }
 
           var bal = new ball(coords[0], coords[1], ballRadius, speed, numNormalBalls + i/*explosive balls will have highest ids*/, "e")
@@ -771,7 +788,8 @@ jsPsych.plugins["mot-game"] = (function() {
           if(par.lives){
             curLevel.model.decrementLives(/*callback:*/function(){curLevel.view.showLives(curLevel.model.lives)})
           }
-          curLevel.defusalMode(); //COMMENT THIS TO DISABLE DEFUSAL MODE
+          this.onCollide(collisionType)
+          //curLevel.defusalMode(); //COMMENT THIS TO DISABLE DEFUSAL MODE
         } else if(collisionType == "userObstacle"){
 
         }
@@ -788,9 +806,11 @@ jsPsych.plugins["mot-game"] = (function() {
         //setTimeout(function(){b.collisionsEnabled = true}, 100)
         //this.color = "#FF0000"
         if(collisionType == "wall") {
-          this.wallCollideAnimation.showAnimation(this.x, this.y)
+          this.callWallCollideAnimation()
+          this.wallCollideAudio.play()
         } else if (collisionType == "userObstacle") {
-          this.userObstacleCollideAnimation.showAnimation(this.x, this.y)
+          this.callObstacleAnimation()
+          this.userObstacleCollideAudio.play()
         }
       }
       this.wallCollideAnimation = (this.explosive) ? new wallExplodeAnimation() : new emptyAnimation()
@@ -802,8 +822,8 @@ jsPsych.plugins["mot-game"] = (function() {
       this.occluderEnterAudio = par.implodeExplodeMode ? new teleportBeginAudio() : new emptyAudio()
       this.occluderExitAudio = par.implodeExplodeMode ? new teleportEndAudio() : new emptyAudio()
 
-      this.callWallCollideAnimation = function(){this.implodeAnimation.showAnimation(this.x, this.y)}
-      this.callObstacleAnimation = function(){this.explodeAnimation.showAnimation(this.x, this.y)}
+      this.callWallCollideAnimation = function(){this.wallCollideAnimation.showAnimation(this.x, this.y)}
+      this.callObstacleAnimation = function(){this.userObstacleCollideAnimation.showAnimation(this.x, this.y)}
       this.callOccluderEnterAnimation = function(){this.occluderEnterAnimation.showAnimation(this.x, this.y)}
       this.callOccluderExitAnimation = function(){this.occluderExitAnimation.showAnimation(this.x, this.y)}
 
@@ -860,6 +880,8 @@ jsPsych.plugins["mot-game"] = (function() {
       this.lowestRow = function(){return this.y + this.radius}
       this.leftestColumn = function() {return this.x - this.radius}
       this.rightestColumn = function() {return this.x + this.radius}
+      this.numShrinks = 0 //it has been shrunken 0 times
+      this.maxShrinks = 5
 
       //move the ball one increment accorsing to its current velocity and position:
       this.move = function(timestepDuration){
@@ -916,7 +938,8 @@ jsPsych.plugins["mot-game"] = (function() {
                   //for performance, forceFieldVector could be elimated and velocity added directly to instead
                 }
             }
-          }
+
+            console.log(forceFieldVector)}
             velocity[0]*=pfsrp.velocityMultipler
             velocity[1]*=pfsrp.velocityMultipler
             this.setVelocity(velocity)
@@ -932,14 +955,38 @@ jsPsych.plugins["mot-game"] = (function() {
         this.setY(this.y+dy);
 
         //if it's in implode and explode mode, have it implode if it's inside an occluder and explode til it's at the normal radius if it's outside
-        if(par.implodeExplodeMode && !curLevel.defusalModeOn){
+        if(par.implodeExplodeMode && !curLevel.defusalModeOn()){
           if(circleIsInAnOccluder([this.x, this.y], this.radius)){
-            if(!this.occluded){this.callOccluderEnterAnimation(); this.occluded = true} //have it do the occluder enter animation if it's not already occluded
+            if(this.numShrinks == 0){//just entered
+              var a = document.getElementById('a-teleport')
+              a.load()
+              a.play()
+            }
+            if(this.numShrinks < this.maxShrinks-1){
+              this.numShrinks++
+              this.imgElement.src = 'robomb-pngs/shrunken-' + this.numShrinks + '.png'
+            } else { this.occluded = true }
+            //if(!this.occluded){this.callOccluderEnterAnimation(); this.occluded = true} //have it do the occluder enter animation if it's not already occluded
          }else {
-            if(this.occluded){this.callOccluderExitAnimation(); this.occluded = false}
+           if(this.occluded){//just exited, hasn't set occluded to false yet
+             var a = document.getElementById('a-unteleport')
+             a.load()
+             a.play()
+           }
+           this.occluded = false
+           if(this.numShrinks > 0){
+             this.numShrinks--
+             this.imgElement.src = 'robomb-pngs/shrunken-' + this.numShrinks + '.png'
+           } else {
+             if(this.imgElement.src != 'robomb-pngs/robot-normal.png') {this.imgElement.src = 'robomb-pngs/robot-normal.png'}
+           }
+
+
+            //if(this.occluded){this.callOccluderExitAnimation(); this.occluded = false}
          }
       }
     }
+
 
   }
 
@@ -1021,7 +1068,7 @@ jsPsych.plugins["mot-game"] = (function() {
     }
 
     function standardWallHitAudio(){
-        this.el = document.getElementById('a-collisionBwop')
+        this.el = document.getElementById('a-wallHit')
         this.play = function(){this.el.load(); this.el.play()}
     }
 
@@ -1201,7 +1248,7 @@ jsPsych.plugins["mot-game"] = (function() {
         }
 
         //set timeout for what happens after the initial frame is over:
-        setTimeout(curLevel.model.resetAllBallDesigns, initialFrameDuration)
+        setTimeout(function(){curLevel.model.resetAllBallDesigns();}, initialFrameDuration)
 
         //show the occluder images:
         if(par.occludersEnabled){
@@ -1419,8 +1466,10 @@ jsPsych.plugins["mot-game"] = (function() {
         var messImgEl = document.getElementById('messageImg')
         var buttonDiv = document.getElementById('buttonDiv')
         var textDiv = document.getElementById('msgText')
-        var fontsize = textDiv.style.fontSize
-        if(messageTxt.length > 200){textDiv.style.fontSize = messageTxt.length/10 + 'px';}//handle overflow text. the formula might need to be changed
+        //var fontsize = textDiv.style.fontSize//store the current font size in case it changed
+
+        //if(messageTxt.length > 200){textDiv.style.fontSize = messageTxt.length/10 + 'px';}//handle overflow text. the formula might need to be changed
+
         textDiv.innerHTML = messageTxt
 
         //adjust image width and height to fit the text:
@@ -1438,21 +1487,30 @@ jsPsych.plugins["mot-game"] = (function() {
           var button = buttons[i]
           var butt = document.createElement("img")
           butt.src = button.imgUp
-          //butt.style.transform = 'translate(-50%, -50%)'
+
+
+          butt.style.position='absolute'
+          butt.style.transform = 'translate(0%, -50%)'
+          butt.style.MozTransform = 'translate(0%, -50%)'
+          butt.style.WebkitTransform = 'translate(0%, -50%)'
+          butt.style.OTransform = 'translate(0%, -50%)'
           butt.style.height='50px'
-          butt.style.margin= 160/buttons.length/buttons.length + 'px'
+          butt.style.margin= 'auto' //160/buttons.length/buttons.length + 'px'
+          //butt.style.top='0%'
           butt.onclick = function(){
             butt.src = button.imgDn;
-            setTimeout(button.onClick, 90);
-            //now that the alert's over, reset the font size of the text in case it changed due to overflow:
-            textDiv.style.fontSize = fontsize + 'px';
-            //start listening for walls again:
-            if(!curLevel.defusalModeOn()){
-              document.addEventListener("mousedown", function(event){curLevel.controller.findWallDrawingPath(event)});
+              setTimeout(button.onClick, 90);
+              /*/now that the alert's over, reset the font size of the text in case it changed due to overflow:
+              textDiv.style.display = 'none';textDiv.style.fontSize = fontsize; setTimeout(function(){textDiv.style.display = 'block';},130)*/
+              //start listening for walls again:
+              if(!curLevel.defusalModeOn()){
+                setTimeout(function(){
+                document.addEventListener("mousedown", curLevel.controller.findWallDrawingPath);
+              },100)
             }
           }
           butt.onload = function(){
-            buttonDiv.height = butt.height
+            buttonDiv.style.height = butt.height + 'px'
           }
           buttonDiv.appendChild(butt)
 
@@ -1689,9 +1747,10 @@ jsPsych.plugins["mot-game"] = (function() {
         for(var b = 0, l=balls.length; b < l; b++){
           if(balls[b].occluded){
             balls[b].occluded = false
-            balls[b].callOccluderExitAnimation()
+            //balls[b].callOccluderExitAnimation()
           }
         }
+        setTimeout(curLevel.model.resetAllBallDesigns, 33)
         curLevel.view.showBalls(balls)
         //remove the wall drawing listeners
         document.removeEventListener("mousedown", this.findWallDrawingPath)
@@ -1721,6 +1780,9 @@ jsPsych.plugins["mot-game"] = (function() {
               curLevel.controller.correctGuesses++
               curLevel.controller.guessesRemaining--
               curLevel.view.showImgAtFor("robomb-pngs/yep-medium.png", pos[0], pos[1], 1000)
+              var correctAudio = document.getElementById('a-correct')
+              correctAudio.load()
+              correctAudio.play()
               if(curLevel.controller.guessesRemaining == 0){
                   if(curLevel.controller.incorrectGuesses == 0){
                     curLevel.controller.endGame("defusalModeSuccess")
@@ -1733,6 +1795,9 @@ jsPsych.plugins["mot-game"] = (function() {
               curLevel.controller.incorrectGuesses++
               curLevel.controller.guessesRemaining-- //-- instead of set to 0 because then we can collect data about how many the got right/wrong
               curLevel.view.showImgAtFor("robomb-pngs/nope-medium.png", pos[0], pos[1], 1000)
+              var incorrectAudio = document.getElementById('a-incorrect')
+              incorrectAudio.load()
+              incorrectAudio.play()
               //if this was their last guess:
               if(curLevel.controller.guessesRemaining == 0){
                 curLevel.controller.endGame("incorrectGuess")
@@ -1891,21 +1956,24 @@ jsPsych.plugins["mot-game"] = (function() {
         this.curTime = new Date().valueOf() - this.startTime
 
         this.curTimeInSeconds = Math.round(this.curTime % 60000/1000)
-            if(this.curTimeInSeconds == this.ctdwnTime && !this.timeHasRunOut /*time hasn't run out yet*/){
+            if(this.curTimeInSeconds == this.ctdwnTime && !this.timeHasRunOut){
               this.timeHasRunOut = true
               curLevel.timeHasRunOut()
               //this.ctdwnTime = -1000 //reset it so it doesn't call timeHasRunOut a million times
 
             }
 
-      }}
+      }
+    }
 
       this.reset = function(countdownTime, color) {
         this.setCountdownTime(countdownTime);
         this.startTime = new Date().valueOf(); //0
         this.color = color
         this.updateCurTime()
+        this.timeHasRunOut = false
       }
+
 
       //this is sensitive to counting up or down
       this.getTime = function(noupdate/*optional parameter, if true will not update the time before returning the time*/){
@@ -1928,6 +1996,8 @@ jsPsych.plugins["mot-game"] = (function() {
         this.paused = false;
         this.run()
       }
+
+      this.resume = function(){this.start()}//basically another name for start function. timer.pause(); timer.start() makes less sense thatn timer.pause(); timer.resume()
 
       this.run = function(){
         setTimeout(function(){
@@ -1953,6 +2023,18 @@ function circleIsInAnOccluder(center, radius){
 
   return false; //never called if true is returned in the loop
 }
+
+//returns a boolean value indicating whether a given ball (in format [x,y], radius) is colliding with any other ball. it takes input in this form because
+//it's called before all ball objects are actually made, to make sure they're initialized in the right place
+function collidingWithBalls(pos, radius, balls /*an array of actual ball objects*/){
+  var colliding = false
+  for(var b = 0, l = balls.length; b < l; b++){
+    var dist = distanceBetween(pos, [balls[b].x, balls[b].y])
+    if(dist > this.radius || dist > balls[b].radius){return true}
+  }
+  return false
+}
+
 
 
     function level(model, view, controller, levelDuration) {

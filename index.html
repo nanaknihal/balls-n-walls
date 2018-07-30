@@ -11,22 +11,24 @@
   <link href="jspsych-6.0.3/css/jspsych.css" rel="stylesheet" type="text/css"></link>
 </head>
 
-<body>
+<body style='background-color: black'>
 
 </body>
+<!--<audio loop id='a-music' src = 'sounds/music.mp3'></audio>-->
 <script>
 var gameWidth = 960, gameHeight = 600
 var timeline = []
-
-var welcome = {
-  type:"html-keyboard-response",
-  stimulus:"Welcome to the game. Press any key to begin"
-};
-timeline.push(welcome);
+var gameMusic = /*document.getElementById('a-music')*/ new Audio('sounds/music.mp3')
+gameMusic.loop = true
+//gameMusic.src = 'sounds/music.mp3'
+//gameMusic.load()
+//gameMusic.play()
 
 var instructionsPt1 = {
   type:"html-keyboard-response",
-  stimulus:"<img src='robomb-pngs/screen-splash.svg' height='" + gameHeight + "'></img>'"
+  stimulus:"<img src='robomb-pngs/screen-splash.svg' height='" + gameHeight + "' style='position: absolute; top: 50%; left: 50%; margin-right:50%; transform: translate(-50%, -50%);></img>'",
+  on_finish: function(){gameMusic.load()
+  gameMusic.play()}
 };
 timeline.push(instructionsPt1);
 
@@ -59,7 +61,7 @@ var tutorial = {
   duration: 15000,
   ballSpeed: 0.07,
   ballRadius: 20,
-  numRegularBalls: 2,
+  numRegularBalls: 7,
   numExplodingBalls: 1,
   maxUserDefinedObstacles: 1,
   maxUserDefinedObstacleSegments: 3,
@@ -67,21 +69,22 @@ var tutorial = {
   minDistanceBetweenObstaclePixels: 66,
   userObstacleThickness: 3,
   wallThickness:16,  //16px thick border walls
-  occludersEnabled: true,
+  occludersEnabled: false,
   invisibleOccluders: false,
-  implodeExplodeMode: true,
+  implodeExplodeMode: false,
   stochasticRobotPaths: false,
   parametersForStochasticRobotPaths: {inertia: 0.95, springConstant: 0, accelerationStandardDeviation: 0.01, velocityMultipler: 1.030},
-  forceFields: false,
-  forceFieldStrength: 0.0006,
+  forceFields: true,
+  forceFieldStrength: 0.001,
   occluderRectangles:[{x: generateRandomOccluderXCoordinate(/*put minimum occluder distance from wall here*/100), y: 0, width: 45, height: gameHeight},{x: generateRandomOccluderXCoordinate(190), y: 0, width: 45, height: gameHeight}],
   lives: true, //toggle whether the player has a fixed number of lives and the related gameplay aspects
   numLives: 5,
   gameWidth: gameWidth,
   gameHeight: gameHeight,
-  savedModel: []
+  savedModel: [],
+  exitWhenOutOfLives: true
 }
-//timeline.push(tutorial) UNCOMMENT FOR TUTORIAL
+timeline.push(tutorial)
 var level1 = {
   type:"mot-game",
   stimulus:"<p>test</p>",
@@ -96,9 +99,9 @@ var level1 = {
   minDistanceBetweenObstaclePixels: 66,
   userObstacleThickness: 3,
   wallThickness:16,  //16px thick border walls
-  occludersEnabled: false,
-  invisibleOccluders: false,
-  implodeExplodeMode: false,
+  occludersEnabled: true,
+  invisibleOccluders: true,
+  implodeExplodeMode: true,
   stochasticRobotPaths: false,
   parametersForStochasticRobotPaths: {inertia: 0.95, springConstant: 0, accelerationStandardDeviation: 0.01, velocityMultipler: 1.030},
   forceFields: false,
@@ -368,6 +371,7 @@ var level1 = {
 		]
   }*/null,
   savedModel: [],
+exitWhenOutOfLives: true,
   gameWidth: 960,
   gameHeight: 600
 }
@@ -380,18 +384,18 @@ var level2 = {
   duration: 15000,
   ballSpeed: 0.07,
   ballRadius: 20,
-  numRegularBalls: 2,
-  numExplodingBalls: 1,
+  numRegularBalls: 3,
+  numExplodingBalls: 2,
   maxUserDefinedObstacles: 1,
   maxUserDefinedObstacleSegments: 3,
   maxDistanceBetweenObstaclePixels:300,
   minDistanceBetweenObstaclePixels: 66,
   userObstacleThickness: 3,
   wallThickness:16,  //16px thick border walls
-  occludersEnabled: false,
+  occludersEnabled: true,
   invisibleOccluders: false,
   implodeExplodeMode: false,
-  stochasticRobotPaths: true,
+  stochasticRobotPaths: false,
   parametersForStochasticRobotPaths: {inertia: 0.95, springConstant: 0, accelerationStandardDeviation: 0.01, velocityMultipler: 1.030},
   forceFields: false,
   forceFieldStrength: 0.0006,
@@ -400,11 +404,75 @@ var level2 = {
   numLives: 5,
   gameWidth: gameWidth,
   gameHeight: gameHeight,
-  savedModel: []
+  savedModel: [],
+exitWhenOutOfLives: true
 }
 
 timeline.push(level2);
 
+var level3 = {
+  type:"mot-game",
+  stimulus:"<p>test</p>",
+  duration: 15000,
+  ballSpeed: 0.07,
+  ballRadius: 20,
+  numRegularBalls: 4,
+  numExplodingBalls: 4,
+  maxUserDefinedObstacles: 1,
+  maxUserDefinedObstacleSegments: 3,
+  maxDistanceBetweenObstaclePixels:300,
+  minDistanceBetweenObstaclePixels: 66,
+  userObstacleThickness: 3,
+  wallThickness:16,  //16px thick border walls
+  occludersEnabled: true,
+  invisibleOccluders: true,
+  implodeExplodeMode: false,
+  stochasticRobotPaths: false,
+  parametersForStochasticRobotPaths: {inertia: 0.95, springConstant: 0, accelerationStandardDeviation: 0.01, velocityMultipler: 1.030},
+  forceFields: false,
+  forceFieldStrength: 0.0006,
+  occluderRectangles:[{x: generateRandomOccluderXCoordinate(/*put minimum occluder distance from wall here*/100), y: 0, width: 45, height: gameHeight},{x: generateRandomOccluderXCoordinate(190), y: 0, width: 45, height: gameHeight}],
+  lives: true, //toggle whether the player has a fixed number of lives and the related gameplay aspects
+  numLives: 5,
+  gameWidth: gameWidth,
+  gameHeight: gameHeight,
+  savedModel: [],
+exitWhenOutOfLives: true
+}
+
+timeline.push(level3);
+
+var level4 = {
+  type:"mot-game",
+  stimulus:"<p>test</p>",
+  duration: 15000,
+  ballSpeed: 0.07,
+  ballRadius: 20,
+  numRegularBalls: 2,
+  numExplodingBalls: 4,
+  maxUserDefinedObstacles: 1,
+  maxUserDefinedObstacleSegments: 3,
+  maxDistanceBetweenObstaclePixels:300,
+  minDistanceBetweenObstaclePixels: 66,
+  userObstacleThickness: 3,
+  wallThickness:16,  //16px thick border walls
+  occludersEnabled: true,
+  invisibleOccluders: true,
+  implodeExplodeMode: true,
+  stochasticRobotPaths: false,
+  parametersForStochasticRobotPaths: {inertia: 0.95, springConstant: 0, accelerationStandardDeviation: 0.01, velocityMultipler: 1.030},
+  forceFields: true,
+  forceFieldStrength: 0.0006,
+  occluderRectangles:[{x: generateRandomOccluderXCoordinate(/*put minimum occluder distance from wall here*/100), y: 0, width: 45, height: gameHeight},{x: generateRandomOccluderXCoordinate(190), y: 0, width: 45, height: gameHeight}],
+  lives: true, //toggle whether the player has a fixed number of lives and the related gameplay aspects
+  numLives: 5,
+  gameWidth: gameWidth,
+  gameHeight: gameHeight,
+  savedModel: [],
+exitWhenOutOfLives: true
+}
+
+timeline.push(level4);
 /* CODE FROM THE JSPSYCH TUTORIAL:
 var blue_trial = {
   type:"image-keyboard-response",
