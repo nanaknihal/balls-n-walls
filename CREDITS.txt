@@ -1,0 +1,6 @@
+
+music.mp3: {8-bit March} by Twin Musicom (twinmusicom.org)
+
+Music-2.mp3: <div class=attribution-block><a href=http://dig.ccmixter.org/files/boomaga/29170>Smoke & Lights</a> by boomaga (c) copyright 2010 Licensed under a Creative Commons <a href=http://creativecommons.org/licenses/by-nc/3.0/>Attribution Noncommercial  (3.0)</a> license. </div>
+
+More credits to come for all the other sounds, and of course the graphics all done by Chris
