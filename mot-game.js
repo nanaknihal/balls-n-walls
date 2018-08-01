@@ -1243,12 +1243,13 @@ jsPsych.plugins["mot-game"] = (function() {
         }
         //show it
         this.showImgAtFor('robomb-pngs/bomb-detected.png', w/2-width/2, h/2-height/2, initialFrameDuration)
+        mod.freeze()
         //this.update(mod)
         this.showLives(mod.lives)
         }
 
         //set timeout for what happens after the initial frame is over:
-        setTimeout(function(){curLevel.model.resetAllBallDesigns();}, initialFrameDuration)
+        setTimeout(function(){mod.resetAllBallDesigns(); mod.unFreeze()}, initialFrameDuration)
 
         //show the occluder images:
         if(par.occludersEnabled){
