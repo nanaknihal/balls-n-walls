@@ -1987,13 +1987,15 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
       this.countdown = true, //default is countdown-mode, not countup-mode
       this.ctdwnTime = par.levelDuration,
       this.setCountdownTime = function(t){this.ctdwnTime = t},
-      this.startTime = 0, //null means it hasn't been set
+      this.startTime = 0,
       this.curTime = 1000,
+      this.pausedTime = 0, //time when paused. Set to 0 by default, because the formula for time elapsed is ((presentTime - resumedTime) - (pausedTime - startTime))
+      this.resumedTime = 0,
       this.timeHasRunOut = false,
       this.updateCurTime = function(){
         if(!this.paused){
         //startDate must be set already for this to work properly.
-        this.curTime = new Date().valueOf() - this.startTime
+        this.curTime = new Date().valueOf() - this.resumedTime + this.pausedTime - this.startTime
 
         this.curTimeInSeconds = Math.round(this.curTime % 60000/1000)
             if(this.curTimeInSeconds == this.ctdwnTime && !this.timeHasRunOut){
@@ -2013,6 +2015,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
         this.updateCurTime()
         this.timeHasRunOut = false
       }
+
 
       //this is sensitive to counting up or down
       this.getTime = function(noupdate/*optional parameter, if true will not update the time before returning the time*/){
@@ -2035,14 +2038,15 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
         this.paused = false;
         this.run()
       }
-      this.resume = function(){this.start()}//basically another name for start function. timer.pause(); timer.start() makes less sense thatn timer.pause(); timer.resume()
+
+      this.resume = function(){this.resumedTime = new Date().valueOf(); this.start()}
 
       this.run = function(){
         setTimeout(function(){
         if(!(curLevel.gameOver() || this.paused)){
         curLevel.timer.updateCurTime();curLevel.view.displayTimer(curLevel.timer); curLevel.timer.run()}}, 1000) //recursive call
       }
-      this.pause = function(){this.paused = true}
+      this.pause = function(){this.updateCurTime(); this.pausedTime = new Date().valueOf(); this.paused = true}
 }
 
 
