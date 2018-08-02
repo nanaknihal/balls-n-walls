@@ -30,7 +30,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
     "<canvas id='livesCanvas' style='position:absolute; left: 0; top: 0; z-index:3' height='" + h + "' width = '" + w + "'></canvas>" +
     "<div id='messageBox' style='width: 66%;top:50%; margin-left:50%; transform: translate(-50%, -50%); -moz-transform: translate(-50%, -50%); -webkit-transform: translate(-50%, -50%); -ms-transform: translate(-50%, -50%); -o-transform: translate(-50%, -50%); display:none; animation-name: messagePopUpAnimation; animation-duration: 4s; position:absolute; z-index:500; overflow: auto; user-select:none;'><img id='messageImg' src='robomb-pngs/alert-box.png' style='display:block; width:100%; margin: auto; pointer-events:none; user-select:none'></img><div id='msgText' style='position:absolute; width: 95%; top: 50%; margin-left:50%; transform: translate(-50%,-50%); -moz-transform: translate(-50%,-50%); -webkit-transform: translate(-50%,-50%); -ms-transform: translate(-50%,-50%); -o-transform: translate(-50%,-50%); font:28px Overpass, sans-serif; color: white; text-align: center; display:block'></div><div id='buttonDiv'></div>" +
     "</div>" +
-    "<div id='bottomScreenText' style='display:none; animation-name: scrollIt; animation-duration: 12s; position:absolute; top: 87%; width: 80%; margin-left: 10%; z-index:500; overflow: auto'><p id='bottomText' style='color: #AABBCD; font: 14px Overpass, sans serif'>You've held out until the robots could be quarantined. +1 life. However, they are set to go off soon. You have 10 seconds to defuse them by clicking the right ones. \nYou have one defusal kit per bomb, so don't waste any</div>'" +
+    "<div id='bottomScreenText' style='display:none; animation-name: scrollIt; animation-duration: 12s; position:absolute; top: 87%; width: 80%; margin-left: 10%; z-index:500; overflow: auto'><p id='bottomText' style='color: #C6FDF9; font: 14px Overpass, sans serif'>You've held out until the robots could be quarantined. +1 life. However, they are set to go off soon. You have 10 seconds to defuse them by clicking the right ones. \nYou have one defusal kit per bomb, so don't waste any</div>'" +
     "</div>" +
     "<audio id='a-wallCreate' src='sounds/wall-create.wav'></audio>" + //wall creation sound. from: https://freesound.org/people/xixishi/sounds/265210/
     "<audio id='a-collisionBwop' src='sounds/collision-bwop.mp3'></audio>" + //https://freesound.org/people/willy_ineedthatapp_com/sounds/167338/
@@ -42,9 +42,9 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
     "<audio id='a-unteleport' src='sounds/unteleport.wav'></audio>" +// https://freesound.org/people/fins/sounds/172207/
 
     //font:
-    "<link rel='stylesheet' href='https://fonts.googleapis.com/css?family=Overpass+Mono:300,400,600,700|Overpass:100,100i,200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i&subset=latin-ext'> </link>" +
+    //"<link rel='stylesheet' href='https://fonts.googleapis.com/css?family=Overpass+Mono:300,400,600,700|Overpass:100,100i,200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i&subset=latin-ext'> </link>" +
     //message pop-up animation:
-    "<style>@keyframes fadeIn{from {opacity:0}; to {opacity:0.5}}</style>  <style>@keyframes scrollIt{from {margin-left:0px}; to {margin-left:330px}}</style>"
+    "<style>@keyframes fadeIn{from {opacity:0}; to {opacity:0.5}}</style>  <style>@keyframes scrollIt{from {margin-left:0px}; to {margin-left:330px}}</style> <style>@import url('https://fonts.googleapis.com/css?family=Overpass');</style>"
 
     document.body.style.backgroundColor = "black"
     document.body.style.userSelect = "none"
@@ -170,14 +170,16 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
       this.currentTime = 0
       this.balls = []; //including exploding balls
       this.getBalls = function(){return this.balls}
+      this.getExplodingBalls = function(){return this.explodingBalls}
       this.removeBall = function(ball){
         //remove it from explodingballs too if it's exploding:
         if(ball.explosive){
-          if(this.explodingBalls.length <= 1){curLevel.controller.endGame("defusalModeNeverHappened")} else {
-            this.explodingBalls.splice(this.balls.indexOf(ball),1)
-          }
+          this.explodingBalls.splice(this.explodingBalls.indexOf(ball),1)
+          setTimeout(function(){
+          if(curLevel.model.explodingBalls.length == 0 ){curLevel.controller.endGame("defusalModeNeverHappened")}
+        }, 400)
+        curLevel.model.balls.splice(this.balls.indexOf(ball),1)
         }
-        this.balls.splice(this.balls.indexOf(ball),1)
       }
       this.explodingBalls = [];
       this.occluderRects = par.occluderRectangles
@@ -530,9 +532,13 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
       }
 
       this.update = function(newTime){
+        console.log(curLevel.model.getExplodingBalls())
        if(!this.frozen){ //don't update if it's frozen
         var timestepDuration = newTime - this.currentTime
         this.currentTime = newTime
+
+
+
 
         /*bad motion algorithm:
         //if it's in stochasticRobotPaths mode,
@@ -544,10 +550,9 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
         }*/
         //Checks for collision with the four walls surrounding the game, NOT user-defined obstacles/walls
         this.executeWallCollisions = function(){
-
         for(var i = 0, numBalls = this.balls.length; i < numBalls; i++){
-
           var ball = this.balls[i];
+          if(ball === undefined){continue}//go to the next ball if this one has been removed during the loop
           var ballPoint = [ball.getX(), ball.getY()]
 
           var collisionRadius = ball.getRadius() + this.wallThickness //greatest distance that can trigger a collision
@@ -646,6 +651,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
           //iterate through all the balls and pixels (except last pixel because there will be no line drawn from it):
           for(var i = 0, numBalls = this.balls.length; i < numBalls; i++){
             var ball = this.balls[i]
+            if(ball === undefined){continue}//go to the next ball if this one has been removed during the loop
             var rad = ball.getRadius()
             var ballPoint = [ball.getX(), ball.getY()]
             var ballVec = ball.getVelocity()
@@ -1226,18 +1232,8 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
       }
 
       this.showInitialFrame = function(mod, initialFrameDuration){
-        //just call view's update function once. However, the exploding balls' colors must be changed first.
-        //change the exploding balls' colors:
-        for(var j = 0, balls = mod.explodingBalls, numBalls = balls.length; j < numBalls; j++){
-          var ball = balls[j];
-          //make the callback of the last setImage  this.update(), so that it doesn't update til all the images are loaded
-          if(j == numBalls - 1){
-            var thisView = this
-            ball.setImage("robomb-pngs/robot-bomb.png", function(){thisView.update(mod)})
-          } else {
-            ball.setImage("robomb-pngs/robot-bomb.png")
-          }
-
+        //just call view's update function once. However, the exploding balls must be displayed differently:
+        //bomb detected image over every exploding ball:
         var bdimg = new Image()
         bdimg.src = 'robomb-pngs/bomb-detected.png'
         //set the width and height:
@@ -1245,8 +1241,28 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
         bdimg.onload = function(){
           width = bdimg.width, height = bdimg.height
         }
-        //show it
-        this.showImgAtFor('robomb-pngs/bomb-detected.png', w/2-width/2, h/2-height/2, initialFrameDuration)
+
+        for(var j = 0, balls = mod.explodingBalls, numBalls = balls.length; j < numBalls; j++){
+          var ball = balls[j];
+          //make the callback of the last setImage  this.update(), so that it doesn't update til all the images are loaded
+          if(j == numBalls - 1){
+            this.showImgAtFor('robomb-pngs/bomb-detected.png', ball.x, ball.y, initialFrameDuration)
+            var thisView = this
+            ball.setImage("robomb-pngs/robot-bomb.png", function(){thisView.update(mod)})
+            //now, show the bomb detected text:
+             /*var ctx = document.getElementById('overlay').getContext('2d')
+             ctx.font = '30px "Overpass"'
+             ctx.fillStyle = '#C6FDF9'
+             ctx.textAlign = 'center'
+             ctx.fillText('BOMBS DETECTED', w/2, 7*h/8)
+             setTimeout(function(){ctx.clearRect(0,0,w,h)}, initialFrameDuration)*/
+             curLevel.view.showImgAtFor('robomb-pngs/bombb.png', w/2, 7*h/8, initialFrameDuration)
+          } else {
+            this.showImgAtFor('robomb-pngs/bomb-detected.png', ball.x, ball.y, initialFrameDuration)
+            ball.setImage("robomb-pngs/robot-bomb.png")
+          }
+
+
         //this.update(mod)
         this.showLives(mod.lives)
         //set timeout for what happens after the initial frame is over:
