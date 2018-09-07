@@ -11,6 +11,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
     var par = trial
     var w=par.gameWidth, h=par.gameHeight;
     display_element.innerHTML =
+    //"<img src='robomb-pngs/top-bar.png' style='position: absolute; left: 50%; margin-right:50%; transform: translate(-50%, 0); vertical-align: middle; width: " + w + "'><br /><br /><br /><br />" +
     "<div id='gameContainer' style='position: absolute; top: 50%; left: 50%; margin-right:50%; transform: translate(-50%, -50%); height: " + h + "px; width: " + w + "px; vertical-align: middle'>" +
     "<!-background image:--><img src='robomb-pngs/floor.png' height='" + h + "' width='" + w + "' style='position:absolute; margin:auto; z-index:-100'></img>" +
     "<!--main canvas where game happens:-->" +
@@ -194,8 +195,10 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
         callback();
       }
       this.incrementLives = function(callback){
-        console.log(this.lives)
-        this.lives++
+        //console.log(this.lives)
+        if(this.lives < par.maxLives){
+          this.lives++
+      }
         callback();
       }
 
@@ -203,20 +206,45 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
       this.resetAllBallDesigns = function(){
         var balls = myself.getBalls()
         for(var m=0, numBalls = balls.length; m<numBalls; m++){
-          balls[m].setImage("robomb-pngs/robot-normal.png");
+          balls[m].setImage(myself.defaultBallImg);//shrunken 5, 3, normal, -1
         }
       }
 
       //initialize the balls:
+      this.ballRadius = 25 //default value
+      this.defaultBallImg = 'robomb-pngs/robot-normal.png' //same as 'small'
+      switch(par.ballRadius){
+        case 'smallest':
+          this.ballRadius = 12
+          this.defaultBallImg = 'robomb-pngs/shrunken-5.png'
+          break
+        case 'small':
+          this.ballRadius = 16
+          this.defaultBallImg = 'robomb-pngs/shrunken-3.png'
+          break
+        case 'large':
+          this.ballRadius = 25
+          this.defaultBallImg = 'robomb-pngs/robot-normal.png'
+          break
+        case 'largest':
+          this.ballRadius = 30
+          this.defaultBallImg = 'robomb-pngs/enlarged-1.png'
+          break
+      }
+
       var randomCoordinatesForNormalBall = function(){
-        var x = Math.round(1.5*ballRadius + Math.random()*(w-3*ballRadius));
-        var y = Math.round(1.5*ballRadius + Math.random()*(h-3*ballRadius)); //.5*ballradius minimum distance from wall
+        var horiMargin = w/6+myself.ballRadius
+        var vertMargin = h/4+myself.ballRadius
+        var x = Math.round(horiMargin + Math.random()*(w-2*horiMargin) - myself.ballRadius/2);
+        var y = Math.round(vertMargin + Math.random()*(h-2*vertMargin) - myself.ballRadius/2);
         return [x,y]
       }
 
       var randomCoordinatesForExplodingBall = function(){
-        var x = Math.round(15*ballRadius + Math.random()*(w-30*ballRadius));
-        var y = Math.round(15*ballRadius + Math.random()*(h-30*ballRadius));
+        var horiMargin = w/4+myself.ballRadius
+        var vertMargin = h/3.4+myself.ballRadius
+        var x = Math.round(horiMargin + Math.random()*(w-2*horiMargin) - myself.ballRadius/2);
+        var y = Math.round(vertMargin + Math.random()*(h-2*vertMargin) - myself.ballRadius/2);
         return [x,y]
       }
 
@@ -238,19 +266,18 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
 
 
         //now initialize balls, but make sure they aren't in occluders
-        var ballRadius = par.ballRadius
         for(var i = 0; i<numNormalBalls; i++){
           //random x-y coordinates of a new ball:
           var coords = randomCoordinatesForNormalBall()
           //make sure the ball is in an acceptable place:
-            var badPosition = circleIsInAnOccluder(coords, ballRadius) || (par.forceFields && collidingWithBalls(coords, ballRadius, this.balls))
+            var badPosition = circleIsInAnOccluder(coords, this.ballRadius) || collidingWithBalls(coords, this.ballRadius, this.balls)
             while(badPosition){
               //reset the coordinates until the piwr and the coordinates are therefore valid
               coords = randomCoordinatesForNormalBall()
-              badPosition = circleIsInAnOccluder(coords, ballRadius) || (par.forceFields && collidingWithBalls(coords, ballRadius, this.balls))
+              badPosition = circleIsInAnOccluder(coords, this.ballRadius) || collidingWithBalls(coords, this.ballRadius, this.balls)
             }
           //make the ball (and add it to this.balls) if it's at a valid position:
-          this.balls.push(new ball(coords[0],coords[1],ballRadius, speed, i/*id is just i*/))
+          this.balls.push(new ball(coords[0],coords[1],this.ballRadius, speed, i/*id is just i*/))
         }
 
 
@@ -261,14 +288,14 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
         //random x-y coordinates of a new exploding ball:
         var coords = randomCoordinatesForExplodingBall()
         //make sure the ball isn't inside any occluders:
-          var badPosition = circleIsInAnOccluder(coords, ballRadius) || (par.forceFields && collidingWithBalls(coords, ballRadius, this.balls))
+          var badPosition = circleIsInAnOccluder(coords, this.ballRadius) || collidingWithBalls(coords, this.ballRadius, this.balls)
           while(badPosition){
             //reset the coordinates until they're not in the occluder
             coords = randomCoordinatesForExplodingBall()
-            badPosition = circleIsInAnOccluder(coords, ballRadius) || (par.forceFields && collidingWithBalls(coords, ballRadius, this.balls))
+            badPosition = circleIsInAnOccluder(coords, this.ballRadius) || collidingWithBalls(coords, this.ballRadius, this.balls)
           }
 
-          var bal = new ball(coords[0], coords[1], ballRadius, speed, numNormalBalls + i/*explosive balls will have highest ids*/, "e")
+          var bal = new ball(coords[0], coords[1], this.ballRadius, speed, numNormalBalls + i/*explosive balls will have highest ids*/, "e")
           this.balls.push(bal)
           this.explodingBalls.push(bal)
         }
@@ -285,7 +312,8 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
        */
 
        /*USING THIS INSTEAD:*/
-       this.wallThickness = par.wallThickness
+       this.vertWallThickness = par.vertWallThickness
+       this.horiWallThickness = par.horiWallThickness
 
 
 
@@ -532,7 +560,6 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
       }
 
       this.update = function(newTime){
-        console.log(curLevel.model.getExplodingBalls())
        if(!this.frozen){ //don't update if it's frozen
         var timestepDuration = newTime - this.currentTime
         this.currentTime = newTime
@@ -555,12 +582,13 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
           if(ball === undefined){continue}//go to the next ball if this one has been removed during the loop
           var ballPoint = [ball.getX(), ball.getY()]
 
-          var collisionRadius = ball.getRadius() + this.wallThickness //greatest distance that can trigger a collision
+          var vertCollisionDistance = ball.getRadius() + this.vertWallThickness //greatest distance that can trigger a collision
+          var horiCollisionDistance = ball.getRadius() + this.horiWallThickness
 
-          var collisionLeftWall = ballPoint[0]-collisionRadius <= 0
-          var collisionRightWall = ballPoint[0]+collisionRadius >= w
-          var collisionTopWall = ballPoint[1]-collisionRadius <= 0
-          var collisionBottomWall = ballPoint[1]+collisionRadius >= h
+          var collisionLeftWall = ballPoint[0]-horiCollisionDistance <= 0
+          var collisionRightWall = ballPoint[0]+horiCollisionDistance >= w
+          var collisionTopWall = ballPoint[1]-vertCollisionDistance <= 0
+          var collisionBottomWall = ballPoint[1]+vertCollisionDistance >= h
 
           var vel = ball.getVelocity()
           //flip motion in x-direction IF it's touching the left or rigth wall and going towards the respective wall: (sometimes, balls can end up too far inside the wall,
@@ -791,6 +819,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
           if(par.lives){
             curLevel.model.decrementLives(/*callback:*/function(){curLevel.view.showLives(curLevel.model.lives)})
           }
+          curLevel.controller.guessesRemaining-- //decrement number of guesses they have
           //curLevel.defusalMode(); //COMMENT THIS TO DISABLE DEFUSAL MODE
         } else if(collisionType == "userObstacle"){
 
@@ -997,8 +1026,8 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
 
     /*TODO: make an animation class and subclass these. I don't know enough about JS classes to do that easily*/
     function wallExplodeAnimation(){
-        var img = "explosion.png"
-        var duration = 2000
+        var img = "robomb-pngs/explosion.png"
+        var duration = 1000
         this.showAnimation = function(x,y) {curLevel.view.showImgAtFor(img, x, y, duration)}
     }
 
@@ -1248,7 +1277,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
           if(j == numBalls - 1){
             this.showImgAtFor('robomb-pngs/bomb-detected.png', ball.x, ball.y, initialFrameDuration)
             var thisView = this
-            ball.setImage("robomb-pngs/robot-bomb.png", function(){thisView.update(mod)})
+            ball.setImage("robomb-pngs/robot-open-bomb-"+par.ballRadius+".png", function(){thisView.update(mod)})
             //now, show the bomb detected text:
              /*var ctx = document.getElementById('overlay').getContext('2d')
              ctx.font = '30px "Overpass"'
@@ -1259,9 +1288,24 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
              curLevel.view.showImgAtFor('robomb-pngs/bombb.png', w/2, 7*h/8, initialFrameDuration)
           } else {
             this.showImgAtFor('robomb-pngs/bomb-detected.png', ball.x, ball.y, initialFrameDuration)
-            ball.setImage("robomb-pngs/robot-bomb.png")
+            ball.setImage("robomb-pngs/robot-open-bomb-"+par.ballRadius+".png")
           }
+        }
+          //same but for regular robots:
+          for(var k = 0, balls = mod.balls, numBalls = balls.length; k < numBalls; k++){
+            var bal = balls[k];
+            //make the callback of the last setImage  this.update(), so that it doesn't update til all the images are loaded
+            if(k == numBalls - 1){
+              var thisView = this
+              if(!bal.explosive){
+                bal.setImage("robomb-pngs/robot-open-normal-"+par.ballRadius+".png", function(){thisView.update(mod)})
+              }
 
+            } else {
+              if(!bal.explosive){
+              bal.setImage("robomb-pngs/robot-open-normal-"+par.ballRadius+".png")
+            }
+            }
 
         //this.update(mod)
         this.showLives(mod.lives)
@@ -1324,7 +1368,8 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
             ctx.fillStyle = color
             //ctx.arc(ball.getX(), ball.getY(), ball.getRadius(), 0, 2*Math.PI);
             //ctx.fill();
-            ctx.drawImage(ball.imgElement, ball.x-ball.imgElement.width/2+4, ball.y-ball.imgElement.height/2+4);
+            var offset = ball.radius/4.5 /*small offset to offset for images being off-center*/
+            ctx.drawImage(ball.imgElement, ball.x-ball.imgElement.width/2 + offset, ball.y-ball.imgElement.height/2+offset);
 
             ctx.closePath();
           }
@@ -1370,6 +1415,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
               var color = "#2CFFCF"
               ctx.strokeStyle = "#2CFFCF"
               ctx.lineWidth = par.userObstacleThickness
+              if(par.ballRadius == 'smallest') {ctx.lineWidth = 2}
               ctx.moveTo(pix[o][0], pix[o][1])
               ctx.lineTo(pix[o+1][0], pix[o+1][1])
               ctx.stroke();
@@ -1435,8 +1481,8 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
         }
 
         //clear it after the duration's up:
-        setTimeout(function(){
-          ctx.clearRect(x-width/2,y-height/2,width, height)
+        setTimeout(function(){var padding = 1
+        ctx.clearRect(x-width/2-padding,y-height/2-padding,width+padding+1, height+padding+1)
           if(options !== undefined && options.objectToNotifyWhenDoneDisplaying !== undefined){
 
             options.objectToNotifyWhenDoneDisplaying.respondToImageBeingCleared()
@@ -1452,7 +1498,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
       this.showLives = function(lives){
         //lives is just a number saying how many lives there are, but it could easily be changed to an array with unique lives
         var img = new Image();
-        img.src = "life.jpg"
+        img.src = "robomb-pngs/life.png"
         var width = null
         img.onload = function(){
           //clear the previous rect of lives:
@@ -1460,7 +1506,8 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
           var topLifeCoordinate = 10
           ctx.clearRect(w/2-img.width*(lives+1)/2, topLifeCoordinate, (lives+1)*img.width, img.height)
           for(var j = 0; j < lives; j++){
-            ctx.drawImage(img, w/2-img.width*(lives/2-j), topLifeCoordinate)
+            //ctx.drawImage(img, w/2-img.width*(lives/2-j), topLifeCoordinate)
+            ctx.drawImage(img,img.width*j,0)
           }
         }
       }
@@ -1483,7 +1530,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
         for(var j = 0, rects = occluderRectangles, numRects = rects.length; j < numRects; j++){
           ctx.beginPath()
           ctx.fillStyle = occluderPattern
-          ctx.rect(rects[j].x, rects[j].y+par.wallThickness, rects[j].width, rects[j].height-par.wallThickness*2)
+          ctx.rect(rects[j].x, rects[j].y+par.vertWallThickness, rects[j].width, rects[j].height-par.horiWallThickness*2)
           ctx.fill()
           //this.showImgAtFor(occs[j].imgPath, occs[j].x, occs[j].y, curLevel.timer.getTime(), {customContext:document.getElementById("occluderCanvas").getContext("2d")})
         }
@@ -1503,13 +1550,13 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
         //set up the alert box:
         var okButton = {imgUp: 'robomb-pngs/btn-okay-up.png',
                         imgDn: 'robomb-pngs/btn-okay-down.png',
-                        onClick: function(){curLevel.view.closeAlertBox(); curLevel.controller.beginDefusalMode(defusalTimeLimit)},
+                        onClick: function(){curLevel.view.closeAlertBox(); curLevel.controller.beginDefusalMode(defusalTimeLimit); curLevel.model.freeze()},
                         activateWhenEnterPressed: true}
         var text = ""
         if(args !== undefined && args.deflectionSuccessful){
           text = "You've held out until the robots could be quarantined. +1 life. However, they are set to go off soon. You have 10 seconds to defuse them by clicking the right ones. You have one defusal kit per bomb, so don't waste any."
         } else {
-          text = "One of the bomb carrying robots hit a wall! The bombs in all sabotaged robots have been activated, and you have ten seconds to defuse them. Click all the bomb-carrying bots to defuse them."
+          //text = "One of the bomb carrying robots hit a wall! The bombs in all sabotaged robots have been activated, and you have ten seconds to defuse them. Click all the bomb-carrying bots to defuse them."
         }
         this.showAlertBox(text, [okButton])
 
@@ -1603,7 +1650,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
             //display a border around the ball
             ctx.beginPath()
             ctx.strokeStyle = "red"
-            ctx.arc(ball.getX(), ball.getY(), totalRadius, 0, 2*Math.PI)
+            ctx.arc(ball.getX() - totalRadius/4.5 /*images are slightly offset from center due to shadow*/, ball.getY() - totalRadius/4.5, totalRadius, 0, 2*Math.PI)
             ctx.stroke()
             ctx.closePath();
 
@@ -1631,14 +1678,14 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
               tctx.clearRect(timer.x-timer.fontSize,timer.y-timer.fontSize, timer.fontSize*2, timer.fontSize*2)
               tctx.font = timer.fontSize + "px Arial"
               //time = Math.round((this.curTime % 60000)/1000)
-              var time = timer.getTime == null ? 0: Math.round(timer.getTime()/1000)
+              var time = timer.getTime() == null ? 0 : Math.round(timer.getTime()/1000)
               tctx.fillStyle = timer.color
               tctx.textAlign = "center"
               tctx.fillText(time, timer.x, timer.y) //NOTE: assuming time counter should always be under a minute
             } else { //if it's defusal mode, display the big countdown:
               //clear previously existing timer displays
               tctx.clearRect(0,0,w, h)
-              var time = timer.getTime == null ? 0: Math.round(timer.getTime()/1000)
+              var time = timer.getTime() == null ? 0: Math.round(timer.getTime()/1000)
               var ctdwnImgEl = new Image()
               var ctdwnImg = 'robomb-pngs/countdown-10.png'
               if(time < 10){
@@ -1692,13 +1739,12 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
         curLevel.view.init();
         this.loadCanvas();
 
+        var showTheInitialFrame = function(){
         var initialFrameDuration = 1300 //ms
         curLevel.timer.reset(levelDuration/1000, "green")
         curLevel.timer.start()
         curLevel.view.displayTimer(curLevel.timer)
         curLevel.view.showInitialFrame(model,initialFrameDuration) //show the frame where the exploding balls look different
-
-
         //now set what happens after the initial frame is over:
         setTimeout(function(){
 
@@ -1741,7 +1787,23 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
             } else { //if game isn't in replay mode*/
               curLevel.controller.getWallsFromUser() //this adds an event listener to get drawn walls from user.
             /*}*/
-        }, initialFrameDuration)
+        }, initialFrameDuration)}
+
+        var button =    {imgUp: 'robomb-pngs/btn-okay-up.png',
+                        imgDn: 'robomb-pngs/btn-okay-down.png',
+                        onClick: showTheInitialFrame,
+                        activateWhenEnterPressed: true}
+
+        if(par.notifyUserOfOccluders){
+          showAlertBox("box", button)
+        }
+        if(par.notifyUserOfInvisOccluders){
+          showAlertBox("fuck", button)
+        }
+        if(par.notifyUserOfImplodeExplodeMode){
+          showAlertBox("git", button)
+        }
+        if(!(par.notifyUserOfOccluders | par.notifyUserOfInvisOccluders | par.notifyUserOfImplodeExplodeMode)){showTheInitialFrame();}
         }
 
 
@@ -2001,7 +2063,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
       this.x = w/2, // x positioning
       this.y = h/22,
       this.countdown = true, //default is countdown-mode, not countup-mode
-      this.ctdwnTime = par.levelDuration,
+      this.ctdwnTime = par.duration/1000,
       this.setCountdownTime = function(t){this.ctdwnTime = t},
       this.startTime = 0,
       this.curTime = 1000,
@@ -2026,6 +2088,8 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
 
       this.reset = function(countdownTime, color) {
         this.setCountdownTime(countdownTime);
+        this.resumedTime = 0
+        this.pausedTime = 0
         this.startTime = new Date().valueOf(); //0
         this.color = color
         this.updateCurTime()
@@ -2047,6 +2111,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
 
       this.getTimeTilCountdownEnd = function(noupdate){
         if(noupdate != true) {this.updateCurTime()}
+
         return this.ctdwnTime*1000 - this.curTime
       }
 
@@ -2154,7 +2219,7 @@ function collidingWithBalls(pos, radius, balls /*an array of actual ball objects
 
     //currentSavedFrameIndex is incremented after displaying each frame of the saved model
     function replayModeUpdate(currentSavedFrameIndex, currentTime){
-      console.log([currentSavedFrameIndex, currentTime])
+      //console.log([currentSavedFrameIndex, currentTime])
       window.requestAnimationFrame(function(){
         curLevel.view.update(makeAFakeModelObjectFromGivenReplayFrame(par.savedModel[currentSavedFrameIndex]), curLevel.timer.getTime())
         window.requestAnimationFrame(replayModeUpdate, currentSavedFrameIndex+1)

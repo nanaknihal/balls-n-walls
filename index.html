@@ -54,21 +54,40 @@ function generateRandomOccluderXCoordinate(occluderToWallMinDistance){
   return occluderToWallMinDistance+Math.random()*(gameWidth-2*occluderToWallMinDistance)
 }
 
+function randomBallRadius(){
+   var r = Math.round(Math.random()*3)
+   switch(r){
+     case 0:
+      return 'smallest'
+      break
+     case 1:
+      return 'small'
+      break
+     case 2:
+      return 'large'
+      break
+     case 3:
+      return 'largest'
+      break
+   }
+}
+
 
 var tutorial = {
   type:"mot-game-tutorial",
   stimulus:"<p>test</p>",
   duration: 15000,
   ballSpeed: 0.07,
-  ballRadius: 20,
-  numRegularBalls: 2,
-  numExplodingBalls: 3,
+  ballRadius: 'large',
+  numRegularBalls: 1,
+  numExplodingBalls: 1,
   maxUserDefinedObstacles: 1,
   maxUserDefinedObstacleSegments: 3,
   maxDistanceBetweenObstaclePixels:300,
   minDistanceBetweenObstaclePixels: 66,
   userObstacleThickness: 3,
-  wallThickness:16,  //16px thick border walls
+  vertWallThickness:48,  //16px thick border walls
+  horiWallThickness:16,
   occludersEnabled: false,
   invisibleOccluders: false,
   implodeExplodeMode: false,
@@ -78,7 +97,8 @@ var tutorial = {
   forceFieldStrength: 0.001,
   occluderRectangles:[{x: generateRandomOccluderXCoordinate(/*put minimum occluder distance from wall here*/100), y: 0, width: 45, height: gameHeight},{x: generateRandomOccluderXCoordinate(190), y: 0, width: 45, height: gameHeight}],
   lives: true, //toggle whether the player has a fixed number of lives and the related gameplay aspects
-  numLives: 5,
+  numLives: 2,
+  maxLives: 6,
   gameWidth: gameWidth,
   gameHeight: gameHeight,
   savedModel: [],
@@ -89,8 +109,8 @@ var level1 = {
   type:"mot-game",
   stimulus:"<p>test</p>",
   duration: 15000,
-  ballSpeed: 0.07,
-  ballRadius: 20,
+  ballSpeed: jsPsych.timelineVariable("ballSpeed", true),
+  ballRadius: randomBallRadius(),
   numRegularBalls: 4,
   numExplodingBalls: 1,
   maxUserDefinedObstacles: 1,
@@ -98,10 +118,14 @@ var level1 = {
   maxDistanceBetweenObstaclePixels:300,
   minDistanceBetweenObstaclePixels: 66,
   userObstacleThickness: 3,
-  wallThickness:16,  //16px thick border walls
+  vertWallThickness:48,  //16px thick border walls
+  horiWallThickness:16,
   occludersEnabled: true,
+  notifyUserOfOccluders: false,
   invisibleOccluders: true,
-  implodeExplodeMode: true,
+  notifyUserOfInvisOccluders: false,
+  implodeExplodeMode: false,
+  notifyUserOfImplodeExplodeMode: false,
   stochasticRobotPaths: false,
   parametersForStochasticRobotPaths: {inertia: 0.95, springConstant: 0, accelerationStandardDeviation: 0.01, velocityMultipler: 1.030},
   forceFields: false,
@@ -109,6 +133,7 @@ var level1 = {
   occluderRectangles:[{x: generateRandomOccluderXCoordinate(/*put minimum occluder distance from wall here*/100), y: 0, width: 45, height: gameHeight},{x: generateRandomOccluderXCoordinate(190), y: 0, width: 45, height: gameHeight}],
   lives: true, //toggle whether the player has a fixed number of lives and the related gameplay aspects
   numLives: 5,
+  maxLives:6,
   //replayMode: false,
   replayModeParameters: /*{"ballInitialConditions":[
 			{
@@ -376,14 +401,52 @@ exitWhenOutOfLives: true,
   gameHeight: 600
 }
 timeline.push(level1);
-
+var loop_node = {
+  timeline: [{
+    type:"mot-game",
+    stimulus:"<p>test</p>",
+    duration: 15000,
+    ballSpeed: jsPsych.timelineVariable("ballSpeed", true),
+    ballRadius: randomBallRadius(),
+    numRegularBalls: 4,
+    numExplodingBalls: 1,
+    maxUserDefinedObstacles: 1,
+    maxUserDefinedObstacleSegments: 3,
+    maxDistanceBetweenObstaclePixels:300,
+    minDistanceBetweenObstaclePixels: 66,
+    userObstacleThickness: 3,
+    vertWallThickness:48,  //16px thick border walls
+    horiWallThickness:16,
+    occludersEnabled: true,
+    notifyUserOfOccluders: false,
+    invisibleOccluders: true,
+    notifyUserOfInvisOccluders: false,
+    implodeExplodeMode: false,
+    notifyUserOfImplodeExplodeMode: false,
+    stochasticRobotPaths: false,
+    parametersForStochasticRobotPaths: {inertia: 0.95, springConstant: 0, accelerationStandardDeviation: 0.01, velocityMultipler: 1.030},
+    forceFields: false,
+    forceFieldStrength: 0.0006,
+    occluderRectangles:[{x: generateRandomOccluderXCoordinate(/*put minimum occluder distance from wall here*/100), y: 0, width: 45, height: gameHeight},{x: generateRandomOccluderXCoordinate(190), y: 0, width: 45, height: gameHeight}],
+    lives: true, //toggle whether the player has a fixed number of lives and the related gameplay aspects
+    numLives: 5,
+    maxLives:6,
+    replayModeParameters: null,
+    savedModel: [],
+    exitWhenOutOfLives: true,
+    gameWidth: 960,
+    gameHeight: 600
+  }],
+  loop_function: function(){return true}
+}
+timeline.push(loop_node)
 
 var level2 = {
   type:"mot-game",
   stimulus:"<p>test</p>",
   duration: 15000,
   ballSpeed: 0.07,
-  ballRadius: 20,
+  ballRadius: 'large',
   numRegularBalls: 3,
   numExplodingBalls: 2,
   maxUserDefinedObstacles: 1,

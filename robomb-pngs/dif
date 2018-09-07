@@ -1,0 +1,448 @@
+1c1
+< jsPsych.plugins["mot-game-tutorial"] = (function() {
+---
+> jsPsych.plugins["mot-game"] = (function() {
+12a13
+>     var obstacleZIndex = par.invisibleOccluders ? 4 : 3
+20,21c21
+<     //it may be good to not hard-code the top and left value but rather use variables...this will be decided later when we do more styling
+<     "<canvas id='overlay' style='position:absolute; left: 0; top: 0; z-index:3' height='" + h + "' width = '" + w + "'></canvas>"
+---
+>     "<canvas id='overlay' style='position:absolute; left: 0; top: 0; z-index:4' height='" + h + "' width = '" + w + "'></canvas>"
+23,24c23,24
+<     //it may be good to not hard-code the top and left value but rather use variables...this will be decided later when we do more styling
+<     "<canvas id='occluderCanvas' style='position:absolute; left: 0; top: 0; z-index:2' height='" + h + "' width = '" + w + "'></canvas>" +
+---
+>     "<canvas id='occluderCanvas' style='position:absolute; left: 0; top: 0; z-index:3' height='" + h + "' width = '" + w + "'></canvas>" +
+>     "<canvas id='obstacleCanvas' style='position:absolute; left: 0; top: 0; z-index:" + obstacleZIndex + "' height='" + h + "' width = '" + w + "'></canvas>" +
+28d27
+<     //it may be good to not hard-code the top and left value but rather use variables...this will be decided later when we do more styling
+31c30
+<     "<div id='messageBox' style='width: 66%;top:50%; margin-left:50%; transform: translate(-50%, -50%); -moz-transform: translate(-50%, -50%); -webkit-transform: translate(-50%, -50%); -ms-transform: translate(-50%, -50%); -o-transform: translate(-50%, -50%); display:none; animation-name: messagePopUpAnimation; animation-duration: 4s; position:absolute; z-index:500; overflow: auto; user-select:none;'><img id='messageImg' src='robomb-pngs/alert-box.png' style='display:block; width:100%; margin: auto; pointer-events:none; user-select:none'></img><div id='msgText' style='position:absolute; width: 95%; top: 50%; margin-left:50%; transform: translate(-50%,-50%); -moz-transform: translate(-50%,-50%); -webkit-transform: translate(-50%,-50%); -ms-transform: translate(-50%,-50%); -o-transform: translate(-50%,-50%); font:28px Overpass, sans-serif; color: white; text-align: center; display:block'></div><div id='buttonDiv'></div>" +
+---
+>     "<div id='messageBox' style='width: 66%;top:50%; margin-left:50%; transform: translate(-50%, -50%); -moz-transform: translate(-50%, -50%); -webkit-transform: translate(-50%, -50%); -ms-transform: translate(-50%, -50%); -o-transform: translate(-50%, -50%); display:none; animation-name: messagePopUpAnimation; animation-duration: 4s; position:absolute; z-index:500; overflow: auto; user-select:none;'><img id='messageImg' src='robomb-pngs/alert-box.png' style='display:block; width:100%; margin: auto; pointer-events:none; user-select:none'></img><div id='msgText' style='position:absolute; width: 95%; top: 50%; margin-left:50%; transform: translate(-50%,-50%); -moz-transform: translate(-50%,-50%); -webkit-transform: translate(-50%,-50%); -ms-transform: translate(-50%,-50%); -o-transform: translate(-50%,-50%); font:37px Overpass, sans-serif; color: white; text-align: center; display:block'></div><div id='buttonDiv'></div>" +
+38,39c37,38
+<     "<audio id='a-incorrect' src='sounds/incorrect.wav'></audio>" + //https://freesound.org/people/KevinVG207/sounds/331912/
+<     "<audio id='a-wallHit' src='sounds/wall-hit.wav'></audio>" + //https://freesound.org/people/jeckkech/sounds/391668/
+---
+>     "<audio id='a-incorrect' src='sounds/incorrect.wav'></audio>" +//https://freesound.org/people/KevinVG207/sounds/331912/
+>     "<audio id='a-wallHit' src='sounds/wall-hit.wav'></audio>" +//https://freesound.org/people/jeckkech/sounds/391668/
+45c44
+<     //"<link rel='stylesheet' href='https://fonts.googleapis.com/css?family=Overpass+Mono:300,400,600,700|Overpass:100,100i,200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i&subset=latin-ext'> </link>" +
+---
+>     "<link rel='stylesheet' href='https://fonts.googleapis.com/css?family=Overpass+Mono:300,400,600,700|Overpass:100,100i,200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i&subset=latin-ext'> </link>" +
+47c46
+<     "<style>@keyframes fadeIn{from {opacity:0}; to {opacity:0.5}}</style>  <style>@keyframes scrollIt{from {margin-left:0px}; to {margin-left:330px}}</style> <style>@import url('https://fonts.googleapis.com/css?family=Overpass');</style>"
+---
+>     "<style>@keyframes fadeIn{from {opacity:0}; to {opacity:0.5}}</style>  <style>@keyframes scrollIt{from {margin-left:0px}; to {margin-left:330px}}</style>"
+53a53,54
+> 
+>     //document.getElementById('music').play()
+82c83
+<     neverMadeAWallYet = true //for tutorial, to congratulate the user upon making the first wall
+---
+> 
+158a160
+>     //alertbox testing code
+165c167
+<     curLevel.view.showAlertBox('test', [button])*/
+---
+>     curLevel.view.showAlertBox('Test', [button])*/
+173d174
+<       this.getExplodingBalls = function(){return this.explodingBalls}
+189c190,193
+<       this.lives = par.numLives
+---
+> 
+>       //set the number of lives as the number of lives from the last trial (last trial was waiting scren)
+>       var numLives = jsPsych.data.get().last(1).values()[0].numLives
+>       this.lives = (numLives === undefined) ? par.numLives : numLives
+192d195
+<         this.lives--
+193a197
+>         this.lives--
+197d200
+<         //console.log(this.lives)
+206c209
+<           balls[m].setImage(myself.defaultBallImg);//shrunken 5, 3, normal, -1
+---
+>           balls[m].setImage("robomb-pngs/robot-normal.png");
+233,234c236,237
+<         var x = Math.round(1.5*myself.ballRadius + Math.random()*(w-3*myself.ballRadius));
+<         var y = Math.round(1.5*myself.ballRadius + Math.random()*(h-3*myself.ballRadius)); //.5*ballradius minimum distance from wall
+---
+>         var x = Math.round(1.5*ballRadius + Math.random()*(w-3*ballRadius));
+>         var y = Math.round(1.5*ballRadius + Math.random()*(h-3*ballRadius)); //.5*ballradius minimum distance from wall
+239,240c242,243
+<         var x = Math.round(15*myself.ballRadius + Math.random()*(w-30*myself.ballRadius));
+<         var y = Math.round(15*myself.ballRadius + Math.random()*(h-30*myself.ballRadius));
+---
+>         var x = Math.round(15*ballRadius + Math.random()*(w-30*ballRadius));
+>         var y = Math.round(15*ballRadius + Math.random()*(h-30*ballRadius));
+261a265
+>         var ballRadius = par.ballRadius
+266c270
+<             var badPosition = circleIsInAnOccluder(coords, this.ballRadius) || (par.forceFields && collidingWithBalls(coords, this.ballRadius, this.balls))
+---
+>             var badPosition = circleIsInAnOccluder(coords, ballRadius) || (par.forceFields && collidingWithBalls(coords, ballRadius, this.balls))
+270c274
+<               badPosition = circleIsInAnOccluder(coords, this.ballRadius) || (par.forceFields && collidingWithBalls(coords, this.ballRadius, this.balls))
+---
+>               badPosition = circleIsInAnOccluder(coords, ballRadius) || (par.forceFields && collidingWithBalls(coords, ballRadius, this.balls))
+273c277
+<           this.balls.push(new ball(coords[0],coords[1],this.ballRadius, speed, i/*id is just i*/))
+---
+>           this.balls.push(new ball(coords[0],coords[1],ballRadius, speed, i/*id is just i*/))
+284c288
+<           var badPosition = circleIsInAnOccluder(coords, this.ballRadius) || (par.forceFields && collidingWithBalls(coords, this.ballRadius, this.balls))
+---
+>           var badPosition = circleIsInAnOccluder(coords, ballRadius) || (par.forceFields && collidingWithBalls(coords, ballRadius, this.balls))
+288c292
+<             badPosition = circleIsInAnOccluder(coords, this.ballRadius) || (par.forceFields && collidingWithBalls(coords, this.ballRadius, this.balls))
+---
+>             badPosition = circleIsInAnOccluder(coords, ballRadius) || (par.forceFields && collidingWithBalls(coords, ballRadius, this.balls))
+291c295
+<           var bal = new ball(coords[0], coords[1], this.ballRadius, speed, numNormalBalls + i/*explosive balls will have highest ids*/, "e")
+---
+>           var bal = new ball(coords[0], coords[1], ballRadius, speed, numNormalBalls + i/*explosive balls will have highest ids*/, "e")
+387a392
+> 
+425d429
+< 
+559,561d562
+< 
+< 
+< 
+571a573
+> 
+572a575
+> 
+808d810
+<           curLevel.model.removeBall(this)
+813c815
+<           curLevel.controller.guessesRemaining-- //decrement number of guesses they have
+---
+>           this.onCollide(collisionType)
+906a909
+> 
+914d916
+< 
+963c965,966
+<           }
+---
+> 
+>               }
+1010a1014
+> 
+1021c1025
+<         var duration = 1000
+---
+>         var duration = 2000
+1074a1079
+> 
+1149a1155
+> 
+1170,1171c1176,1177
+<               curLevel.view.showImgAtFor("robomb-pngs/you-cant-draw-through-robots.png", ball.getX(), ball.getY(), 350, {objectToNotifyWhenDoneDisplaying: this})
+<               this.imageDisplayCooldownPeriod = true
+---
+>               //curLevel.view.showImgAtFor("x.png", ball.getX(), ball.getY(), 350, {objectToNotifyWhenDoneDisplaying: this})
+>               //this.imageDisplayCooldownPeriod = true
+1194,1206c1200
+< 
+<             //notify the when they create first obstacle (for the tutorial). The event will be picked by an event listener elsewhere
+<             //(likely in showInitialFrame) which will have a little bit more logic on handling the event
+<             if(this.pixels.length > 1 && neverMadeAWallYet) {
+<               setTimeout(function(){
+<                 var wallFinished = new CustomEvent('wallFinished')
+<                 wallFinished.x = pos[0]
+<                 wallFinished.y = pos[1]
+<                 document.dispatchEvent(wallFinished)
+<                 //add some custom properties to the event to tell where the mouseclick was:
+<               }, 300)
+<             }
+< 
+---
+>           }
+1213d1206
+<     }
+1273,1274c1266,1267
+<              /*var ctx = document.getElementById('overlay').getContext('2d')
+<              ctx.font = '30px "Overpass"'
+---
+>              var ctx = document.getElementById('overlay').getContext('2d')
+>              setTimeout(function(){ctx.font = '30px "Overpass"'
+1277,1279c1270,1271
+<              ctx.fillText('BOMBS DETECTED', w/2, 7*h/8)
+<              setTimeout(function(){ctx.clearRect(0,0,w,h)}, initialFrameDuration)*/
+<              curLevel.view.showImgAtFor('robomb-pngs/bombb.png', w/2, 7*h/8, initialFrameDuration)
+---
+>              ctx.fillText('BOMBS DETECTED', w/2, 7*h/8)}, 200) //hopefully 200ms is enough time to load the font
+>              setTimeout(function(){ctx.clearRect(0,0,w,h)}, initialFrameDuration)
+1286,1289c1278,1281
+<           for(var k = 0, balls = mod.balls, numBalls = balls.length; k < numBalls; k++){
+<             var bal = balls[k];
+<             //make the callback of the last setImage  this.update(), so that it doesn't update til all the images are loaded
+<             if(k == numBalls - 1){
+---
+>           for(var j = 0, balls = mod.balls, numBalls = balls.length; j < numBalls; j++){
+>             var ball = balls[j];
+>             //make the callback of the last setImage  this.update(), so that it doesn't update til all the images are loaded]
+>             if(j == numBalls - 1){
+1291,1293c1283
+<               if(!bal.explosive){
+<                 bal.setImage("robomb-pngs/robot-open-normal-"+par.ballRadius+".png", function(){thisView.update(mod)})
+<               }
+---
+>               ball.setImage("robomb-pngs/robot-open-normal-"+par.ballRadius+".png", function(){thisView.update(mod)})
+1296,1298c1286
+<               if(!bal.explosive){
+<               bal.setImage("robomb-pngs/robot-open-normal-"+par.ballRadius+".png")
+<             }
+---
+>               ball.setImage("robomb-pngs/robot-open-normal-"+par.ballRadius+".png")
+1300a1289
+> 
+1305a1295,1296
+>         curLevel.model.freeze()
+>         setTimeout(function(){curLevel.model.resetAllBallDesigns(); curLevel.model.unFreeze()}, initialFrameDuration)
+1307,1344d1297
+<         setTimeout(curLevel.model.resetAllBallDesigns, initialFrameDuration)
+<         setTimeout(function(){
+<           var secondOkButton =
+<                           {
+<                             imgUp: 'robomb-pngs/btn-okay-up.png',
+<                             imgDn: 'robomb-pngs/btn-okay-down.png',
+<                             onClick: function(){
+< 
+<                               curLevel.view.closeAlertBox(); curLevel.model.unFreeze(); curLevel.timer.resume()
+<                               document.addEventListener('wallFinished', function(event){
+<                                 if(neverMadeAWallYet){
+<                                   curLevel.view.showImgAtFor('robomb-pngs/yep-medium.png', event.x, event.y, 333);
+<                                   var correctAudio = document.getElementById('a-correct')
+<                                   correctAudio.load()
+<                                   correctAudio.play()
+<                                 }
+<                                 neverMadeAWallYet = false; curLevel.timer.run()/*resume the timer finally*/})
+<                             },
+<                             activateWhenEnterPressed: true
+<                           }
+< 
+<           var okButton = {
+<                             imgUp: 'robomb-pngs/btn-okay-up.png',
+<                             imgDn: 'robomb-pngs/btn-okay-down.png',
+<                             onClick: function(){
+<                               curLevel.view.closeAlertBox();
+<                               curLevel.view.showAlertBox("Force walls drawn through robots will not affect them while they're inside the force", [secondOkButton])
+<                             },
+<                             activateWhenEnterPressed: true
+<                           }
+<           curLevel.model.freeze()
+<           curLevel.timer.pause()
+<           curLevel.view.showAlertBox('Click and drag to draw force walls. Try to stop the bomb-carrying robots from hitting the real walls and detonating', [okButton])
+<           //listen for the wall being finished and notify the user 'good job'
+< 
+< 
+<         }, initialFrameDuration + 700
+<         )
+1407a1361
+>               if(par.ballRadius = 'smallest') {ctx.lineWidth = 2}
+1473,1474c1427,1429
+<         setTimeout(function(){var padding = 1
+<         ctx.clearRect(x-width/2-padding,y-height/2-padding,width+padding+1, height+padding+1)
+---
+>         setTimeout(function(){
+>           var padding = 1
+>           ctx.clearRect(x-width/2-padding,y-height/2-padding,width+padding+1, height+padding+1)
+1536,1543d1490
+<         curLevel.model.freeze()
+< 
+<         //set up the alert box:
+<         var okButton = {imgUp: 'robomb-pngs/btn-okay-up.png',
+<                         imgDn: 'robomb-pngs/btn-okay-down.png',
+<                         onClick: function(){curLevel.view.closeAlertBox(); curLevel.controller.beginDefusalMode(defusalTimeLimit)},
+<                         activateWhenEnterPressed: true}
+<         var text = ""
+1545c1492,1494
+<           text = "You've held out until the robots could be quarantined. +1 life. However, they are set to go off soon. You have 10 seconds to defuse them by clicking the right ones. You have one defusal kit per bomb, so don't waste any."
+---
+>           this.showTextOnBottom("You've held out until the robots could be quarantined. +1 life. However, they are set to go off soon. You have 10 seconds to defuse them by clicking the right ones. You have one defusal kit per bomb, so don't waste any.")
+>           curLevel.model.freeze()
+>           curLevel.controller.beginDefusalMode(defusalTimeLimit)
+1547c1496,1504
+<           //text = "One of the bomb carrying robots hit a wall! The bombs in all sabotaged robots have been activated, and you have ten seconds to defuse them. Click all the bomb-carrying bots to defuse them."
+---
+>           var text = "One of the bomb carrying robots hit a wall! The bombs in all sabotaged robots have been activated, and you have ten seconds to defuse them. Click all the bomb-carrying bots to defuse them."
+>           /*var okButton = {imgUp: 'robomb-pngs/btn-okay-up.png',
+>                           imgDn: 'robomb-pngs/btn-okay-down.png',
+>                           onClick: function(){curLevel.view.closeAlertBox(); curLevel.controller.beginDefusalMode(defusalTimeLimit)},
+>                           activateWhenEnterPressed: true}*/
+> 
+>           this.showTextOnBottom(text)
+>           curLevel.controller.beginDefusalMode(defusalTimeLimit)
+>           //this.showAlertBox(text, [okButton])
+1549d1505
+<         this.showAlertBox(text, [okButton])
+1614a1571
+> 
+1635d1591
+< 
+1644d1599
+< 
+1669c1624
+<               var time = timer.getTime() == null ? 0 : Math.round(timer.getTime()/1000)
+---
+>               var time = timer.getTime() == null ? 0: Math.round(timer.getTime()/1000)
+1711a1667
+> 
+1730,1737c1686
+<         var showTheInitialFrame = function(){
+<         var initialFrameDuration = 1300 //ms
+<         curLevel.timer.reset(levelDuration/1000, "green")
+<         curLevel.timer.start()
+<         curLevel.view.displayTimer(curLevel.timer)
+<         curLevel.view.showInitialFrame(model,initialFrameDuration) //show the frame where the exploding balls look different
+<         //now set what happens after the initial frame is over:
+<         setTimeout(function(){
+---
+>             showTheInitialFrame = function(){
+1738a1688
+>             var initialFrameDuration = 1300 //ms
+1741,1772c1691,1732
+<             curLevel.timer.unHide()
+<             //then start the first update
+<               //if(par.replayMode){
+<               //  replayModeUpdate(0);
+<               //} else{}
+<                 updateGame(0); //beginning time is 0
+<               //}
+< 
+<             //grab the timestamp via the event loop to know when this piece of code gets executed. Timestamps may be more reliable than the timer class here,
+<             //and they doesn't get reset unless the document gets reloaded, unlike timers. Hence, timestamps are used for collection of user obstacle
+<             //creation times. The folloing code will execute whether replay mode is happening or not, and will allow for precise logging
+<             //of wall creation time, relative to the moment when wall creation is enabled.
+<             var wallCreationEnabledEvent = new Event("wallCreationEnabled")
+<             document.addEventListener("wallCreationEnabled", function(event){timestampWallCreationEnabled/*this should be global (within the plugin though)*/ = event.timeStamp}, false)
+<             document.dispatchEvent(wallCreationEnabledEvent)
+<             /*//collect time difference between now:
+<             var theTime = Date.now()
+<             //and ...(to be continued later, in the par.replayMode == true part of the following if)
+< 
+<             //if it's in replay mode, load the first frame
+<             if(par.replayMode){
+<               //if it's in replay mode, create the correct points.
+<               var pts = par.replayModeParameters.createdPoints
+<               //iterate through the points
+<               for(var i = 0, len = pts.length; i < len; i++){
+<                 //create the point at the right time
+<                 var pt = pts[i]
+<                 //...(continued) now:
+<                 var theNewTime = Date.now()
+<                 var timeTilPointQueued = theNewTime-theTime //this was at most about 1ms on my laptop but may be significant on slower devices for more obstacles
+<                 addReplayObstaclePointAfterTime(pt, pt.timeCreated-timeTilPointQueued/*subtracting it compensates for miniscule time lost going through all points)
+<               }
+---
+>             curLevel.view.displayTimer(curLevel.timer)
+>             curLevel.view.showInitialFrame(model,initialFrameDuration) //show the frame where the exploding balls look different
+> 
+> 
+>           //now set what happens after the initial frame is over:
+>           setTimeout(function(){
+> 
+>               curLevel.timer.reset(levelDuration/1000, "green")
+>               curLevel.timer.start()
+>               curLevel.timer.unHide()
+>               //then start the first update
+>                 //if(par.replayMode){
+>                 //  replayModeUpdate(0);
+>                 //} else{}
+>                   updateGame(0); //beginning time is 0
+>                 //}
+> 
+>               //grab the timestamp via the event loop to know when this piece of code gets executed. Timestamps may be more reliable than the timer class here,
+>               //and they doesn't get reset unless the document gets reloaded, unlike timers. Hence, timestamps are used for collection of user obstacle
+>               //creation times. The folloing code will execute whether replay mode is happening or not, and will allow for precise logging
+>               //of wall creation time, relative to the moment when wall creation is enabled.
+>               var wallCreationEnabledEvent = new Event("wallCreationEnabled")
+>               document.addEventListener("wallCreationEnabled", function(event){timestampWallCreationEnabled/*this should be global (within the plugin though)*/ = event.timeStamp}, false)
+>               document.dispatchEvent(wallCreationEnabledEvent)
+>               /*//collect time difference between now:
+>               var theTime = Date.now()
+>               //and ...(to be continued later, in the par.replayMode == true part of the following if)
+> 
+>               //if it's in replay mode, load the first frame
+>               if(par.replayMode){
+>                 //if it's in replay mode, create the correct points.
+>                 var pts = par.replayModeParameters.createdPoints
+>                 //iterate through the points
+>                 for(var i = 0, len = pts.length; i < len; i++){
+>                   //create the point at the right time
+>                   var pt = pts[i]
+>                   //...(continued) now:
+>                   var theNewTime = Date.now()
+>                   var timeTilPointQueued = theNewTime-theTime //this was at most about 1ms on my laptop but may be significant on slower devices for more obstacles
+>                   addReplayObstaclePointAfterTime(pt, pt.timeCreated-timeTilPointQueued/*subtracting it compensates for miniscule time lost going through all points)
+>                 }
+> 
+1773a1734,1738
+>               } else { //if game isn't in replay mode*/
+>                 curLevel.controller.getWallsFromUser() //this adds an event listener to get drawn walls from user.
+>               /*}*/
+>           }, initialFrameDuration)
+>         }
+1775,1778d1739
+<             } else { //if game isn't in replay mode*/
+<               curLevel.controller.getWallsFromUser() //this adds an event listener to get drawn walls from user.
+<             /*}*/
+<         }, initialFrameDuration)}
+1779a1741
+>         //if an alert box should be shown:
+1782c1744
+<                         onClick: showTheInitialFrame,
+---
+>                         onClick: function(){showTheInitialFrame; curLevel.view.closeAlertBox()},
+1784d1745
+< 
+1786c1747
+<           showAlertBox("box", button)
+---
+>           curLevel.view.showAlertBox("We've added a little challenge to this level", [button])
+1789c1750
+<           showAlertBox("fuck", button)
+---
+>           curLevel.view.showAlertBox("Now the occluders are still there but invisible!", [button])
+1792c1753
+<           showAlertBox("git", button)
+---
+>           curLevel.view.showAlertBox("The robots can now teleport through the occluders!", [button])
+1794c1755
+<         if(!(par.notifyUserOfOccluders | par.notifyUserOfInvisOccluders | par.notifyUserOfImplodeExplodeMode)){showTheInitialFrame();}
+---
+>         if(!(par.notifyUserOfOccluders || par.notifyUserOfInvisOccluders || par.notifyUserOfImplodeExplodeMode)){showTheInitialFrame}
+1891c1852
+<               curLevel.view.showImgAtFor("robomb-pngs/yep-medium.png",pos[0], pos[1], 1000)
+---
+>               curLevel.view.showImgAtFor("robomb-pngs/yep-medium.png", pos[0], pos[1], 1000)
+1978c1939
+<           curLevel.view.showAlertBox("All the exploding robots detonated. Next Level?", buttons);
+---
+>             curLevel.view.showAlertBox("Level Passed! On to the next one?", buttons);
+1995c1956,1957
+<             curLevel.view.showAlertBox("Defusal Mode failed. Not all the guesses were correct. You wasted your kit on harmless robots. Poor robots. Go to next level?", buttons);            //alert("Incorrect guess. Level failed.")
+---
+>             curLevel.view.showAlertBox("Defusal Mode failed. Not all the guesses were correct. You wasted your kit on harmless robots. Poor robots. Go to next level?", buttons);
+>             //alert("Incorrect guess. Level failed.")
+2006a1969,1970
+>         data.numLives = curLevel.model.lives
+>         //curLevel.beginGame()
+2102d2065
+< 
+2149a2113
+> 
+2176c2140,2141
+<           model.incrementLives(function(){curLevel.view.showLives(curLevel.model.lives);curLevel.controller.defusalMode({deflectionSuccessful: true})})        }
+---
+>           model.incrementLives(function(){curLevel.view.showLives(curLevel.model.lives);curLevel.controller.defusalMode({deflectionSuccessful: true})})
+>         }
+2210d2174
+<       //console.log([currentSavedFrameIndex, currentTime])
