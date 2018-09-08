@@ -79,8 +79,6 @@ var tutorial = {
   duration: 15000,
   ballSpeed: 0.07,
   ballRadius: 'large',
-  numRegularBalls: 1,
-  numExplodingBalls: 1,
   maxUserDefinedObstacles: 1,
   maxUserDefinedObstacleSegments: 3,
   maxDistanceBetweenObstaclePixels:300,
@@ -97,7 +95,7 @@ var tutorial = {
   forceFieldStrength: 0.001,
   occluderRectangles:[{x: generateRandomOccluderXCoordinate(/*put minimum occluder distance from wall here*/100), y: 0, width: 45, height: gameHeight},{x: generateRandomOccluderXCoordinate(190), y: 0, width: 45, height: gameHeight}],
   lives: true, //toggle whether the player has a fixed number of lives and the related gameplay aspects
-  numLives: 2,
+  numLives: 5,
   maxLives: 6,
   gameWidth: gameWidth,
   gameHeight: gameHeight,
@@ -109,7 +107,7 @@ var level1 = {
   type:"mot-game",
   stimulus:"<p>test</p>",
   duration: 15000,
-  ballSpeed: jsPsych.timelineVariable("ballSpeed", true),
+  ballSpeed: 0.07,//jsPsych.timelineVariable("ballSpeed", true),
   ballRadius: randomBallRadius(),
   numRegularBalls: 4,
   numExplodingBalls: 1,
@@ -400,16 +398,22 @@ exitWhenOutOfLives: true,
   gameWidth: 960,
   gameHeight: 600
 }
-timeline.push(level1);
+//timeline.push(level1);
+loop_counter = 0
 var loop_node = {
   timeline: [{
     type:"mot-game",
     stimulus:"<p>test</p>",
     duration: 15000,
-    ballSpeed: jsPsych.timelineVariable("ballSpeed", true),
+    ballSpeed: 0.07,//jsPsych.timelineVariable("ballSpeed", true),
     ballRadius: randomBallRadius(),
-    numRegularBalls: 4,
-    numExplodingBalls: 1,
+    numRegularBalls: function(){
+      console.log(loop_counter)
+      return 4
+    },
+    numExplodingBalls: function(){
+      return 3
+    },
     maxUserDefinedObstacles: 1,
     maxUserDefinedObstacleSegments: 3,
     maxDistanceBetweenObstaclePixels:300,
@@ -417,7 +421,7 @@ var loop_node = {
     userObstacleThickness: 3,
     vertWallThickness:48,  //16px thick border walls
     horiWallThickness:16,
-    occludersEnabled: true,
+    occludersEnabled: false,
     notifyUserOfOccluders: false,
     invisibleOccluders: true,
     notifyUserOfInvisOccluders: false,
@@ -437,150 +441,11 @@ var loop_node = {
     gameWidth: 960,
     gameHeight: 600
   }],
-  loop_function: function(){return true}
+  //timeline_variables: [{ballSpeed: 0.05*Math.random()*0.02}],
+  loop_function: function(){alert('a');loop_counter++; return jsPsych.data.get().last(1).values()[0].numLives > 0}
 }
 timeline.push(loop_node)
 
-var level2 = {
-  type:"mot-game",
-  stimulus:"<p>test</p>",
-  duration: 15000,
-  ballSpeed: 0.07,
-  ballRadius: 'large',
-  numRegularBalls: 3,
-  numExplodingBalls: 2,
-  maxUserDefinedObstacles: 1,
-  maxUserDefinedObstacleSegments: 3,
-  maxDistanceBetweenObstaclePixels:300,
-  minDistanceBetweenObstaclePixels: 66,
-  userObstacleThickness: 3,
-  wallThickness:16,  //16px thick border walls
-  occludersEnabled: true,
-  invisibleOccluders: false,
-  implodeExplodeMode: false,
-  stochasticRobotPaths: false,
-  parametersForStochasticRobotPaths: {inertia: 0.95, springConstant: 0, accelerationStandardDeviation: 0.01, velocityMultipler: 1.030},
-  forceFields: false,
-  forceFieldStrength: 0.0006,
-  occluderRectangles:[{x: generateRandomOccluderXCoordinate(/*put minimum occluder distance from wall here*/100), y: 0, width: 45, height: gameHeight},{x: generateRandomOccluderXCoordinate(190), y: 0, width: 45, height: gameHeight}],
-  lives: true, //toggle whether the player has a fixed number of lives and the related gameplay aspects
-  numLives: 5,
-  gameWidth: gameWidth,
-  gameHeight: gameHeight,
-  savedModel: [],
-exitWhenOutOfLives: true
-}
-
-timeline.push(level2);
-
-var level3 = {
-  type:"mot-game",
-  stimulus:"<p>test</p>",
-  duration: 15000,
-  ballSpeed: 0.07,
-  ballRadius: 20,
-  numRegularBalls: 4,
-  numExplodingBalls: 4,
-  maxUserDefinedObstacles: 1,
-  maxUserDefinedObstacleSegments: 3,
-  maxDistanceBetweenObstaclePixels:300,
-  minDistanceBetweenObstaclePixels: 66,
-  userObstacleThickness: 3,
-  wallThickness:16,  //16px thick border walls
-  occludersEnabled: true,
-  invisibleOccluders: true,
-  implodeExplodeMode: false,
-  stochasticRobotPaths: false,
-  parametersForStochasticRobotPaths: {inertia: 0.95, springConstant: 0, accelerationStandardDeviation: 0.01, velocityMultipler: 1.030},
-  forceFields: false,
-  forceFieldStrength: 0.0006,
-  occluderRectangles:[{x: generateRandomOccluderXCoordinate(/*put minimum occluder distance from wall here*/100), y: 0, width: 45, height: gameHeight},{x: generateRandomOccluderXCoordinate(190), y: 0, width: 45, height: gameHeight}],
-  lives: true, //toggle whether the player has a fixed number of lives and the related gameplay aspects
-  numLives: 5,
-  gameWidth: gameWidth,
-  gameHeight: gameHeight,
-  savedModel: [],
-exitWhenOutOfLives: true
-}
-
-timeline.push(level3);
-
-var level4 = {
-  type:"mot-game",
-  stimulus:"<p>test</p>",
-  duration: 15000,
-  ballSpeed: 0.07,
-  ballRadius: 20,
-  numRegularBalls: 2,
-  numExplodingBalls: 4,
-  maxUserDefinedObstacles: 1,
-  maxUserDefinedObstacleSegments: 3,
-  maxDistanceBetweenObstaclePixels:300,
-  minDistanceBetweenObstaclePixels: 66,
-  userObstacleThickness: 3,
-  wallThickness:16,  //16px thick border walls
-  occludersEnabled: true,
-  invisibleOccluders: true,
-  implodeExplodeMode: true,
-  stochasticRobotPaths: false,
-  parametersForStochasticRobotPaths: {inertia: 0.95, springConstant: 0, accelerationStandardDeviation: 0.01, velocityMultipler: 1.030},
-  forceFields: true,
-  forceFieldStrength: 0.0006,
-  occluderRectangles:[{x: generateRandomOccluderXCoordinate(/*put minimum occluder distance from wall here*/100), y: 0, width: 45, height: gameHeight},{x: generateRandomOccluderXCoordinate(190), y: 0, width: 45, height: gameHeight}],
-  lives: true, //toggle whether the player has a fixed number of lives and the related gameplay aspects
-  numLives: 5,
-  gameWidth: gameWidth,
-  gameHeight: gameHeight,
-  savedModel: [],
-exitWhenOutOfLives: true
-}
-
-timeline.push(level4);
-/* CODE FROM THE JSPSYCH TUTORIAL:
-var blue_trial = {
-  type:"image-keyboard-response",
-  stimulus: "img/blue.png",
-  choices: ["f","j"]
-}
-
-var orange_trial = {
-  type: "image-keyboard-response",
-  stimulus: "img/orange.png",
-  choices: ["f", "j"]
-}
-
-var test_stimuli = [
-  {stimulus: "img/blue.png", data: {test_part: "test", correct_response: "f"}},
-  {stimulus: "img/orange.png", data: {test_part: "test", correct_response:"j"}}]
-timeline.push(blue_trial,orange_trial);
-
-var fixation = {
-  type: "html-keyboard-response",
-  stimulus: "<div style='font-size:60px;'>+</div>",
-  choices: jsPsych.NO_KEYS,
-  trial_duration: jsPsych.randomization.sampleWithoutReplacement(
-    [250, 500, 750, 1000, 1250, 1500, 1750, 2000], 1)[0],
-  data: {test_part: "fixation"}
-}
-
-var test = {
-  type:"image-keyboard-response",
-  stimulus:jsPsych.timelineVariable("stimulus"),
-  choices:["f","j"],
-  data:jsPsych.timelineVariable("data"),
-  on_finish: function(data){
-    data.correct = data.key_press == jsPsych.pluginAPI.convertKeyCharacterToKeyCode(data.correct_response);
-  }
-}
-
-var test_procedure = {
-  timeline:[fixation, test],
-  timeline_variables: test_stimuli,
-  randomize_order: true,
-  repetitions: 5
-}
-timeline.push(test_procedure);
-*/
 jsPsych.init({
   timeline: timeline,
   on_finish: function(){

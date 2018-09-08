@@ -4,6 +4,10 @@ jsPsych.plugins["mot-game"] = (function() {
   plugin.info = {
     name: 'mot-game',
     parameters: {
+      ballSpeed: {
+        type: jsPsych.plugins.parameterType.FUNCTION,
+        defualt: 0.04
+      }
     }
   }
 
@@ -162,7 +166,7 @@ jsPsych.plugins["mot-game"] = (function() {
                       imgUp: 'robomb-pngs/btn-okay-up.png',
                       imgDn: 'robomb-pngs/btn-okay-down.png',
                       onClick: curLevel.view.closeAlertBox,
-                      activateWhenEnterPressed: true
+                      activateOnEnterOrSpace: true
                     }
     curLevel.view.showAlertBox('Test', [button])*/
     function model(numNormalBalls, numExplodingBalls, speed) {
@@ -813,11 +817,12 @@ jsPsych.plugins["mot-game"] = (function() {
         this.colliding = true
         if(!this.collisionsEnabled){
         } else if(collisionType == "wall" && this.explosive){
+          curLevel.model.removeBall(this)
           //if it's in lives mode, have it decrement a life.
           if(par.lives){
             curLevel.model.decrementLives(/*callback:*/function(){curLevel.view.showLives(curLevel.model.lives)})
           }
-          this.onCollide(collisionType)
+          curLevel.controller.guessesRemaining-- //decrement number of guesses they have
           //curLevel.defusalMode(); //COMMENT THIS TO DISABLE DEFUSAL MODE
         } else if(collisionType == "userObstacle"){
 
@@ -1185,6 +1190,8 @@ jsPsych.plugins["mot-game"] = (function() {
           }
         }*/
 
+        //make sure they can't draw pictures outside of the walls:
+
         if(validPosition){
             this.pixels.push(pos)
             data.createdPoints.push(
@@ -1452,15 +1459,18 @@ jsPsych.plugins["mot-game"] = (function() {
       this.showLives = function(lives){
         //lives is just a number saying how many lives there are, but it could easily be changed to an array with unique lives
         var img = new Image();
-        img.src = "life.jpg"
+        img.src = "robomb-pngs/life.png"
         var width = null
         img.onload = function(){
           //clear the previous rect of lives:
           var ctx = document.getElementById("livesCanvas").getContext("2d")
-          var topLifeCoordinate = 10
-          ctx.clearRect(w/2-img.width*(lives+1)/2, topLifeCoordinate, (lives+1)*img.width, img.height)
+          var topLifeCoordinate = 5
+          var leftLifeCoordinate = 12
+          var padding = 3//padding between life icons
+          ctx.clearRect(topLifeCoordinate, leftLifeCoordinate, (img.width+padding)*lives, img.height)
           for(var j = 0; j < lives; j++){
-            ctx.drawImage(img, w/2-img.width*(lives/2-j), topLifeCoordinate)
+            //ctx.drawImage(img, w/2-img.width*(lives/2-j), topLifeCoordinate)
+            ctx.drawImage(img,(img.width+padding)*j+leftLifeCoordinate,topLifeCoordinate)
           }
         }
       }
@@ -1507,7 +1517,7 @@ jsPsych.plugins["mot-game"] = (function() {
           /*var okButton = {imgUp: 'robomb-pngs/btn-okay-up.png',
                           imgDn: 'robomb-pngs/btn-okay-down.png',
                           onClick: function(){curLevel.view.closeAlertBox(); curLevel.controller.beginDefusalMode(defusalTimeLimit)},
-                          activateWhenEnterPressed: true}*/
+                          activateOnEnterOrSpace: true}*/
 
           this.showTextOnBottom(text)
           curLevel.controller.beginDefusalMode(defusalTimeLimit)
@@ -1573,8 +1583,7 @@ jsPsych.plugins["mot-game"] = (function() {
           }
           buttonDiv.appendChild(butt)
 
-          if(button.activateWhenEnterPressed){document.addEventListener('keypress', function(e){if(e.keyCode == 13){butt.onclick()}})}
-        }
+          if(button.activateOnEnterOrSpace){document.addEventListener('keypress', function(e){if(e.keyCode == 13 || e.keyCode == 32){butt.onclick()}})}        }
         messageDiv.style.display = 'block'
       }
 
@@ -1752,7 +1761,7 @@ jsPsych.plugins["mot-game"] = (function() {
         var button =    {imgUp: 'robomb-pngs/btn-okay-up.png',
                         imgDn: 'robomb-pngs/btn-okay-down.png',
                         onClick: function(){showTheInitialFrame(); curLevel.view.closeAlertBox()},
-                        activateWhenEnterPressed: true}
+                        activateOnEnterOrSpace: true}
         if(par.notifyUserOfOccluders){
           curLevel.view.showAlertBox("We've added a little challenge to this level", [button])
         }
@@ -1924,7 +1933,7 @@ jsPsych.plugins["mot-game"] = (function() {
                             jsPsych.finishTrial(data)
                             //figure out a line here to quit the game and return to title screen
                           },
-                          activateWhenEnterPressed: true
+                          activateOnEnterOrSpace: true
                         },*/
                         {
                           imgUp: 'robomb-pngs/btn-play-up.png',
@@ -1937,7 +1946,7 @@ jsPsych.plugins["mot-game"] = (function() {
                             curLevel.controller.gameOver = true
                             jsPsych.finishTrial(data)
                           },
-                          activateWhenEnterPressed: true
+                          activateOnEnterOrSpace: true
                         }]
 
         //maybe someday change to the state pattern

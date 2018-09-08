@@ -9,6 +9,8 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
 
   plugin.trial = function(display_element, trial) {
     var par = trial
+    var numRegBalls = 1
+    var numExBalls = 0 ///hard coding these since it's the tutorial and will need a specific number of reg/exploding robots. RObots are called balls in this game because they were originally balls before more game design
     var w=par.gameWidth, h=par.gameHeight;
     display_element.innerHTML =
     //"<img src='robomb-pngs/top-bar.png' style='position: absolute; left: 50%; margin-right:50%; transform: translate(-50%, 0); vertical-align: middle; width: " + w + "'><br /><br /><br /><br />" +
@@ -31,7 +33,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
     "<canvas id='livesCanvas' style='position:absolute; left: 0; top: 0; z-index:3' height='" + h + "' width = '" + w + "'></canvas>" +
     "<div id='messageBox' style='width: 66%;top:50%; margin-left:50%; transform: translate(-50%, -50%); -moz-transform: translate(-50%, -50%); -webkit-transform: translate(-50%, -50%); -ms-transform: translate(-50%, -50%); -o-transform: translate(-50%, -50%); display:none; animation-name: messagePopUpAnimation; animation-duration: 4s; position:absolute; z-index:500; overflow: auto; user-select:none;'><img id='messageImg' src='robomb-pngs/alert-box.png' style='display:block; width:100%; margin: auto; pointer-events:none; user-select:none'></img><div id='msgText' style='position:absolute; width: 95%; top: 50%; margin-left:50%; transform: translate(-50%,-50%); -moz-transform: translate(-50%,-50%); -webkit-transform: translate(-50%,-50%); -ms-transform: translate(-50%,-50%); -o-transform: translate(-50%,-50%); font:28px Overpass, sans-serif; color: white; text-align: center; display:block'></div><div id='buttonDiv'></div>" +
     "</div>" +
-    "<div id='bottomScreenText' style='display:none; animation-name: scrollIt; animation-duration: 12s; position:absolute; top: 87%; width: 80%; margin-left: 10%; z-index:500; overflow: auto'><p id='bottomText' style='color: #C6FDF9; font: 14px Overpass, sans serif'>You've held out until the robots could be quarantined. +1 life. However, they are set to go off soon. You have 10 seconds to defuse them by clicking the right ones. \nYou have one defusal kit per bomb, so don't waste any</div>'" +
+    "<div id='bottomScreenText' style='display:none; animation-name: scrollIt; animation-duration: 12s; position:relative; top: -10%; width: 80%; margin-left: 10%; z-index:500; overflow: auto'><br /><div id='bottomText' style='positon: absolute; margin-left: 50%; color: #C6FDF9; font: 14px Overpass, sans serif'>You've held out until the robots could be quarantined. +1 life. However, they are set to go off soon. You have 10 seconds to defuse them by clicking the right ones. \nYou have one defusal kit per bomb, so don't waste any</div>'" +
     "</div>" +
     "<audio id='a-wallCreate' src='sounds/wall-create.wav'></audio>" + //wall creation sound. from: https://freesound.org/people/xixishi/sounds/265210/
     "<audio id='a-collisionBwop' src='sounds/collision-bwop.mp3'></audio>" + //https://freesound.org/people/willy_ineedthatapp_com/sounds/167338/
@@ -45,7 +47,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
     //font:
     //"<link rel='stylesheet' href='https://fonts.googleapis.com/css?family=Overpass+Mono:300,400,600,700|Overpass:100,100i,200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i&subset=latin-ext'> </link>" +
     //message pop-up animation:
-    "<style>@keyframes fadeIn{from {opacity:0}; to {opacity:0.5}}</style>  <style>@keyframes scrollIt{from {margin-left:0px}; to {margin-left:330px}}</style> <style>@import url('https://fonts.googleapis.com/css?family=Overpass');</style>"
+    "<style>@keyframes fadeIn{from {opacity:0}; to {opacity:0.5}}</style>  <style>@keyframes scrollIt{from {margin-left:-30%}; to {margin-left:30%}}</style> <style>@import url('https://fonts.googleapis.com/css?family=Overpass');</style>"
 
     document.body.style.backgroundColor = "black"
     document.body.style.userSelect = "none"
@@ -60,8 +62,8 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
       correctGuesses: null,
       incorrectGuesses: null,
       numWallsMade: 0,/*should it register each click?*/
-      numRegBalls: par.numRegularBalls, //redundant
-      numExplodingBalls: par.numExplodingBalls, //redundant with the following but makes life easier later for data analysis
+      numRegBalls: numRegBalls, //redundant
+      numExplodingBalls: numExBalls, //redundant with the following but makes life easier later for data analysis
       ballInitialConditions: [], //an array of objects representing balls and their respective initial conditions
       ballSpeed: par.ballSpeed,
       maxObstacles: par.maxUserDefinedObstacles,
@@ -151,7 +153,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
   }
     function theLevel() { //now levels are based off parameters passed to jsPsych
       var levelDuration = 15000;
-      var m = new model(par.numRegularBalls,par.numExplodingBalls,/*0.1*/par.ballSpeed)
+      var m = new model(numRegBalls,numExBalls,/*0.1*/par.ballSpeed)
       var v = new view(model)
       var c = new controller(m, v, levelDuration)
       return new level(m, v, c, levelDuration)
@@ -161,7 +163,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
                       imgUp: 'robomb-pngs/btn-okay-up.png',
                       imgDn: 'robomb-pngs/btn-okay-down.png',
                       onClick: curLevel.view.closeAlertBox,
-                      activateWhenEnterPressed: true
+                      activateOnEnterOrSpace: true
                     }
     curLevel.view.showAlertBox('test', [button])*/
     function model(numNormalBalls, numExplodingBalls, speed) {
@@ -1261,67 +1263,30 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
       }
 
       this.showInitialFrame = function(mod, initialFrameDuration){
-        //just call view's update function once. However, the exploding balls must be displayed differently:
-        //bomb detected image over every exploding ball:
-        var bdimg = new Image()
-        bdimg.src = 'robomb-pngs/bomb-detected.png'
-        //set the width and height:
-        var width = 0, height = 0
-        bdimg.onload = function(){
-          width = bdimg.width, height = bdimg.height
-        }
+        //first, show pop-up explaining the bomb detected screen:
+        curLevel.model.freeze()
+        curLevel.timer.pause()
+        curLevel.timer.hide()
+        //curLevel.timer.hide()
+        var ok =
+                        {
+                          imgUp: 'robomb-pngs/btn-okay-up.png',
+                          imgDn: 'robomb-pngs/btn-okay-down.png',
+                          onClick: function(){
+                            curLevel.view.closeAlertBox(); curLevel.model.unFreeze(); practiceWallMaking()
+                          },
+                          activateOnEnterOrSpace: true
+                        }
 
-        for(var j = 0, balls = mod.explodingBalls, numBalls = balls.length; j < numBalls; j++){
-          var ball = balls[j];
-          //make the callback of the last setImage  this.update(), so that it doesn't update til all the images are loaded
-          if(j == numBalls - 1){
-            this.showImgAtFor('robomb-pngs/bomb-detected.png', ball.x, ball.y, initialFrameDuration)
-            var thisView = this
-            ball.setImage("robomb-pngs/robot-open-bomb-"+par.ballRadius+".png", function(){thisView.update(mod)})
-            //now, show the bomb detected text:
-             /*var ctx = document.getElementById('overlay').getContext('2d')
-             ctx.font = '30px "Overpass"'
-             ctx.fillStyle = '#C6FDF9'
-             ctx.textAlign = 'center'
-             ctx.fillText('BOMBS DETECTED', w/2, 7*h/8)
-             setTimeout(function(){ctx.clearRect(0,0,w,h)}, initialFrameDuration)*/
-             curLevel.view.showImgAtFor('robomb-pngs/bombb.png', w/2, 7*h/8, initialFrameDuration)
-          } else {
-            this.showImgAtFor('robomb-pngs/bomb-detected.png', ball.x, ball.y, initialFrameDuration)
-            ball.setImage("robomb-pngs/robot-open-bomb-"+par.ballRadius+".png")
-          }
-        }
-          //same but for regular robots:
-          for(var k = 0, balls = mod.balls, numBalls = balls.length; k < numBalls; k++){
-            var bal = balls[k];
-            //make the callback of the last setImage  this.update(), so that it doesn't update til all the images are loaded
-            if(k == numBalls - 1){
-              var thisView = this
-              if(!bal.explosive){
-                bal.setImage("robomb-pngs/robot-open-normal-"+par.ballRadius+".png", function(){thisView.update(mod)})
-              }
-
-            } else {
-              if(!bal.explosive){
-              bal.setImage("robomb-pngs/robot-open-normal-"+par.ballRadius+".png")
-            }
-            }
-
-        //this.update(mod)
-        this.showLives(mod.lives)
-        //set timeout for what happens after the initial frame is over:
-
-        }
-
-        setTimeout(curLevel.model.resetAllBallDesigns, initialFrameDuration)
-        setTimeout(function(){
+        curLevel.view.showAlertBox("Welcome to the tutorial. Let's practice a skill that will be useful: making walls", [ok])
+        var practiceWallMaking = function(){
           var secondOkButton =
                           {
                             imgUp: 'robomb-pngs/btn-okay-up.png',
                             imgDn: 'robomb-pngs/btn-okay-down.png',
                             onClick: function(){
 
-                              curLevel.view.closeAlertBox(); curLevel.model.unFreeze(); curLevel.timer.resume()
+                              curLevel.view.closeAlertBox(); curLevel.model.unFreeze();
                               document.addEventListener('wallFinished', function(event){
                                 if(neverMadeAWallYet){
                                   curLevel.view.showImgAtFor('robomb-pngs/yep-medium.png', event.x, event.y, 333);
@@ -1329,9 +1294,9 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
                                   correctAudio.load()
                                   correctAudio.play()
                                 }
-                                neverMadeAWallYet = false; curLevel.timer.run()/*resume the timer finally*/})
+                                neverMadeAWallYet = false;})
                             },
-                            activateWhenEnterPressed: true
+                            activateOnEnterOrSpace: true
                           }
 
           var okButton = {
@@ -1339,21 +1304,112 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
                             imgDn: 'robomb-pngs/btn-okay-down.png',
                             onClick: function(){
                               curLevel.view.closeAlertBox();
-                              curLevel.view.showAlertBox("Force walls drawn through robots will not affect them while they're inside the force", [secondOkButton])
+                              curLevel.view.showAlertBox("Force walls drawn through robots will not affect them.", [secondOkButton])
                             },
-                            activateWhenEnterPressed: true
+                            activateOnEnterOrSpace: true
                           }
-          curLevel.model.freeze()
-          curLevel.timer.pause()
-          curLevel.view.showAlertBox('Click and drag to draw force walls. Try to stop the bomb-carrying robots from hitting the real walls and detonating', [okButton])
-          //listen for the wall being finished and notify the user 'good job'
+          curLevel.view.showAlertBox('Welcome to the tutorial. Click and drag to draw force walls. Only one wall can be on the screen at a time.', [okButton])
+
+          //go on indefinitely by resetting the timer every so often (3000 is just a safe value of seconds before it runs out, when it's reset)
+          var intrvl = setInterval(function(){curLevel.timer.reset(par.duration/1000, "green");}, curLevel.timer.getTimeTilCountdownEnd()-3000)
+          setTimeout(function(){
+            document.addEventListener('keypress', function(e){
+              if(e.key == " "){notifyOfExplodingBalls()}
+            });
+            curLevel.view.showTextOnBottom("Press the space key when ready")
+          }, 4000)
+
+        }
+        hasNotified = false
+        var notifyOfExplodingBalls = function(){
+          if(!hasNotified){
+          hasNotified = true
+
+          var ok2 = {
+            imgUp: 'robomb-pngs/btn-okay-up.png',
+            imgDn: 'robomb-pngs/btn-okay-down.png',
+            onClick: function(){
+              data.numLives = curLevel.model.lives
+              curLevel.controller.gameOver = true
+              jsPsych.finishTrial(data)
+            },
+            activateOnEnterOrSpace: true
+          }
+          var ok =
+                          {
+                            imgUp: 'robomb-pngs/btn-okay-up.png',
+                            imgDn: 'robomb-pngs/btn-okay-down.png',
+                            onClick: function(){
+                              curLevel.view.showAlertBox("Don't let the bomb-carrying robots hit the walls no matter what!", [ok2])
+                            },
+                            activateOnEnterOrSpace: true
+                          }
+          var message = document.createElement('div')
+          message.innerHTML = "Some robots will contain bombs!<br />"
+          image = new Image()
+          image.src = 'robomb-pngs/robot-open-bomb-large.png'
+          message.append(image)
+          message.innerHTML+="<br />You will see the bombs when the saboteurs plant them but once they are planted, the robots immediately close their doors."
+          curLevel.view.showAlertBox(message, [ok])
+        }}
+        //bomb detected image over every exploding ball:
+        var bombDetectedScreen = function(){
+          var bdimg = new Image()
+          bdimg.src = 'robomb-pngs/bomb-detected.png'
+          //set the width and height:
+          var width = 0, height = 0
+          bdimg.onload = function(){
+            width = bdimg.width, height = bdimg.height
+          }
+
+          for(var j = 0, balls = mod.explodingBalls, numBalls = balls.length; j < numBalls; j++){
+            var ball = balls[j];
+            //make the callback of the last setImage  this.update(), so that it doesn't update til all the images are loaded
+            if(j == numBalls - 1){
+              curLevel.view.showImgAtFor('robomb-pngs/bomb-detected.png', ball.x, ball.y, initialFrameDuration)
+              var thisView = this
+              ball.setImage("robomb-pngs/robot-open-bomb-"+par.ballRadius+".png", function(){thisView.update(mod)})
+              //now, show the bomb detected text:
+               /*var ctx = document.getElementById('overlay').getContext('2d')
+               ctx.font = '30px "Overpass"'
+               ctx.fillStyle = '#C6FDF9'
+               ctx.textAlign = 'center'
+               ctx.fillText('BOMBS DETECTED', w/2, 7*h/8)
+               setTimeout(function(){ctx.clearRect(0,0,w,h)}, initialFrameDuration)*/
+               curLevel.view.showImgAtFor('robomb-pngs/bombb.png', w/2, 7*h/8, initialFrameDuration)
+            } else {
+              curLevel.view.showImgAtFor('robomb-pngs/bomb-detected.png', ball.x, ball.y, initialFrameDuration)
+              ball.setImage("robomb-pngs/robot-open-bomb-"+par.ballRadius+".png")
+            }
+          }
+            //same but for regular robots:
+            for(var k = 0, balls = mod.balls, numBalls = balls.length; k < numBalls; k++){
+              var bal = balls[k];
+              //make the callback of the last setImage  this.update(), so that it doesn't update til all the images are loaded
+              if(k == numBalls - 1){
+                if(!bal.explosive){
+                  bal.setImage("robomb-pngs/robot-open-normal-"+par.ballRadius+".png", function(){curLevel.view.update(mod)})
+                }
+
+              } else {
+                if(!bal.explosive){
+                bal.setImage("robomb-pngs/robot-open-normal-"+par.ballRadius+".png")
+              }
+              }
+
+          //this.update(mod)
+          curLevel.view.showLives(mod.lives)
+          //set timeout for what happens after the initial frame is over:
+
+          }
+
+          setTimeout(curLevel.model.resetAllBallDesigns, initialFrameDuration)
 
 
-        }, initialFrameDuration + 700
-        )
-        //show the occluder images:
-        if(par.occludersEnabled){
-          this.showOccluders(mod.getOccluderRects());
+          //show the occluder images:
+          if(par.occludersEnabled){
+            this.showOccluders(mod.getOccluderRects());
+          }
         }
       }
 
@@ -1441,8 +1497,6 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
           //this.showWalls(par.wallThickness)
           this.showObstacles(mod.userObstacles)
 
-
-
           //show the points the showPoint() added to this.pointsToShow:
           for(var j = 0, pix = this.pointsToShow, numPix = pix.length; j<numPix; j++){
             var x = pix[j][0]
@@ -1502,12 +1556,16 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
         var width = null
         img.onload = function(){
           //clear the previous rect of lives:
-          var ctx = document.getElementById("livesCanvas").getContext("2d")
-          var topLifeCoordinate = 10
-          ctx.clearRect(w/2-img.width*(lives+1)/2, topLifeCoordinate, (lives+1)*img.width, img.height)
+          var lifectx = document.getElementById("livesCanvas").getContext("2d")
+          var topLifeCoordinate = 5
+          var leftLifeCoordinate = 12
+          var padding = 3//padding between life icons
+          lifectx.clearRect(0,0,500,500)//topLifeCoordinate, leftLifeCoordinate, (img.width+padding)*lives, img.height)
+          //ctx.fillStyle = '#'+(Math.random()*0xFFFFFF<<0).toString(16);
+          //ctx.fill()
           for(var j = 0; j < lives; j++){
             //ctx.drawImage(img, w/2-img.width*(lives/2-j), topLifeCoordinate)
-            ctx.drawImage(img,img.width*j,0)
+            lifectx.drawImage(img,(img.width+padding)*j+leftLifeCoordinate,topLifeCoordinate)
           }
         }
       }
@@ -1551,7 +1609,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
         var okButton = {imgUp: 'robomb-pngs/btn-okay-up.png',
                         imgDn: 'robomb-pngs/btn-okay-down.png',
                         onClick: function(){curLevel.view.closeAlertBox(); curLevel.controller.beginDefusalMode(defusalTimeLimit); curLevel.model.freeze()},
-                        activateWhenEnterPressed: true}
+                        activateOnEnterOrSpace: true}
         var text = ""
         if(args !== undefined && args.deflectionSuccessful){
           text = "You've held out until the robots could be quarantined. +1 life. However, they are set to go off soon. You have 10 seconds to defuse them by clicking the right ones. You have one defusal kit per bomb, so don't waste any."
@@ -1572,8 +1630,8 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
         //var fontsize = textDiv.style.fontSize//store the current font size in case it changed
 
         //if(messageTxt.length > 200){textDiv.style.fontSize = messageTxt.length/10 + 'px';}//handle overflow text. the formula might need to be changed
-
-        textDiv.innerHTML = messageTxt
+        textDiv.innerHTML = ''
+        textDiv.append(messageTxt)
 
         //adjust image width and height to fit the text:
         messImgEl.width = textDiv.width + 10 + 'px'
@@ -1619,7 +1677,12 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
           }
           buttonDiv.appendChild(butt)
 
-          if(button.activateWhenEnterPressed){document.addEventListener('keypress', function(e){if(e.keyCode == 13){butt.onclick()}})}
+          if(button.activateOnEnterOrSpace){
+            document.addEventListener('keypress', function(e){if(e.keyCode == 13 || e.key == " "){
+              document.removeEventListener('keypress', arguments.callee)
+              butt.onclick()
+            }
+            })}
         }
         messageDiv.style.display = 'block'
       }
@@ -1632,6 +1695,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
 
 
       this.closeAlertBox = function(){
+        console.log("cl")
         var messageDiv = document.getElementById('messageBox')
         messageDiv.style.display = 'none'
       }
@@ -1750,7 +1814,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
 
             curLevel.timer.reset(levelDuration/1000, "green")
             curLevel.timer.start()
-            curLevel.timer.unHide()
+            //curLevel.timer.unHide()
             //then start the first update
               //if(par.replayMode){
               //  replayModeUpdate(0);
@@ -1792,7 +1856,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
         var button =    {imgUp: 'robomb-pngs/btn-okay-up.png',
                         imgDn: 'robomb-pngs/btn-okay-down.png',
                         onClick: showTheInitialFrame,
-                        activateWhenEnterPressed: true}
+                        activateOnEnterOrSpace: true}
 
         if(par.notifyUserOfOccluders){
           showAlertBox("box", button)
@@ -1965,7 +2029,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
                             jsPsych.finishTrial(data)
                             //figure out a line here to quit the game and return to title screen
                           },
-                          activateWhenEnterPressed: true
+                          activateOnEnterOrSpace: true
                         },*/
                         {
                           imgUp: 'robomb-pngs/btn-play-up.png',
@@ -1978,7 +2042,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
                             curLevel.controller.gameOver = true
                             jsPsych.finishTrial(data)
                           },
-                          activateWhenEnterPressed: true
+                          activateOnEnterOrSpace: true
                         }]
 
         //maybe someday change to the state pattern
@@ -2053,7 +2117,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
 
     //game timer. can be reset, told to count down, up, set coundtown time.
     function timer(){
-      this.hidden = false, //toggle whether it's displayed
+      this.hidden = true, //toggle whether it's displayed
       this.hide = function() {this.hidden = true},
       this.unHide = function() {this.hidden = false}
       this.paused = true
