@@ -16,6 +16,8 @@
 </body>
 <!--<audio loop id='a-music' src = 'sounds/music.mp3'></audio>-->
 <script>
+var timeStarted = new Date().valueOf()
+var gameDuration = 15*60*1000
 var gameWidth = 960, gameHeight = 600
 var timeline = []
 var gameMusic = /*document.getElementById('a-music')*/ new Audio('sounds/music.mp3')
@@ -448,11 +450,19 @@ var loop_node = {
 
   loop_function: function(){
     if(jsPsych.data.get().last(1).values()[0].numLives > 0){
-      loop_counter++
+      loop_counter++ //increment level number. loop counter is basically level number but is 0 for level 1, so level 1 is when loop_counter == 0
     } else {
-      loop_counter = 0
+      loop_counter = 0 //no previous loop has been done before
     }
-    return true
+
+    //is the experiment duration over? if so return false, exiting the loop
+    var rn = new Date().valueOf()
+    alert(rn-timeStarted)
+    if(rn-timeStarted > gameDuration){
+      return false
+    } else {
+      return true
+    }
   }
 }
 timeline.push(loop_node)
