@@ -4,6 +4,9 @@ jsPsych.plugins["mot-game"] = (function() {
   plugin.info = {
     name: 'mot-game',
     parameters: {
+      levelNumber: {
+        type:jsPsych.plugins.parameterType.INT
+      },
       ballSpeed: {
         type: jsPsych.plugins.parameterType.INT,
         defualt: 0.04
@@ -189,7 +192,9 @@ jsPsych.plugins["mot-game"] = (function() {
         if(ball.explosive){
           this.explodingBalls.splice(this.explodingBalls.indexOf(ball),1)
           setTimeout(function(){
-          if(curLevel.model.explodingBalls.length == 0 ){curLevel.controller.endGame("defusalModeNeverHappened")}
+          if(curLevel.model.lives <=/*is <= problematic by making it happen more than once??*/ 0){curLevel.controller.endGame("outOfLives")}
+          if(curLevel.model.explodingBalls.length == 0 && curLevel.model.lives > 0){curLevel.controller.endGame("bombsAllDetonated")}
+
         }, 400)
         curLevel.model.balls.splice(this.balls.indexOf(ball),1)
         }
@@ -202,7 +207,8 @@ jsPsych.plugins["mot-game"] = (function() {
 
       //set the number of lives as the number of lives from the last trial (last trial was waiting scren)
       var numLives = jsPsych.data.get().last(1).values()[0].numLives
-      this.lives = (numLives === undefined) ? par.numLives : numLives
+      //if it's level one or there are no previous levels stored (similar situations, but not quite the same so checking both)
+      this.lives = (numLives === undefined || par.levelNumber == 1) ? par.numLives : numLives
       //usually callback is view.showLives()
       this.decrementLives = function(callback){
         this.lives--
@@ -1275,13 +1281,6 @@ jsPsych.plugins["mot-game"] = (function() {
       this.showInitialFrame = function(mod, initialFrameDuration){
         //just call view's update function once. However, the exploding balls must be displayed differently:
         //bomb detected image over every exploding ball:
-        var bdimg = new Image()
-        bdimg.src = 'robomb-pngs/bomb-detected.png'
-        //set the width and height:
-        var width = 0, height = 0
-        bdimg.onload = function(){
-          width = bdimg.width, height = bdimg.height
-        }
 
         for(var j = 0, balls = mod.explodingBalls, numBalls = balls.length; j < numBalls; j++){
           var ball = balls[j];
@@ -1483,7 +1482,8 @@ jsPsych.plugins["mot-game"] = (function() {
           var topLifeCoordinate = 5
           var leftLifeCoordinate = 12
           var padding = 3//padding between life icons
-          ctx.clearRect(topLifeCoordinate, leftLifeCoordinate, (img.width+padding)*lives, img.height)
+          ctx.clearRect(0,0,500,500)//topLifeCoordinate, leftLifeCoordinate, (img.width+padding)*lives, img.height)
+
           for(var j = 0; j < lives; j++){
             //ctx.drawImage(img, w/2-img.width*(lives/2-j), topLifeCoordinate)
             ctx.drawImage(img,(img.width+padding)*j+leftLifeCoordinate,topLifeCoordinate)
@@ -1599,7 +1599,13 @@ jsPsych.plugins["mot-game"] = (function() {
           }
           buttonDiv.appendChild(butt)
 
-          if(button.activateOnEnterOrSpace){document.addEventListener('keypress', function(e){if(e.keyCode == 13 || e.keyCode == 32){butt.onclick()}})}        }
+          if(button.activateOnEnterOrSpace){
+            document.addEventListener('keypress', function(e){if(e.keyCode == 13 || e.key == " "){
+              document.removeEventListener('keypress', arguments.callee)
+              butt.onclick()
+            }
+            })}
+         }
         messageDiv.style.display = 'block'
       }
 
@@ -1988,7 +1994,7 @@ jsPsych.plugins["mot-game"] = (function() {
             data.correctGuesses = curLevel.controller.correctGuesses
             data.incorrectGuesses = curLevel.controller.incorrectGuesses
             curLevel.model.decrementLives(function(){curLevel.view.showLives(curLevel.model.lives)})
-            curLevel.view.showAlertBox("Defusal Mode failed. Not all the guesses were correct. You wasted your kit on harmless robots. Poor robots. Go to next level?", buttons);
+            curLevel.view.showAlertBox("Defusal Mode failed. Not all the guesses were correct. You wasted your kit on harmless robots. Poor robots. Go to Level " + (par.levelNumber+1) +"?", buttons);
             //alert("Incorrect guess. Level failed.")
             //maybe we can have it restart at the level before?
             break;
@@ -1998,8 +2004,18 @@ jsPsych.plugins["mot-game"] = (function() {
             data.correctGuesses = curLevel.controller.correctGuesses
             data.incorrectGuesses = curLevel.controller.incorrectGuesses
             curLevel.model.incrementLives(function(){curLevel.view.showLives(curLevel.model.lives)})
-            curLevel.view.showAlertBox("Level Passed! +1 Life. Would you like to try the next level?", buttons);
+            curLevel.view.showAlertBox("Level Passed! +1 Life. Proceed to Level " + (par.levelNumber+1) +"?", buttons);
             break;
+          case "outOfLives":
+            data.defusalMode = "neverNeeded"
+            data.defusalDuration = 0
+            curLevel.view.showAlertBox("Level failed :( <br /> ur out of lives. Restarting at Level 1", buttons)
+            break;
+          case "bombsAllDetonated":
+              data.defusalMode = "neverNeeded"
+              data.defusalDuration = 0
+              curLevel.view.showAlertBox("All the bombs detonated :(<br/> Proceed to Level " + (par.levelNumber+1) +"?", buttons)
+              break;
         }
         data.numLives = curLevel.model.lives
         //curLevel.beginGame()

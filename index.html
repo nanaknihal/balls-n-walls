@@ -102,7 +102,7 @@ var tutorial = {
   savedModel: [],
   exitWhenOutOfLives: true
 }
-//timeline.push(tutorial)
+timeline.push(tutorial)
 var level1 = {
   type:"mot-game",
   stimulus:"<p>test</p>",
@@ -404,15 +404,17 @@ var loop_node = {
   timeline: [{
     type:"mot-game",
     stimulus:"<p>test</p>",
+    levelNumber: function(){return loop_counter+1},
     duration: 15000,
-    ballSpeed: 0.07,//jsPsych.timelineVariable("ballSpeed", true),
+    ballSpeed: function(){return 0.06+loop_counter*0.00011},
     ballRadius: randomBallRadius(),
     numRegularBalls: function(){
       console.log(loop_counter)
-      return 4
+      return loop_counter
     },
     numExplodingBalls: function(){
-      return 2
+      //increment every 2-3 levels with some randomness
+      return 1+loop_counter/(2+Math.round(Math.random()))
     },
     maxUserDefinedObstacles: 1,
     maxUserDefinedObstacleSegments: 3,
@@ -441,8 +443,15 @@ var loop_node = {
     gameWidth: 960,
     gameHeight: 600
   }],
-  //timeline_variables: [{ballSpeed: 0.05*Math.random()*0.02}],
-  loop_function: function(){loop_counter++; return jsPsych.data.get().last(1).values()[0].numLives > 0}
+
+  loop_function: function(){
+    if(jsPsych.data.get().last(1).values()[0].numLives > 0){
+      loop_counter++
+    } else {
+      loop_counter = 0
+    }
+    return true
+  }
 }
 timeline.push(loop_node)
 
