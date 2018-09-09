@@ -1311,10 +1311,10 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
           curLevel.view.showAlertBox('Welcome to the tutorial. Click and drag to draw force walls. Only one wall can be on the screen at a time.', [okButton])
 
           //go on indefinitely by resetting the timer every so often (3000 is just a safe value of seconds before it runs out, when it's reset)
-          var intrvl = setInterval(function(){curLevel.timer.reset(par.duration/1000, "green");}, curLevel.timer.getTimeTilCountdownEnd()-3000)
+          intrvl = setInterval(function(){curLevel.timer.reset(par.duration/1000, "#2CFFCF");}, curLevel.timer.getTimeTilCountdownEnd()-3000)
           setTimeout(function(){
             document.addEventListener('keypress', function(e){
-              if(e.key == " "){notifyOfExplodingBalls(); clearInterval(intrvl)}
+              if(e.key == " "){notifyOfExplodingBalls()}
             });
             curLevel.view.showTextOnBottom("Press the space key when ready")
           }, 4000)
@@ -1331,6 +1331,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
             onClick: function(){
               data.numLives = curLevel.model.lives
               curLevel.controller.gameOver = true
+              clearInterval(intrvl)
               jsPsych.finishTrial(data)
             },
             activateOnEnterOrSpace: true
@@ -1740,7 +1741,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
             if(!curLevel.defusalModeOn()){ //if it's not defusal mode, display the timer regularly
               //clear previously existing timer displays
               tctx.clearRect(timer.x-timer.fontSize,timer.y-timer.fontSize, timer.fontSize*2, timer.fontSize*2)
-              tctx.font = timer.fontSize + "px Arial"
+              tctx.font = timer.fontSize + "px Overpass"
               //time = Math.round((this.curTime % 60000)/1000)
               var time = timer.getTime() == null ? 0 : Math.round(timer.getTime()/1000)
               tctx.fillStyle = timer.color
@@ -1805,14 +1806,14 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
 
         var showTheInitialFrame = function(){
         var initialFrameDuration = 1300 //ms
-        curLevel.timer.reset(levelDuration/1000, "green")
+        curLevel.timer.reset(levelDuration/1000, "#2CFFCF")
         curLevel.timer.start()
         curLevel.view.displayTimer(curLevel.timer)
         curLevel.view.showInitialFrame(model,initialFrameDuration) //show the frame where the exploding balls look different
         //now set what happens after the initial frame is over:
         setTimeout(function(){
 
-            curLevel.timer.reset(levelDuration/1000, "green")
+            curLevel.timer.reset(levelDuration/1000, "#2CFFCF")
             curLevel.timer.start()
             //curLevel.timer.unHide()
             //then start the first update

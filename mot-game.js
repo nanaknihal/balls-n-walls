@@ -44,7 +44,7 @@ jsPsych.plugins["mot-game"] = (function() {
     "<canvas id='livesCanvas' style='position:absolute; left: 0; top: 0; z-index:3' height='" + h + "' width = '" + w + "'></canvas>" +
     "<div id='messageBox' style='width: 66%;top:50%; margin-left:50%; transform: translate(-50%, -50%); -moz-transform: translate(-50%, -50%); -webkit-transform: translate(-50%, -50%); -ms-transform: translate(-50%, -50%); -o-transform: translate(-50%, -50%); display:none; animation-name: messagePopUpAnimation; animation-duration: 4s; position:absolute; z-index:500; overflow: auto; user-select:none;'><img id='messageImg' src='robomb-pngs/alert-box.png' style='display:block; width:100%; margin: auto; pointer-events:none; user-select:none'></img><div id='msgText' style='position:absolute; width: 95%; top: 50%; margin-left:50%; transform: translate(-50%,-50%); -moz-transform: translate(-50%,-50%); -webkit-transform: translate(-50%,-50%); -ms-transform: translate(-50%,-50%); -o-transform: translate(-50%,-50%); font:37px Overpass, sans-serif; color: white; text-align: center; display:block'></div><div id='buttonDiv'></div>" +
     "</div>" +
-    "<div id='bottomScreenText' style='display:none; animation-name: fadeIn; animation-duration: 10s; position:relative; top: -10%; width: 100%; z-index:500; overflow: auto'><br /><div id='bottomText' style='positon: absolute; width:100%; color: #C6FDF9; text-align: center; font: 14px Overpass, sans serif'>You've held out until the robots could be quarantined. +1 life. However, they are set to go off soon. You have 10 seconds to defuse them by clicking the right ones. You have one defusal kit per bomb, so don't waste any</div>'" +
+    "<div id='bottomScreenText' style='display:none; animation-name: fadeIn; animation-duration: 2s; position:relative; top: -10%; width: 100%; z-index:500; overflow: auto'><br /><div id='bottomText' style='positon: absolute; width:100%; color: #C6FDF9; text-align: center; font: 14px Overpass, sans serif'>You've held out until the robots could be quarantined. +1 life. However, they are set to go off soon. You have 10 seconds to defuse them by clicking the right ones. You have one defusal kit per bomb, so don't waste any</div>'" +
     "</div>" +
     "<audio id='a-wallCreate' src='sounds/wall-create.wav'></audio>" + //wall creation sound. from: https://freesound.org/people/xixishi/sounds/265210/
     "<audio id='a-collisionBwop' src='sounds/collision-bwop.mp3'></audio>" + //https://freesound.org/people/willy_ineedthatapp_com/sounds/167338/
@@ -95,7 +95,7 @@ jsPsych.plugins["mot-game"] = (function() {
 
     /*GAME CODE*/
     var ballColor = "grey"
-
+    pressed = false
     var distanceBetween = function(p1, p2){
       var xdist = p2[0]-p1[0]
       var ydist = p2[1]-p1[1]
@@ -1355,7 +1355,7 @@ jsPsych.plugins["mot-game"] = (function() {
         //not using commented parts anymore:
         //for(var j = 0, numWalls = 4; j < numWalls; j++){
           //var wall = model.walls[j];
-          var color = "green"
+          var color = "#FF2C5B"
           ctx.beginPath();
           ctx.fillStyle = color
           //ctx.rect(wall.getX(), wall.getY(), wall.getW(), wall.getL())
@@ -1602,7 +1602,13 @@ jsPsych.plugins["mot-game"] = (function() {
           if(button.activateOnEnterOrSpace){
             document.addEventListener('keypress', function(e){if(e.keyCode == 13 || e.key == " "){
               document.removeEventListener('keypress', arguments.callee)
+              //prevent double-presses
+              if(!pressed){
               butt.onclick()
+              pressed = true
+
+            }
+            setTimeout(function(){pressed = false}, 100)
             }
             })}
          }
@@ -1660,7 +1666,8 @@ jsPsych.plugins["mot-game"] = (function() {
             if(!curLevel.defusalModeOn()){ //if it's not defusal mode, display the timer regularly
               //clear previously existing timer displays
               tctx.clearRect(timer.x-timer.fontSize,timer.y-timer.fontSize, timer.fontSize*2, timer.fontSize*2)
-              tctx.font = timer.fontSize + "px Arial"
+              tctx.font = timer.fontSize + "px Overpass"
+              tctx.fontWeight = "bold"
               //time = Math.round((this.curTime % 60000)/1000)
               var time = timer.getTime() == null ? 0: Math.round(timer.getTime()/1000)
               tctx.fillStyle = timer.color
@@ -1727,18 +1734,16 @@ jsPsych.plugins["mot-game"] = (function() {
             showTheInitialFrame = function(){
 
             var initialFrameDuration = 1300 //ms
-            curLevel.timer.reset(levelDuration/1000, "green")
-            curLevel.timer.start()
-            curLevel.view.displayTimer(curLevel.timer)
             curLevel.view.showInitialFrame(model,initialFrameDuration) //show the frame where the exploding balls look different
 
 
           //now set what happens after the initial frame is over:
           setTimeout(function(){
-
-              curLevel.timer.reset(levelDuration/1000, "green")
-              curLevel.timer.start()
-              curLevel.timer.unHide()
+              curLevel.timer.resume()
+              //curLevel.timer.reset(levelDuration/1000, "#FF2C5B")
+              //curLevel.timer.start()
+              //curLevel.view.displayTimer(curLevel.timer)
+              //curLevel.timer.unHide()
               //then start the first update
                 //if(par.replayMode){
                 //  replayModeUpdate(0);
@@ -2062,7 +2067,7 @@ jsPsych.plugins["mot-game"] = (function() {
       this.paused = true
       this.color = "red",
       this.getColor = function(){return this.color},
-      this.fontSize =12,
+      this.fontSize = 22,
       this.x = w/2, // x positioning
       this.y = h/22,
       this.countdown = true, //default is countdown-mode, not countup-mode

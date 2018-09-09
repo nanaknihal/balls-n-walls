@@ -406,7 +406,9 @@ var loop_node = {
     stimulus:"<p>test</p>",
     levelNumber: function(){return loop_counter+1},
     duration: 15000,
-    ballSpeed: function(){return 0.06+loop_counter*0.00011},
+    ballSpeed: function(){var s = 0.06+loop_counter*0.00011
+    alert(s)
+  return s},
     ballRadius: randomBallRadius(),
     numRegularBalls: function(){
       console.log(loop_counter)
