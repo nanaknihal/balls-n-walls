@@ -21,6 +21,26 @@ var gameDuration = 15*60*1000
 var gameWidth = 960, gameHeight = 600
 var timeline = []
 var gameMusic = /*document.getElementById('a-music')*/ new Audio('sounds/music.mp3')
+var GlobalTester = (function(){
+    var fields = {};
+    var before = function(w){
+        for(var field in w){
+            fields[field] = true;
+        };
+    };
+
+    var after = function(w){
+        for(var field in w){
+            if(!fields[field]){
+                 console.log(field + " has been added");
+            }
+        };
+
+    };
+    return {before: before, after:after};
+}());
+
+GlobalTester.before(window);
 gameMusic.loop = true
 //gameMusic.src = 'sounds/music.mp3'
 //gameMusic.load()
@@ -75,36 +95,44 @@ function randomBallRadius(){
 }
 
 
-var tutorial = {
-  type:"mot-game-tutorial",
-  stimulus:"<p>test</p>",
-  duration: 15000,
-  ballSpeed: 0.07,
-  ballRadius: 'large',
-  maxUserDefinedObstacles: 1,
-  maxUserDefinedObstacleSegments: 3,
-  maxDistanceBetweenObstaclePixels:300,
-  minDistanceBetweenObstaclePixels: 66,
-  userObstacleThickness: 3,
-  vertWallThickness:48,  //16px thick border walls
-  horiWallThickness:16,
-  occludersEnabled: false,
-  invisibleOccluders: false,
-  implodeExplodeMode: false,
-  stochasticRobotPaths: false,
-  parametersForStochasticRobotPaths: {inertia: 0.95, springConstant: 0, accelerationStandardDeviation: 0.01, velocityMultipler: 1.030},
-  forceFields: false,
-  forceFieldStrength: 0.001,
-  occluderRectangles:[{x: generateRandomOccluderXCoordinate(/*put minimum occluder distance from wall here*/100), y: 0, width: 45, height: gameHeight},{x: generateRandomOccluderXCoordinate(190), y: 0, width: 45, height: gameHeight}],
-  lives: true, //toggle whether the player has a fixed number of lives and the related gameplay aspects
-  numLives: 5,
-  maxLives: 6,
-  gameWidth: gameWidth,
-  gameHeight: gameHeight,
-  savedModel: [],
-  exitWhenOutOfLives: true
+var tutorial_loop = {
+    timeline: [
+      {
+        type:"mot-game-tutorial",
+        stimulus:"<p>test</p>",
+        duration: 15000,
+        ballSpeed: 0.07,
+        ballRadius: 'large',
+        maxUserDefinedObstacles: 1,
+        maxUserDefinedObstacleSegments: 3,
+        maxDistanceBetweenObstaclePixels:300,
+        minDistanceBetweenObstaclePixels: 66,
+        userObstacleThickness: 3,
+        vertWallThickness:48,  //16px thick border walls
+        horiWallThickness:16,
+        occludersEnabled: false,
+        invisibleOccluders: false,
+        implodeExplodeMode: false,
+        stochasticRobotPaths: false,
+        parametersForStochasticRobotPaths: {inertia: 0.95, springConstant: 0, accelerationStandardDeviation: 0.01, velocityMultipler: 1.030},
+        forceFields: false,
+        forceFieldStrength: 0.001,
+        occluderRectangles:[{x: generateRandomOccluderXCoordinate(/*put minimum occluder distance from wall here*/100), y: 0, width: 45, height: gameHeight},{x: generateRandomOccluderXCoordinate(190), y: 0, width: 45, height: gameHeight}],
+        lives: true, //toggle whether the player has a fixed number of lives and the related gameplay aspects
+        numLives: 5,
+        maxLives: 6,
+        gameWidth: gameWidth,
+        gameHeight: gameHeight,
+        savedModel: [],
+        exitWhenOutOfLives: true
+      }],
+      loop_function: function(){
+        GlobalTester.after(window)
+        if(jsPsych.data.get().last(1).values()[0].restartTutorial === true){return true} else {return false}
+      }
 }
-timeline.push(tutorial)
+
+timeline.push(tutorial_loop)
 var level1 = {
   type:"mot-game",
   stimulus:"<p>test</p>",
@@ -402,14 +430,13 @@ exitWhenOutOfLives: true,
 }
 //timeline.push(level1);
 loop_counter = 0
-var loop_node = {
+var levels_loop = {
   timeline: [{
     type:"mot-game",
     stimulus:"<p>test</p>",
     levelNumber: function(){return loop_counter+1},
     duration: 15000,
     ballSpeed: function(){var s = 0.06+loop_counter*0.00011
-    alert(s)
   return s},
     ballRadius: randomBallRadius(),
     numRegularBalls: function(){
@@ -454,10 +481,9 @@ var loop_node = {
     } else {
       loop_counter = 0 //no previous loop has been done before
     }
-
+    GlobalTester.after(window)
     //is the experiment duration over? if so return false, exiting the loop
     var rn = new Date().valueOf()
-    alert(rn-timeStarted)
     if(rn-timeStarted > gameDuration){
       return false
     } else {
@@ -465,7 +491,7 @@ var loop_node = {
     }
   }
 }
-timeline.push(loop_node)
+timeline.push(levels_loop)
 
 jsPsych.init({
   timeline: timeline,

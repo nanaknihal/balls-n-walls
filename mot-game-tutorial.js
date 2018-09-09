@@ -49,6 +49,24 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
     //message pop-up animation:
     "<style>@keyframes fadeIn{from {opacity:0}; to {opacity:0.5}}</style>  <style>@keyframes scrollIt{from {margin-left:-30%}; to {margin-left:30%}}</style> <style>@import url('https://fonts.googleapis.com/css?family=Overpass');</style>"
 
+    /*global variable declarations*/
+    var pressedSpace = false
+    var pressedR = false
+    var neverMadeAWallYet = true //for tutorial, to congratulate the user upon making the first wall
+    var timestampWallCreationEnabled = null
+    var funkk = function(e){
+      document.removeEventListener('keypress', funkk);
+      if(e.key == " " && !pressedSpace){
+        pressedSpace = true
+        notifyOfExplodingBalls()
+      }else if(e.key == "r" && !pressedR){
+        pressedR = true
+        data.restartTutorial = true
+        jsPsych.finishTrial(data)
+      }
+    }
+
+
     document.body.style.backgroundColor = "black"
     document.body.style.userSelect = "none"
     document.body.style.MozUserSelect = 'none'
@@ -82,7 +100,6 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
 
     /*GAME CODE*/
     var ballColor = "grey"
-    neverMadeAWallYet = true //for tutorial, to congratulate the user upon making the first wall
     var distanceBetween = function(p1, p2){
       var xdist = p2[0]-p1[0]
       var ydist = p2[1]-p1[1]
@@ -120,8 +137,8 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
     //pix has format [x,y]
     function getPixelPositionRelativeToObject(pix, object, noTranslate) {
       //noTranslate is for when the object is not translated via CSS. Translation is used to center elements by doing transform: translate(-50,-50), offsetting them by -width/2, -height/2
-      translateLeft = (noTranslate === undefined || noTranslate == true) ? object.offsetWidth/2 : 0
-      translateTop = (noTranslate === undefined || noTranslate == true) ? object.offsetHeight/2 : 0
+      var translateLeft = (noTranslate === undefined || noTranslate == true) ? object.offsetWidth/2 : 0
+      var translateTop = (noTranslate === undefined || noTranslate == true) ? object.offsetHeight/2 : 0
       var posx = pix[0]-object.offsetLeft + translateLeft
       var posy = pix[1]-object.offsetTop + translateTop
       //this resets any out-of-bounds pixels to within-bounds
@@ -158,7 +175,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
       var c = new controller(m, v, levelDuration)
       return new level(m, v, c, levelDuration)
     }
-    curLevel = theLevel();
+    var curLevel = theLevel();
     /*var button = {
                       imgUp: 'robomb-pngs/btn-okay-up.png',
                       imgDn: 'robomb-pngs/btn-okay-down.png',
@@ -399,7 +416,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
       function dot(a,b){
         var length = a.length
         if(length == b.length){
-          dotp = 0
+          var dotp = 0
           for(var i = 0; i < length; i++){
             dotp += a[i]*b[i]
           }
@@ -1171,6 +1188,16 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
             break;
           }
         }
+
+        //add them if they're within the actual floor, not in the top or bottom black bars:
+        var posInFloor = [pos[0] - par.horiWallThickness, pos[1] - par.vertWallThickness]
+        if(posInFloor[0] < 0 || posInFloor[0] > w - 2*par.horiWallThickness
+        || posInFloor[1] < 0 || posInFloor[1] > h - 2*par.vertWallThickness)
+
+        {
+          validPosition = false
+        }
+
         //don't allow a wall being drawn through a ball:
         /*for(var l=0, balls = curLevel.model.getBalls(), numBalls = balls.length; l<numBalls; l++){
           var ball = balls[l]
@@ -1198,8 +1225,8 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
             var balls = curLevel.model.getBalls()
             for(var q = 0, numOfBalls = balls.length; q < numOfBalls; q++){
               var numPix = this.pixels.length
-              lastPixel = this.pixels[numPix - 1]
-              secondToLastPixel = (numPix > 1) ? this.pixels[numPix -2] : this.pixels[numPix - 1]
+              var lastPixel = this.pixels[numPix - 1]
+              var secondToLastPixel = (numPix > 1) ? this.pixels[numPix -2] : this.pixels[numPix - 1]
               balls[q].respondToObstacleSegmentCreation([lastPixel, secondToLastPixel])
             }
 
@@ -1308,21 +1335,20 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
                             },
                             activateOnEnterOrSpace: true
                           }
-          curLevel.view.showAlertBox('Welcome to the tutorial. Click and drag to draw force walls. Only one wall can be on the screen at a time.', [okButton])
+          curLevel.view.showAlertBox('To build a force wall, click and drag. Only one wall can be on the screen at a time.', [okButton])
 
           //go on indefinitely by resetting the timer every so often (3000 is just a safe value of seconds before it runs out, when it's reset)
           intrvl = setInterval(function(){curLevel.timer.reset(par.duration/1000, "#2CFFCF");}, curLevel.timer.getTimeTilCountdownEnd()-3000)
-          pressedSpace = false
+          //function to be called when a key is pressed
+
           setTimeout(function(){
-            document.addEventListener('keypress', function(e){
-              if(e.key == " " && !pressedSpace){pressedSpace = true; notifyOfExplodingBalls();}
-            });
-            curLevel.view.showTextOnBottom("Press the space key when ready")
+            document.addEventListener('keypress', funkk);
+            curLevel.view.showTextOnBottom("Press space to continue or r to restart the tutorial")
           }, 4000)
 
         }
-        hasNotified = false
-        var notifyOfExplodingBalls = function(){
+        var hasNotified = false
+        notifyOfExplodingBalls = function(){
           if(!hasNotified){
           hasNotified = true
 
@@ -1332,7 +1358,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
             onClick: function(){
               data.numLives = curLevel.model.lives
               curLevel.controller.gameOver = true
-              clearInterval(intrvl)
+              clearInterval(intrvl);
               jsPsych.finishTrial(data)
             },
             activateOnEnterOrSpace: true
