@@ -1312,9 +1312,10 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
 
           //go on indefinitely by resetting the timer every so often (3000 is just a safe value of seconds before it runs out, when it's reset)
           intrvl = setInterval(function(){curLevel.timer.reset(par.duration/1000, "#2CFFCF");}, curLevel.timer.getTimeTilCountdownEnd()-3000)
+          pressedSpace = false
           setTimeout(function(){
             document.addEventListener('keypress', function(e){
-              if(e.key == " "){notifyOfExplodingBalls()}
+              if(e.key == " " && !pressedSpace){pressedSpace = true; notifyOfExplodingBalls();}
             });
             curLevel.view.showTextOnBottom("Press the space key when ready")
           }, 4000)
@@ -1341,7 +1342,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
                             imgUp: 'robomb-pngs/btn-okay-up.png',
                             imgDn: 'robomb-pngs/btn-okay-down.png',
                             onClick: function(){
-                              curLevel.view.showAlertBox("Don't let the bomb-carrying robots hit the walls no matter what!", [ok2])
+                              setTimeout(function(){curLevel.view.showAlertBox("Don't let the bomb-carrying robots hit the walls no matter what!", [ok2])},212)//arbitrary number
                             },
                             activateOnEnterOrSpace: true
                           }
