@@ -5,8 +5,16 @@ jsPsych.plugins["mot-game"] = (function() {
     name: 'mot-game',
     parameters: {
       ballSpeed: {
-        type: jsPsych.plugins.parameterType.FUNCTION,
+        type: jsPsych.plugins.parameterType.INT,
         defualt: 0.04
+      },
+      numRegularBalls: {
+        type: jsPsych.plugins.parameterType.INT,
+        defualt: 2
+      },
+      numExplodingBalls: {
+        type: jsPsych.plugins.parameterType.INT,
+        defualt: 2
       }
     }
   }
@@ -33,7 +41,7 @@ jsPsych.plugins["mot-game"] = (function() {
     "<canvas id='livesCanvas' style='position:absolute; left: 0; top: 0; z-index:3' height='" + h + "' width = '" + w + "'></canvas>" +
     "<div id='messageBox' style='width: 66%;top:50%; margin-left:50%; transform: translate(-50%, -50%); -moz-transform: translate(-50%, -50%); -webkit-transform: translate(-50%, -50%); -ms-transform: translate(-50%, -50%); -o-transform: translate(-50%, -50%); display:none; animation-name: messagePopUpAnimation; animation-duration: 4s; position:absolute; z-index:500; overflow: auto; user-select:none;'><img id='messageImg' src='robomb-pngs/alert-box.png' style='display:block; width:100%; margin: auto; pointer-events:none; user-select:none'></img><div id='msgText' style='position:absolute; width: 95%; top: 50%; margin-left:50%; transform: translate(-50%,-50%); -moz-transform: translate(-50%,-50%); -webkit-transform: translate(-50%,-50%); -ms-transform: translate(-50%,-50%); -o-transform: translate(-50%,-50%); font:37px Overpass, sans-serif; color: white; text-align: center; display:block'></div><div id='buttonDiv'></div>" +
     "</div>" +
-    "<div id='bottomScreenText' style='display:none; animation-name: scrollIt; animation-duration: 12s; position:absolute; top: 87%; width: 80%; margin-left: 10%; z-index:500; overflow: auto'><p id='bottomText' style='color: #C6FDF9; font: 14px Overpass, sans serif'>You've held out until the robots could be quarantined. +1 life. However, they are set to go off soon. You have 10 seconds to defuse them by clicking the right ones. \nYou have one defusal kit per bomb, so don't waste any</div>'" +
+    "<div id='bottomScreenText' style='display:none; animation-name: fadeIn; animation-duration: 10s; position:relative; top: -10%; width: 100%; z-index:500; overflow: auto'><br /><div id='bottomText' style='positon: absolute; width:100%; color: #C6FDF9; text-align: center; font: 14px Overpass, sans serif'>You've held out until the robots could be quarantined. +1 life. However, they are set to go off soon. You have 10 seconds to defuse them by clicking the right ones. You have one defusal kit per bomb, so don't waste any</div>'" +
     "</div>" +
     "<audio id='a-wallCreate' src='sounds/wall-create.wav'></audio>" + //wall creation sound. from: https://freesound.org/people/xixishi/sounds/265210/
     "<audio id='a-collisionBwop' src='sounds/collision-bwop.mp3'></audio>" + //https://freesound.org/people/willy_ineedthatapp_com/sounds/167338/
@@ -47,7 +55,7 @@ jsPsych.plugins["mot-game"] = (function() {
     //font:
     "<link rel='stylesheet' href='https://fonts.googleapis.com/css?family=Overpass+Mono:300,400,600,700|Overpass:100,100i,200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i&subset=latin-ext'> </link>" +
     //message pop-up animation:
-    "<style>@keyframes fadeIn{from {opacity:0}; to {opacity:0.5}}</style>  <style>@keyframes scrollIt{from {margin-left:0px}; to {margin-left:330px}}</style>"
+    "<style>@keyframes fadeIn{from {opacity:0}; to {opacity:1}}</style>  <style>@keyframes scrollIt{from {margin-left:-10%}; to {margin-left:30%}}</style> <style>@import url('https://fonts.googleapis.com/css?family=Overpass');</style>"
 
     document.body.style.backgroundColor = "black"
     document.body.style.userSelect = "none"
@@ -220,19 +228,19 @@ jsPsych.plugins["mot-game"] = (function() {
       this.defaultBallImg = 'robomb-pngs/robot-normal.png' //same as 'small'
       switch(par.ballRadius){
         case 'smallest':
-          this.ballRadius = 12
+          this.ballRadius = 9
           this.defaultBallImg = 'robomb-pngs/shrunken-5.png'
           break
         case 'small':
-          this.ballRadius = 16
+          this.ballRadius = 14
           this.defaultBallImg = 'robomb-pngs/shrunken-3.png'
           break
         case 'large':
-          this.ballRadius = 25
+          this.ballRadius = 22
           this.defaultBallImg = 'robomb-pngs/robot-normal.png'
           break
         case 'largest':
-          this.ballRadius = 60
+          this.ballRadius = 30
           this.defaultBallImg = 'robomb-pngs/enlarged-1.png'
           break
       }
@@ -1163,8 +1171,8 @@ jsPsych.plugins["mot-game"] = (function() {
         }
 
 
-        var validPosition = true
         //add them if they're far enough from the previous pixels.
+        var validPosition = true
         for(var l=0; l<numPix; l++){
           var dist = distanceBetween(pos, this.pixels[l])
 
@@ -1176,6 +1184,16 @@ jsPsych.plugins["mot-game"] = (function() {
             break;
           }
         }
+
+        //add them if they're within the actual floor, not in the top or bottom black bars:
+        var posInFloor = [pos[0] - par.horiWallThickness, pos[1] - par.vertWallThickness]
+        if(posInFloor[0] < 0 || posInFloor[0] > w - 2*par.horiWallThickness
+        || posInFloor[1] < 0 || posInFloor[1] > h - 2*par.vertWallThickness)
+
+        {
+          validPosition = false
+        }
+
         //don't allow a wall being drawn through a ball:
         /*for(var l=0, balls = curLevel.model.getBalls(), numBalls = balls.length; l<numBalls; l++){
           var ball = balls[l]
@@ -1189,8 +1207,6 @@ jsPsych.plugins["mot-game"] = (function() {
             break;
           }
         }*/
-
-        //make sure they can't draw pictures outside of the walls:
 
         if(validPosition){
             this.pixels.push(pos)
@@ -1271,19 +1287,19 @@ jsPsych.plugins["mot-game"] = (function() {
           var ball = balls[j];
           //make the callback of the last setImage  this.update(), so that it doesn't update til all the images are loaded
           if(j == numBalls - 1){
-            this.showImgAtFor('robomb-pngs/bomb-detected.png', ball.x, ball.y, initialFrameDuration)
+            this.showImgAtFor('robomb-pngs/bomb-detected-' + par.ballRadius + '.png', ball.x, ball.y, initialFrameDuration)
             var thisView = this
             ball.setImage("robomb-pngs/robot-open-bomb-"+par.ballRadius+".png", function(){thisView.update(mod)})
             //now, show the bomb detected text:
-             /*var ctx = document.getElementById('overlay').getContext('2d')
+             var ctx = document.getElementById('overlay').getContext('2d')
              ctx.font = '30px "Overpass"'
              ctx.fillStyle = '#C6FDF9'
              ctx.textAlign = 'center'
-             ctx.fillText('BOMBS DETECTED', w/2, 7*h/8)
-             setTimeout(function(){ctx.clearRect(0,0,w,h)}, initialFrameDuration)*/
-             curLevel.view.showImgAtFor('robomb-pngs/bombb.png', w/2, 7*h/8, initialFrameDuration)
+             if(numBalls == 1){ctx.fillText('BOMB DETECTED', w/2, 7*h/8)} else{ctx.fillText('BOMBS DETECTED', w/2, 7*h/8)}
+             setTimeout(function(){ctx.clearRect(0,0,w,h)}, initialFrameDuration)
+             //curLevel.view.showImgAtFor('robomb-pngs/bombb.png', w/2, 7*h/8, initialFrameDuration)
           } else {
-            this.showImgAtFor('robomb-pngs/bomb-detected.png', ball.x, ball.y, initialFrameDuration)
+            this.showImgAtFor('robomb-pngs/bomb-detected-'+par.ballRadius+'.png', ball.x, ball.y, initialFrameDuration)
             ball.setImage("robomb-pngs/robot-open-bomb-"+par.ballRadius+".png")
           }
         }
@@ -1593,7 +1609,7 @@ jsPsych.plugins["mot-game"] = (function() {
         document.getElementById('bottomScreenText').style.display = 'block'
       }
 
-
+    //this.showTextOnBottom("You've held out until the robots could be quarantined. +1 life. However, they are set to go off soon. <br />You have 10 seconds to defuse them by clicking the right ones. You have one defusal kit per bomb, so don't waste any")
 
       this.closeAlertBox = function(){
         var messageDiv = document.getElementById('messageBox')
@@ -1606,7 +1622,7 @@ jsPsych.plugins["mot-game"] = (function() {
         var balls = curLevel.model.getBalls()
         for(var n = 0, numBalls = balls.length; n < numBalls; n++){
           var ball = balls[n]
-          var selectionRadiusAddOn = 1
+          var selectionRadiusAddOn = 2
           var totalRadius = ball.getRadius()+selectionRadiusAddOn
           //if they hover over the ball:
           if(distanceBetween(getPixelPositionRelativeToObject([event.pageX,event.pageY], document.getElementById('gameContainer')), [ball.getX(), ball.getY()]) < ball.getRadius()){
