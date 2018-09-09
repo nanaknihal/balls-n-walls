@@ -1314,7 +1314,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
           var intrvl = setInterval(function(){curLevel.timer.reset(par.duration/1000, "green");}, curLevel.timer.getTimeTilCountdownEnd()-3000)
           setTimeout(function(){
             document.addEventListener('keypress', function(e){
-              if(e.key == " "){notifyOfExplodingBalls()}
+              if(e.key == " "){notifyOfExplodingBalls(); clearInterval(intrvl)}
             });
             curLevel.view.showTextOnBottom("Press the space key when ready")
           }, 4000)
