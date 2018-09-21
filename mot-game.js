@@ -1045,10 +1045,20 @@ jsPsych.plugins["mot-game"] = (function() {
 
     /*TODO: make an animation class and subclass these. I don't know enough about JS classes to do that easily*/
     function wallExplodeAnimation(){
-        var img = "robomb-pngs/explosion.png"
-        var duration = 2000
-        this.showAnimation = function(x,y) {curLevel.view.showImgAtFor(img, x, y, duration)}
+        var duration = 343
+        this.showAnimation = function(x,y) {
+          for(var i = 0; i < 5; i++){
+            //have to call a function if you want to pass a value, can't do set timeout for each value of i
+            queueWallExplodeAnimationFrame(i+1,x,y,duration)
+          }
+        }
     }
+    //created for above for loop becuase i gets changed while setTimeout waits
+    function queueWallExplodeAnimationFrame(i,x,y,duration){
+      var imgPath = "robomb-pngs/explosion"+i+".png"
+        setTimeout(function(){
+        curLevel.view.showImgAtFor(imgPath, x, y, duration/6)},duration/6*i)
+      }
 
     function userObstacleCollideAnimation(){
         this.animationCoolDownTime = 100;
@@ -1611,8 +1621,9 @@ jsPsych.plugins["mot-game"] = (function() {
               butt.onclick()
             }
             })}
+            messageDiv.style.display = 'block'
         }
-        messageDiv.style.display = 'block'
+
       }
 
 
@@ -1973,7 +1984,7 @@ jsPsych.plugins["mot-game"] = (function() {
                             curLevel.controller.gameOver = true
                             jsPsych.finishTrial(data)
                           },
-                          activateOnEnterOrSpace: true
+                          activateOnEnterOrSpace: false
                         }]
 
         //maybe someday change to the state pattern
