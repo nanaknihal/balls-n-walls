@@ -1001,7 +1001,7 @@ jsPsych.plugins["mot-game"] = (function() {
         this.setX(this.x+dx)
         var dy = this.getVelocity()[1] * td
         this.setY(this.y+dy);
-
+        console.log(this.getVelocity()[0]^2+this.getVelocity()[1]^2)
         //if it's in implode and explode mode, have it implode if it's inside an occluder and explode til it's at the normal radius if it's outside
         if(par.implodeExplodeMode && !curLevel.defusalModeOn()){
           if(circleIsInAnOccluder([this.x, this.y], this.radius)){
@@ -1788,7 +1788,7 @@ jsPsych.plugins["mot-game"] = (function() {
         var button =    {imgUp: 'robomb-pngs/btn-okay-up.png',
                         imgDn: 'robomb-pngs/btn-okay-down.png',
                         onClick: function(){showTheInitialFrame(); curLevel.view.closeAlertBox()},
-                        activateOnEnterOrSpace: true}
+                        activateOnEnterOrSpace: false}
         if(par.notifyUserOfOccluders){
           curLevel.view.showAlertBox("We've added a little challenge to this level", [button])
         }
