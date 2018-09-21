@@ -33,7 +33,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
     "<canvas id='livesCanvas' style='position:absolute; left: 0; top: 0; z-index:3' height='" + h + "' width = '" + w + "'></canvas>" +
     "<div id='messageBox' style='width: 66%;top:50%; margin-left:50%; transform: translate(-50%, -50%); -moz-transform: translate(-50%, -50%); -webkit-transform: translate(-50%, -50%); -ms-transform: translate(-50%, -50%); -o-transform: translate(-50%, -50%); display:none; animation-name: messagePopUpAnimation; animation-duration: 4s; position:absolute; z-index:500; overflow: auto; user-select:none;'><img id='messageImg' src='robomb-pngs/alert-box.png' style='display:block; width:100%; margin: auto; pointer-events:none; user-select:none'></img><div id='msgText' style='position:absolute; width: 95%; top: 50%; margin-left:50%; transform: translate(-50%,-50%); -moz-transform: translate(-50%,-50%); -webkit-transform: translate(-50%,-50%); -ms-transform: translate(-50%,-50%); -o-transform: translate(-50%,-50%); font:28px Overpass, sans-serif; color: white; text-align: center; display:block'></div><div id='buttonDiv'></div>" +
     "</div>" +
-    "<div id='bottomScreenText' style='display:none; animation-name: scrollIt; animation-duration: 12s; position:relative; top: -10%; width: 80%; margin-left: 10%; z-index:500; overflow: auto'><br /><div id='bottomText' style='positon: absolute; margin-left: 50%; color: #C6FDF9; font: 14px Overpass, sans serif'>You've held out until the robots could be quarantined. +1 life. However, they are set to go off soon. You have 10 seconds to defuse them by clicking the right ones. \nYou have one defusal kit per bomb, so don't waste any</div>'" +
+    "<div id='bottomScreenText' style='display:none; animation-name: scrollIt; animation-duration: 12s; position:relative; top: -10%; width: 80%; margin-left: 10%; z-index:500; overflow: auto'><br /><div id='bottomText' style='positon: absolute; margin-left: 50%; color: #C6FDF9; font: 17px Overpass, sans serif'>You've held out until the robots could be quarantined. +1 life. However, they are set to go off soon. You have 10 seconds to defuse them by clicking the right ones. \nYou have one defusal kit per bomb, so don't waste any</div>'" +
     "</div>" +
     "<audio id='a-wallCreate' src='sounds/wall-create.wav'></audio>" + //wall creation sound. from: https://freesound.org/people/xixishi/sounds/265210/
     "<audio id='a-collisionBwop' src='sounds/collision-bwop.mp3'></audio>" + //https://freesound.org/people/willy_ineedthatapp_com/sounds/167338/
@@ -1304,8 +1304,9 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
                           },
                           activateOnEnterOrSpace: true
                         }
-
-        curLevel.view.showAlertBox("Welcome to the tutorial. Let's practice a skill that will be useful: making walls", [ok])
+        setTimeout(function(){
+          curLevel.view.showAlertBox("Welcome to the tutorial. Let's practice a skill that will be useful: making walls", [ok])
+        }, 199)
         var practiceWallMaking = function(){
           var secondOkButton =
                           {
@@ -1322,6 +1323,12 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
                                   correctAudio.play()
                                 }
                                 neverMadeAWallYet = false;})
+
+                                //make it so the next step happens when they press ' ', and allow them to restart by pressing 'r' if the tutorial was unclear
+                                setTimeout(function(){
+                                  document.addEventListener('keypress', funkk);
+                                  curLevel.view.showTextOnBottom("Press space to continue or r to restart the tutorial")
+                                }, 4000)
                             },
                             activateOnEnterOrSpace: true
                           }
@@ -1341,10 +1348,6 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
           intrvl = setInterval(function(){curLevel.timer.reset(par.duration/1000, "#2CFFCF");}, curLevel.timer.getTimeTilCountdownEnd()-3000)
           //function to be called when a key is pressed
 
-          setTimeout(function(){
-            document.addEventListener('keypress', funkk);
-            curLevel.view.showTextOnBottom("Press space to continue or r to restart the tutorial")
-          }, 4000)
 
         }
         var hasNotified = false

@@ -42,9 +42,9 @@ jsPsych.plugins["mot-game"] = (function() {
     "<!--selection canvas for ball selection in defusal mode:-->" +
     "<canvas id='selectionCanvas' style='position:absolute; left: 0; top: 0; z-index:1' height='" + h + "' width = '" + w + "'></canvas>" +
     "<canvas id='livesCanvas' style='position:absolute; left: 0; top: 0; z-index:3' height='" + h + "' width = '" + w + "'></canvas>" +
-    "<div id='messageBox' style='width: 66%;top:50%; margin-left:50%; transform: translate(-50%, -50%); -moz-transform: translate(-50%, -50%); -webkit-transform: translate(-50%, -50%); -ms-transform: translate(-50%, -50%); -o-transform: translate(-50%, -50%); display:none; animation-name: messagePopUpAnimation; animation-duration: 4s; position:absolute; z-index:500; overflow: auto; user-select:none;'><img id='messageImg' src='robomb-pngs/alert-box.png' style='display:block; width:100%; margin: auto; pointer-events:none; user-select:none'></img><div id='msgText' style='position:absolute; width: 95%; top: 50%; margin-left:50%; transform: translate(-50%,-50%); -moz-transform: translate(-50%,-50%); -webkit-transform: translate(-50%,-50%); -ms-transform: translate(-50%,-50%); -o-transform: translate(-50%,-50%); font:37px Overpass, sans-serif; color: white; text-align: center; display:block'></div><div id='buttonDiv'></div>" +
+    "<div id='messageBox' style='width: 66%;top:50%; margin-left:50%; transform: translate(-50%, -50%); -moz-transform: translate(-50%, -50%); -webkit-transform: translate(-50%, -50%); -ms-transform: translate(-50%, -50%); -o-transform: translate(-50%, -50%); display:none; animation-name: messagePopUpAnimation; animation-duration: 4s; position:absolute; z-index:500; overflow: auto; user-select:none;'><img id='messageImg' src='robomb-pngs/alert-box.png' style='display:block; width:100%; margin: auto; pointer-events:none; user-select:none'></img><div id='msgText' style='position:absolute; width: 95%; top: 50%; margin-left:50%; transform: translate(-50%,-50%); -moz-transform: translate(-50%,-50%); -webkit-transform: translate(-50%,-50%); -ms-transform: translate(-50%,-50%); -o-transform: translate(-50%,-50%); font:28px Overpass, sans-serif; color: white; text-align: center; display:block'></div><div id='buttonDiv'></div>" +
     "</div>" +
-    "<div id='bottomScreenText' style='display:none; animation-name: fadeIn; animation-duration: 2s; position:relative; top: -10%; width: 100%; z-index:500; overflow: auto'><br /><div id='bottomText' style='positon: absolute; width:100%; color: #C6FDF9; text-align: center; font: 14px Overpass, sans serif'>You've held out until the robots could be quarantined. +1 life. However, they are set to go off soon. You have 10 seconds to defuse them by clicking the right ones. You have one defusal kit per bomb, so don't waste any</div>'" +
+    "<div id='bottomScreenText' style='display:none; animation-name: fadeIn; animation-duration: 2s; position:relative; top: -10%; width: 100%; z-index:500; overflow: auto'><br /><div id='bottomText' style='positon: absolute; width:100%; color: #C6FDF9; text-align: center; font: 18px Overpass, sans serif'>You've held out until the robots could be quarantined. +1 life. However, they are set to go off soon. You have 10 seconds to defuse them by clicking the right ones. You have one defusal kit per bomb, so don't waste any</div>'" +
     "</div>" +
     "<audio id='a-wallCreate' src='sounds/wall-create.wav'></audio>" + //wall creation sound. from: https://freesound.org/people/xixishi/sounds/265210/
     "<audio id='a-collisionBwop' src='sounds/collision-bwop.mp3'></audio>" + //https://freesound.org/people/willy_ineedthatapp_com/sounds/167338/
@@ -1524,21 +1524,27 @@ jsPsych.plugins["mot-game"] = (function() {
       //args is an object. Currently, it has one option: deflectionSuccessful (true or false), which if true will let defusal mode know to give a different message
       //since it displayed
       this.displayDefusalMessage = function(defusalTimeLimit, args){
+        var txt = ""
         if(args !== undefined && args.deflectionSuccessful){
-          this.showTextOnBottom("You've held out until the robots could be quarantined. +1 life. However, they are set to go off soon. You have 10 seconds to defuse them by clicking the right ones. You have one defusal kit per bomb, so don't waste any.")
+          txt = "You've held out until the robots could be quarantined. However, they'll go off soon. You have 10 seconds to defuse them by clicking the right ones. You have one defusal kit per bomb so don't waste any."
           curLevel.model.freeze()
-          curLevel.controller.beginDefusalMode(defusalTimeLimit)
         } else {
-          var text = "One of the bomb carrying robots hit a wall! The bombs in all sabotaged robots have been activated, and you have ten seconds to defuse them. Click all the bomb-carrying bots to defuse them."
-          /*var okButton = {imgUp: 'robomb-pngs/btn-okay-up.png',
-                          imgDn: 'robomb-pngs/btn-okay-down.png',
-                          onClick: function(){curLevel.view.closeAlertBox(); curLevel.controller.beginDefusalMode(defusalTimeLimit)},
-                          activateOnEnterOrSpace: true}*/
+          txt = "One of the bomb carrying robots hit a wall! The bombs in all sabotaged robots have been activated, and you have ten seconds to defuse them. Click all the bomb-carrying bots to defuse them."
 
-          this.showTextOnBottom(text)
-          curLevel.controller.beginDefusalMode(defusalTimeLimit)
-          //this.showAlertBox(text, [okButton])
         }
+        //give an alert for the first two levels:
+        if(par.levelNumber < 3){
+          var okButton = {imgUp: 'robomb-pngs/btn-okay-up.png',
+                          imgDn: 'robomb-pngs/btn-okay-down.png',
+                          onClick: function(){curLevel.view.closeAlertBox(); curLevel.timer.unHide(); curLevel.controller.beginDefusalMode(defusalTimeLimit)},
+                          activateOnEnterOrSpace: true}
+
+          this.showAlertBox(txt, [okButton])
+          curLevel.timer.hide()
+      } else {
+        ////curLevel.controller.beginDefusalMode(defusalTimeLimit
+        curLevel.controller.beginDefusalMode(defusalTimeLimit)
+      }
 
       }
 
@@ -1552,8 +1558,8 @@ jsPsych.plugins["mot-game"] = (function() {
         //var fontsize = textDiv.style.fontSize//store the current font size in case it changed
 
         //if(messageTxt.length > 200){textDiv.style.fontSize = messageTxt.length/10 + 'px';}//handle overflow text. the formula might need to be changed
-
-        textDiv.innerHTML = messageTxt
+        textDiv.innerHTML = ''
+        textDiv.append(messageTxt)
 
         //adjust image width and height to fit the text:
         messImgEl.width = textDiv.width + 10 + 'px'
@@ -1602,16 +1608,10 @@ jsPsych.plugins["mot-game"] = (function() {
           if(button.activateOnEnterOrSpace){
             document.addEventListener('keypress', function(e){if(e.keyCode == 13 || e.key == " "){
               document.removeEventListener('keypress', arguments.callee)
-              //prevent double-presses
-              if(!pressed){
               butt.onclick()
-              pressed = true
-
-            }
-            setTimeout(function(){pressed = false}, 100)
             }
             })}
-         }
+        }
         messageDiv.style.display = 'block'
       }
 
@@ -2014,12 +2014,12 @@ jsPsych.plugins["mot-game"] = (function() {
           case "outOfLives":
             data.defusalMode = "neverNeeded"
             data.defusalDuration = 0
-            curLevel.view.showAlertBox("Level failed :( <br /> ur out of lives. Restarting at Level 1", buttons)
+            curLevel.view.showAlertBox("Level failed :(... ur out of lives. Restarting at Level 1", buttons)
             break;
           case "bombsAllDetonated":
               data.defusalMode = "neverNeeded"
               data.defusalDuration = 0
-              curLevel.view.showAlertBox("All the bombs detonated :(<br/> Proceed to Level " + (par.levelNumber+1) +"?", buttons)
+              curLevel.view.showAlertBox("All the bombs detonated :(                                                                                                                        Proceed to Level " + (par.levelNumber+1) +"?", buttons)
               break;
         }
         data.numLives = curLevel.model.lives
