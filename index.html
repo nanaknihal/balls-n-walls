@@ -430,6 +430,7 @@ exitWhenOutOfLives: true,
 }
 //timeline.push(level1);
 loop_counter = 0
+num_reg_balls = 0
 var levels_loop = {
   timeline: [{
     type:"mot-game",
@@ -441,7 +442,9 @@ var levels_loop = {
     ballRadius: randomBallRadius(),
     numRegularBalls: function(){
       console.log(loop_counter)
-      return loop_counter
+      //increment every 2-3 levels with some randomness
+      num_reg_balls+=Math.round(Math.random())
+      return num_reg_balls
     },
     numExplodingBalls: function(){
       //increment every 2-3 levels with some randomness
@@ -480,6 +483,7 @@ var levels_loop = {
       loop_counter++ //increment level number. loop counter is basically level number but is 0 for level 1, so level 1 is when loop_counter == 0
     } else {
       loop_counter = 0 //no previous loop has been done before
+      num_reg_balls = 0 //reset
     }
     GlobalTester.after(window)
     //is the experiment duration over? if so return false, exiting the loop
