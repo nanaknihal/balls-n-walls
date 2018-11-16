@@ -1380,7 +1380,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
           image = new Image()
           image.src = 'robomb-pngs/robot-open-bomb-large.png'
           message.append(image)
-          message.innerHTML+="<br />You will see the bombs when the saboteurs plant them but once they are planted, the robots immediately close their doors."
+          message.innerHTML+="<br />You will see the bombs when the saboteurs plant them but once they are planted, the robots immediately will close their doors."
           curLevel.view.showAlertBox(message, [ok])
         }}
         //bomb detected image over every exploding ball:
