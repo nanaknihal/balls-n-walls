@@ -1001,7 +1001,7 @@ jsPsych.plugins["mot-game"] = (function() {
         this.setX(this.x+dx)
         var dy = this.getVelocity()[1] * td
         this.setY(this.y+dy);
-        console.log(this.getVelocity()[0]^2+this.getVelocity()[1]^2)
+        //console.log(this.getVelocity()[0]^2+this.getVelocity()[1]^2)
         //if it's in implode and explode mode, have it implode if it's inside an occluder and explode til it's at the normal radius if it's outside
         if(par.implodeExplodeMode && !curLevel.defusalModeOn()){
           if(circleIsInAnOccluder([this.x, this.y], this.radius)){
@@ -2185,8 +2185,10 @@ function collidingWithBalls(pos, radius, balls /*an array of actual ball objects
       this.controller = controller,
       this.gameOver = function(){return this.controller.isGameOver()}
       this.update = function(){
-        model.update(this.timer.getTime())
-        view.update(this.model, this.timer.getTime())
+        var time = this.timer.getTime()
+        console.log(time)
+        model.update(time)
+        view.update(this.model, time)
       }
       this.beginGame = function(){
         this.controller.beginGame()
