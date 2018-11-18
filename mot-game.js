@@ -1721,7 +1721,6 @@ jsPsych.plugins["mot-game"] = (function() {
       this.defusalModeOn = false
       this.setDefusalModeOn = function(){this.defusalModeOn = true;}
       this.setDefusalModeOff = function(){this.defusalModeOn = false;}
-      this.isGameOver = function(){return this.gameOver} //overdoing it on the getters, setters, and LoD? maybe
       this.beginGame = function(){
 
         var balls = curLevel.model.getBalls()
@@ -1982,6 +1981,7 @@ jsPsych.plugins["mot-game"] = (function() {
                             data.numLives = curLevel.model.lives
                             curLevel.controller.endDefusalMode()
                             curLevel.controller.gameOver = true
+                            stopUpdating()
                             jsPsych.finishTrial(data)
                           },
                           activateOnEnterOrSpace: false
@@ -2179,14 +2179,15 @@ function collidingWithBalls(pos, radius, balls /*an array of actual ball objects
 
 
     function level(model, view, controller, levelDuration) {
+      /*this.id = par.levelNumber*/
       this.timer = new timer()
       this.model = model
       this.view = view
-      this.controller = controller,
-      this.gameOver = function(){return this.controller.isGameOver()}
+      this.controller = controller
+      this.gameOver = function(){return this.controller.gameOver}
       this.update = function(){
         var time = this.timer.getTime()
-        console.log(time)
+        console.log(/*this.id*/this.update.caller, time)
         model.update(time)
         view.update(this.model, time)
       }
@@ -2247,16 +2248,28 @@ function collidingWithBalls(pos, radius, balls /*an array of actual ball objects
       })
       currentSavedFrameIndex++
     }
+
+    //This stopUpdating function is in place because updateGame has to know when the game is over. Setting curLevel.gameOver to true
+    //doesn't stop the loop because curLevel is quickly replaced by a new level with gameOver as false. Meanwhile the loop is called
+    //once a frame and by that time, gameOver is true again. stopUpdating makes it clear for a while that the game is over
+    var stopping = false
+    function stopUpdating(){
+      stopping = true;
+      setTimeout(function(){stopping = false;}, 330)//for 1/3 a second, make it clear the game is over so that the updateGame loop stops.
+
+    }
+
     //updates normal game, not replayMode
     function updateGame(currentTime){
       curLevel.curTime = currentTime
-      if(!curLevel.gameOver()){
+
+      if(!stopping){
       window.requestAnimationFrame(function(){
           curLevel.update();
           curLevel.saveFrame();
           window.requestAnimationFrame(updateGame)
       })
-    }
+    } else { alert('s')}
     }
 
 
