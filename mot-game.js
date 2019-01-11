@@ -95,6 +95,7 @@ jsPsych.plugins["mot-game"] = (function() {
 
     /*GAME CODE*/
     var ballColor = "grey"
+    var justReachedMaxLives = false
     pressed = false
     var distanceBetween = function(p1, p2){
       var xdist = p2[0]-p1[0]
@@ -217,6 +218,7 @@ jsPsych.plugins["mot-game"] = (function() {
       this.incrementLives = function(callback){
         if(this.lives < par.maxLives){
           this.lives++
+          if(this.lives == par.maxLives){justReachedMaxLives = true}
       }
         callback();
       }
@@ -1292,47 +1294,43 @@ jsPsych.plugins["mot-game"] = (function() {
         //just call view's update function once. However, the exploding balls must be displayed differently:
         //bomb detected image over every exploding ball:
 
-        for(var j = 0, balls = mod.explodingBalls, numBalls = balls.length; j < numBalls; j++){
+        for(var j = 0, balls = mod.balls, numBalls = balls.length; j < numBalls; j++){
           var ball = balls[j];
-          //make the callback of the last setImage  this.update(), so that it doesn't update til all the images are loaded
-          if(j == numBalls - 1){
-            this.showImgAtFor('robomb-pngs/bomb-detected-' + par.ballRadius + '.png', ball.x, ball.y, initialFrameDuration)
-            var thisView = this
-            ball.setImage("robomb-pngs/robot-open-bomb-"+par.ballRadius+".png", function(){thisView.update(mod)})
-            //now, show the bomb detected text:
-             var ctx = document.getElementById('overlay').getContext('2d')
-             ctx.font = '30px "Overpass"'
-             ctx.fillStyle = '#C6FDF9'
-             ctx.textAlign = 'center'
-             if(numBalls == 1){ctx.fillText('BOMB DETECTED', w/2, 7*h/8)} else{ctx.fillText('BOMBS DETECTED', w/2, 7*h/8)}
-             setTimeout(function(){ctx.clearRect(0,0,w,h)}, initialFrameDuration)
-             //curLevel.view.showImgAtFor('robomb-pngs/bombb.png', w/2, 7*h/8, initialFrameDuration)
-          } else {
-            this.showImgAtFor('robomb-pngs/bomb-detected-'+par.ballRadius+'.png', ball.x, ball.y, initialFrameDuration)
-            ball.setImage("robomb-pngs/robot-open-bomb-"+par.ballRadius+".png")
+          if(ball.explosive){
+          	  this.showImgAtFor('robomb-pngs/bomb-detected-'+par.ballRadius+'.png', ball.x, ball.y, initialFrameDuration)
+          	  
+			  //make the callback of the last setImage  this.update(), so that it doesn't update til all the images are loaded
+			  if(j == numBalls - 1){
+				var thisView = this
+				ball.setImage("robomb-pngs/robot-open-bomb-"+par.ballRadius+".png", function(){thisView.update(mod)})
+				//now, show the bomb detected text:
+				 var ctx = document.getElementById('overlay').getContext('2d')
+				 ctx.font = '30px "Overpass"'
+				 ctx.fillStyle = '#C6FDF9'
+				 ctx.textAlign = 'center'
+				 if(numBalls == 1){ctx.fillText('BOMB DETECTED', w/2, 7*h/8)} else{ctx.fillText('BOMBS DETECTED', w/2, 7*h/8)}
+				 setTimeout(function(){ctx.clearRect(0,0,w,h)}, initialFrameDuration)
+				 //curLevel.view.showImgAtFor('robomb-pngs/bombb.png', w/2, 7*h/8, initialFrameDuration)
+			  } else {
+				ball.setImage("robomb-pngs/robot-open-bomb-"+par.ballRadius+".png") //this setImage doesn't have callback, like
+				//it does in the if condition
+			  }
+          
+          } else { //if it's not explosive
+          		if(j == numBalls - 1){
+             		var thisView = this
+                	ball.setImage(mod.defaultBallImg, function(){thisView.update(mod)})
+            	} else {
+              		ball.setImage(mod.defaultBallImg);
+            	}
+            	
+				//this.update(mod)
+				this.showLives(mod.lives)
           }
         }
-          //same but for regular robots:
-          for(var k = 0, balls = mod.balls, numBalls = balls.length; k < numBalls; k++){
-            var bal = balls[k];
-            //make the callback of the last setImage  this.update(), so that it doesn't update til all the images are loaded
-            if(k == numBalls - 1){
-              var thisView = this
-              if(!bal.explosive){
-                bal.setImage("robomb-pngs/robot-open-normal-"+par.ballRadius+".png", function(){thisView.update(mod)})
-              }
-
-            } else {
-              if(!bal.explosive){
-              bal.setImage("robomb-pngs/robot-open-normal-"+par.ballRadius+".png")
-            }
-            }
-
-        //this.update(mod)
-        this.showLives(mod.lives)
-        //set timeout for what happens after the initial frame is over:
-
-        }
+          
+          
+        //freeze the model at this frame set timeout for what happens after the initial frame is over:
         curLevel.model.freeze()
         setTimeout(function(){curLevel.model.resetAllBallDesigns(); curLevel.model.unFreeze()}, initialFrameDuration)
 
@@ -1616,8 +1614,8 @@ jsPsych.plugins["mot-game"] = (function() {
           buttonDiv.appendChild(butt)
 
           if(button.activateOnEnterOrSpace){
-            document.addEventListener('keypress', function(e){if(e.keyCode == 13 || e.key == " "){
-              document.removeEventListener('keypress', arguments.callee)
+            document.addEventListener('keyup', function(e){if(e.keyCode == 13 || e.key == " "){
+              document.removeEventListener('keyup', arguments.callee)
               butt.onclick()
             }
             })}
@@ -2020,7 +2018,17 @@ jsPsych.plugins["mot-game"] = (function() {
             data.correctGuesses = curLevel.controller.correctGuesses
             data.incorrectGuesses = curLevel.controller.incorrectGuesses
             curLevel.model.incrementLives(function(){curLevel.view.showLives(curLevel.model.lives)})
-            curLevel.view.showAlertBox("Level Passed! +1 Life. Proceed to Level " + (par.levelNumber+1) +"?", buttons);
+            //vary the message depending on whether +1 life is a possibility
+            if(curLevel.model.lives >= par.maxLives){
+            	if(justReachedMaxLives){ //then they were not at maxLives before the lives were updated, so display the normal msg
+            		curLevel.view.showAlertBox("Level Passed! +1 Life. Proceed to Level " + (par.levelNumber+1) +"?", buttons);
+            		justReachedMaxLives = false
+            	} else {
+            		curLevel.view.showAlertBox("Level Passed! Lives are already full; +0 lives. Proceed to Level " + (par.levelNumber+1) +"?", buttons);
+            	}
+            } else {
+            	curLevel.view.showAlertBox("Level Passed! +1 Life. Proceed to Level " + (par.levelNumber+1) +"?", buttons);
+            }
             break;
           case "outOfLives":
             data.defusalMode = "neverNeeded"
@@ -2033,6 +2041,7 @@ jsPsych.plugins["mot-game"] = (function() {
               curLevel.view.showAlertBox("All the bombs detonated :(                                                                                                                        Proceed to Level " + (par.levelNumber+1) +"?", buttons)
               break;
         }
+        justReachedMaxLives = false //reset it to false in case it was true
         data.numLives = curLevel.model.lives
         //curLevel.beginGame()
       }
@@ -2187,7 +2196,7 @@ function collidingWithBalls(pos, radius, balls /*an array of actual ball objects
       this.gameOver = function(){return this.controller.gameOver}
       this.update = function(){
         var time = this.timer.getTime()
-        console.log(/*this.id*/this.update.caller, time)
+        //console.log(/*this.id*/this.update.caller, time)
         model.update(time)
         view.update(this.model, time)
       }
@@ -2269,7 +2278,7 @@ function collidingWithBalls(pos, radius, balls /*an array of actual ball objects
           curLevel.saveFrame();
           window.requestAnimationFrame(updateGame)
       })
-    } else { alert('s')}
+    } else { /*...*/}
     }
 
 

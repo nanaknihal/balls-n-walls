@@ -55,7 +55,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
     var neverMadeAWallYet = true //for tutorial, to congratulate the user upon making the first wall
     var timestampWallCreationEnabled = null
     var funkk = function(e){
-      document.removeEventListener('keypress', funkk);
+      document.removeEventListener('keyup', funkk);
       if(e.key == " " && !pressedSpace){
         pressedSpace = true
         notifyOfExplodingBalls()
@@ -1326,7 +1326,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
 
                                 //make it so the next step happens when they press ' ', and allow them to restart by pressing 'r' if the tutorial was unclear
                                 setTimeout(function(){
-                                  document.addEventListener('keypress', funkk);
+                                  document.addEventListener('keyup', funkk);
                                   curLevel.view.showTextOnBottom("Press space to continue or r to restart the tutorial")
                                 }, 4000)
                             },
@@ -1371,16 +1371,16 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
                             imgUp: 'robomb-pngs/btn-okay-up.png',
                             imgDn: 'robomb-pngs/btn-okay-down.png',
                             onClick: function(){
-                              setTimeout(function(){curLevel.view.showAlertBox("Don't let the bomb-carrying robots hit the walls no matter what!", [ok2])},212)//arbitrary number
+                              setTimeout(function(){curLevel.view.showAlertBox("You must remember which robots contain the bombs. Don't let the bomb-carrying robots hit the walls...or you are doomed", [ok2])},212)//arbitrary number
                             },
                             activateOnEnterOrSpace: true
                           }
           var message = document.createElement('div')
-          message.innerHTML = "Some robots will contain bombs!<br />"
+          message.innerHTML = "Some robots will contain bombs! They'll look like this:<br />"
           image = new Image()
           image.src = 'robomb-pngs/robot-open-bomb-large.png'
           message.append(image)
-          message.innerHTML+="<br />You will see the bombs when the saboteurs plant them but once they are planted, the robots immediately will close their doors."
+          message.innerHTML+="<br />You'll see the bombs when the saboteurs plant them but once they're planted, robots will close their doors."
           curLevel.view.showAlertBox(message, [ok])
         }}
         //bomb detected image over every exploding ball:
@@ -1709,8 +1709,8 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
           buttonDiv.appendChild(butt)
 
           if(button.activateOnEnterOrSpace){
-            document.addEventListener('keypress', function(e){if(e.keyCode == 13 || e.key == " "){
-              document.removeEventListener('keypress', arguments.callee)
+            document.addEventListener('keyup', function(e){if(e.keyCode == 13 || e.key == " "){
+              document.removeEventListener('keyup', arguments.callee)
               butt.onclick()
             }
             })}
