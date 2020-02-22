@@ -291,7 +291,7 @@ jsPsych.plugins["mot-game"] = (function() {
         //random x-y coordinates of a new ball:
         var coords = randomCoordinatesForNormalBall()
         //make sure the ball is in an acceptable place:
-          var badPosition = circleIsInAnOccluder(coords, this.ballRadius) || collidingWithBalls(coords, this.ballRadius, this.balls)
+          var badPosition = circleIsInAnOccluder(coords, this.ballRadius) || collidingWithBalls(coords, this.ballToBallRadius, this.balls)
           while(badPosition){
             //reset the coordinates until the piwr and the coordinates are therefore valid
             coords = randomCoordinatesForNormalBall()
@@ -762,8 +762,35 @@ jsPsych.plugins["mot-game"] = (function() {
                     }
                 }
 
+                this.executeBallCollisions = function(){
+                  //iterate through every ball pair and check if colliding. If so, change the motion
+                  for(var i = 0, numBalls = this.balls.length; i < numBalls; i++){
+                      var ball1 = this.balls[i];
+                      if(ball1 === undefined){continue}//go to the next ball if this one has been removed during the loop
+                      for(var j = i+1; j < numBalls; j++){
+                          var ball2 = this.balls[j];
+                          if(ball2 === undefined){continue}//go to the next ball if this one has been removed during the loop
+
+                          var ball1Point = [ball1.getX(), ball1.getY()];
+                          var ball2Point = [ball2.getX(), ball2.getY()];
+                          var howFar = distanceBetween(ball1Point, ball2Point);
+                          //if too close:
+                          if(howFar <= ball1.ballToBallRadius || howFar <= ball2.ballToBallRadius){
+                            console.log("too close-ball1 at " + ball1Point + " ball2 at " + ball2Point);
+                            //reverse balls' velocities
+                            var vel1 = ball1.getVelocity()
+                            var vel2 = ball2.getVelocity()
+                            var newVel1 = [-vel1[0], -vel1[1]]
+                            var newVel2 = [-vel2[0], -vel2[1]]
+                            ball1.setVelocity(newVel1)
+                            ball2.setVelocity(newVel2)
+                          }
+                    }
+                  }
+                }
         this.executeWallCollisions()
         this.executeObstacleCollisions()
+        if(par.collideIfTooClose){this.executeBallCollisions()};
         //move the balls
         for(var i = 0, numBalls = this.balls.length; i < numBalls; i++){
           this.balls[i].move(timestepDuration)
@@ -878,6 +905,9 @@ jsPsych.plugins["mot-game"] = (function() {
       this.callOccluderExitAnimation = function(){this.occluderExitAnimation.showAnimation(this.x, this.y)}
 
       this.radius = radius
+
+      this.ballToBallRadius = par.minDistanceBetweenBalls*2 //ball to ball collision radius
+
       this.getRadius = function(){return this.radius}
       //all balls must have the same speed but random direction: therefore their:
       //x velocity = their speed*cos(random angle), y velocity: speed*sin(same angle)
@@ -1298,7 +1328,7 @@ jsPsych.plugins["mot-game"] = (function() {
           var ball = balls[j];
           if(ball.explosive){
           	  this.showImgAtFor('robomb-pngs/bomb-detected-'+par.ballRadius+'.png', ball.x, ball.y, initialFrameDuration)
-          	  
+
 			  //make the callback of the last setImage  this.update(), so that it doesn't update til all the images are loaded
 			  if(j == numBalls - 1){
 				var thisView = this
@@ -1315,7 +1345,7 @@ jsPsych.plugins["mot-game"] = (function() {
 				ball.setImage("robomb-pngs/robot-open-bomb-"+par.ballRadius+".png") //this setImage doesn't have callback, like
 				//it does in the if condition
 			  }
-          
+
           } else { //if it's not explosive
           		if(j == numBalls - 1){
              		var thisView = this
@@ -1323,13 +1353,13 @@ jsPsych.plugins["mot-game"] = (function() {
             	} else {
               		ball.setImage(mod.defaultBallImg);
             	}
-            	
+
 				//this.update(mod)
 				this.showLives(mod.lives)
           }
         }
-          
-          
+
+
         //freeze the model at this frame set timeout for what happens after the initial frame is over:
         curLevel.model.freeze()
         setTimeout(function(){curLevel.model.resetAllBallDesigns(); curLevel.model.unFreeze()}, initialFrameDuration)
@@ -2180,7 +2210,7 @@ function collidingWithBalls(pos, radius, balls /*an array of actual ball objects
   var colliding = false
   for(var b = 0, l = balls.length; b < l; b++){
     var dist = distanceBetween(pos, [balls[b].x, balls[b].y])
-    if(dist < this.radius || dist < balls[b].radius){return true}
+    if(dist < this.ballToBallRadius || dist < balls[b].ballToBallRadius){return true}
   }
   return false
 }

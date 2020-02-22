@@ -21,7 +21,9 @@ var gameDuration = 15*60*1000
 var gameWidth = 960, gameHeight = 600
 var timeline = []
 var gameMusic = /*document.getElementById('a-music')*/ new Audio('sounds/music.mp3')
-var GlobalTester = (function(){
+
+
+var GlobalTester = (function(){ //from user david on https://stackoverflow.com/questions/14063064/how-to-find-the-global-variables-used-in-my-javascript/14063134
     var fields = {};
     var before = function(w){
         for(var field in w){
@@ -132,13 +134,15 @@ var tutorial_loop = {
       }
 }
 
-timeline.push(tutorial_loop)
+//timeline.push(tutorial_loop)
 var level1 = {
   type:"mot-game",
   stimulus:"<p>test</p>",
   duration: 15000,
   ballSpeed: 0.07,//jsPsych.timelineVariable("ballSpeed", true),
   ballRadius: randomBallRadius(),
+  minDistanceBetweenBalls: 50,
+  collideIfTooClose: true,
   numRegularBalls: 4,
   numExplodingBalls: 1,
   maxUserDefinedObstacles: 1,
@@ -450,6 +454,8 @@ var levels_loop = {
       //increment every 2-3 levels with some randomness
       return 1+loop_counter/(2+Math.round(Math.random()))
     },
+    minDistanceBetweenBalls: 50,
+    collideIfTooClose: true,
     maxUserDefinedObstacles: 1,
     maxUserDefinedObstacleSegments: 3,
     maxDistanceBetweenObstaclePixels:300,
