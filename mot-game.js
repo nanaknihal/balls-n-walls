@@ -115,6 +115,22 @@ jsPsych.plugins["mot-game"] = (function() {
        return randWithMeanZeroAnSDOne * sd + mean
     }
 
+    //rotates vector [x,y] by angle a
+    var rotateVectorByAngle = function(v, a){
+      return [
+              v[0]* Math.cos(a) - v[1]* Math.sin(a),
+              v[0] * Math.sin(a) + v[1] * Math.cos(a)
+            ]
+            /*//x and y components of new vector
+            var x = v[0]* Math.cos(a) - v[1]* Math.sin(a)
+            var y = v[0] * Math.sin(a) + v[1] * Math.cos(a)
+
+            console.log("input: " + v)
+            console.log("output: " + [x,y])
+            //assert magnitudes are the same:
+            //console.assert(Math.sqrt(v[0]*v[0] + v[1]*v[1]) == Math.sqrt(x*x + y*y))*/
+    }
+
     //point is in format [x,y]; rect is in format {x: , y: , width: , height: }
     var pointIsWithinRectangle = function(point, rect){
       var furthestRightCoordinate = rect.x + rect.width
@@ -828,6 +844,7 @@ jsPsych.plugins["mot-game"] = (function() {
 
     //constructor for balls: (x and y are initial position)
     function ball(x, y, radius, speed, id, isExplosive) {
+      this.speed = speed
       this.id = id
       this.occluded = false //only used for implosion/explosion/teleportation occlusion
       this.collisionsEnabled = true //collisions allowed
@@ -913,7 +930,8 @@ jsPsych.plugins["mot-game"] = (function() {
       //x velocity = their speed*cos(random angle), y velocity: speed*sin(same angle)
 
       var randomAngle = Math.random()*2*Math.PI
-      this.velocity = [speed*Math.cos(randomAngle), speed*Math.sin(randomAngle)]
+      this.velocity = [this.speed*Math.cos(randomAngle), this.speed*Math.sin(randomAngle)]
+
       this.x = x//Math.random()*view.gameWidth
       //this.x_prev = null, //previous position is important to calculate angle of movement
       this.y = y//Math.random()* view.gameHeight
@@ -975,7 +993,29 @@ jsPsych.plugins["mot-game"] = (function() {
         //only do the following modifications to acceleration and velocity if allowed (they will NOT be allowed in a frame where the ball
         //is colliding.
         if(!this.colliding){
-          if(par.stochasticRobotPaths){
+          if(par.randomBallMotion){
+            var vel = this.velocity
+            //var newVel = rotateVectorByAngle(oldVel, Math.random()*2*Math.PI)
+            //console.log("oldVel: " + oldVel + "newVel: " + newVel)
+            //this.setVelocity(rotateVectorByAngle(vel, Math.random()*2*Math.PI))
+            var coef = 0.6
+            this.setVelocity(rotateVectorByAngle(vel, coef*(Math.random()-0.5)))
+            /*
+            /* set a new velocity by taking the current velocity and "averaging" it with a random new one, multiplied
+            by a weighiting coefficient. If it was totally random each frame and not largely dependent on the previous
+            velocity, gameplay would be quite odd and boring
+
+            var newAngle = Math.random()*2*Math.PI
+            var newVelocity = [this.speed*Math.cos(newAngle), this.speed*Math.sin(newAngle)]
+            var coef = 0.02 //"weight" of new velocity
+            console.log("newVelocity: " + newVelocity)
+            var avgX = ( coef*newVelocity[0] + this.velocity[0] ) / (1+coef)
+            var avgY = ( coef*newVelocity[1] + this.velocity[1] ) / (1+coef)
+            console.log("setting")
+            this.setVelocity([avgX, avgY])
+            */
+          }
+          /*if(par.stochasticRobotPaths){
             pfsrp = par.parametersForStochasticRobotPaths
             //Equation for velocity and acceleration taken from Vul, Frank, and Tenenbaum (2009), producing an Ornstein-Uhlenbeck process: (some modifications are here:
             //the velocity is multiplied by velocityMultipler and force fields such as in Scholl & Pylyshyn (1999)). Acceleration is also disabled upon collision.
@@ -1023,7 +1063,8 @@ jsPsych.plugins["mot-game"] = (function() {
             velocity[0]*=pfsrp.velocityMultipler
             velocity[1]*=pfsrp.velocityMultipler
             this.setVelocity(velocity)
-          }
+          }*/
+
       } else {//if the ball is colliding:
         this.colliding = false //it's about to uncollide because it's velocity has been set by whatever called move:
       }
