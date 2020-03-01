@@ -102,6 +102,7 @@ var tutorial_loop = {
       {
         type:"mot-game-tutorial",
         stimulus:"<p>test</p>",
+        backgroundImg: "robomb-pngs/floor.png",
         duration: 15000,
         ballSpeed: 0.07,
         ballRadius: 'large',
@@ -455,6 +456,7 @@ var levels_loop = {
       //increment every 2-3 levels with some randomness
       return 1+loop_counter/(2+Math.round(Math.random()))
     },
+    backgroundImg: "robomb-pngs/floor.png",
     minDistanceBetweenBalls: 50,
     collideIfTooClose: true,
     maxUserDefinedObstacles: 1,
@@ -472,7 +474,7 @@ var levels_loop = {
     notifyUserOfImplodeExplodeMode: false,
     //stochasticRobotPaths: false, DEPRECATED
     randomBallMotion: true,
-    randomMotionCoefficient: 0.6,
+    randomMotionCoefficient: 0.6, //note: there is a bug where high values cause problems with collisions
     parametersForStochasticRobotPaths: {inertia: 0.95, springConstant: 0, accelerationStandardDeviation: 0.01, velocityMultipler: 1.030},
     forceFields: false,
     forceFieldStrength: 0.0006,

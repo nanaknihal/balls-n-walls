@@ -28,7 +28,7 @@ jsPsych.plugins["mot-game"] = (function() {
     var obstacleZIndex = par.invisibleOccluders ? 4 : 3
     display_element.innerHTML =
     "<div id='gameContainer' style='position: absolute; top: 50%; left: 50%; margin-right:50%; transform: translate(-50%, -50%); height: " + h + "px; width: " + w + "px; vertical-align: middle'>" +
-    "<!-background image:--><img src='robomb-pngs/floor.png' height='" + h + "' width='" + w + "' style='position:absolute; margin:auto; z-index:-100'></img>" +
+    "<!-background image:--><img src='" + par.backgroundImg + "' height='" + h + "' width='" + w + "' style='position:absolute; margin:auto; z-index:-100'></img>" +
     "<!--main canvas where game happens:-->" +
     "<canvas id='mainCanvas' height='" + h + "' width = '" + w + "'></canvas>"
     +
