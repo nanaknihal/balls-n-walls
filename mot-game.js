@@ -995,25 +995,8 @@ jsPsych.plugins["mot-game"] = (function() {
         if(!this.colliding){
           if(par.randomBallMotion){
             var vel = this.velocity
-            //var newVel = rotateVectorByAngle(oldVel, Math.random()*2*Math.PI)
-            //console.log("oldVel: " + oldVel + "newVel: " + newVel)
-            //this.setVelocity(rotateVectorByAngle(vel, Math.random()*2*Math.PI))
-            var coef = 0.6
+            var coef = par.randomMotionCoefficient
             this.setVelocity(rotateVectorByAngle(vel, coef*(Math.random()-0.5)))
-            /*
-            /* set a new velocity by taking the current velocity and "averaging" it with a random new one, multiplied
-            by a weighiting coefficient. If it was totally random each frame and not largely dependent on the previous
-            velocity, gameplay would be quite odd and boring
-
-            var newAngle = Math.random()*2*Math.PI
-            var newVelocity = [this.speed*Math.cos(newAngle), this.speed*Math.sin(newAngle)]
-            var coef = 0.02 //"weight" of new velocity
-            console.log("newVelocity: " + newVelocity)
-            var avgX = ( coef*newVelocity[0] + this.velocity[0] ) / (1+coef)
-            var avgY = ( coef*newVelocity[1] + this.velocity[1] ) / (1+coef)
-            console.log("setting")
-            this.setVelocity([avgX, avgY])
-            */
           }
           /*if(par.stochasticRobotPaths){
             pfsrp = par.parametersForStochasticRobotPaths
