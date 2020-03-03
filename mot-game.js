@@ -359,7 +359,7 @@ jsPsych.plugins["mot-game"] = (function() {
        *
        *The obstacle has a radius. If a ball is closer than ball.radius + obstacle.radius, a collision will be registered */
 
-        this.maxObstacles = 1 //1 wall per exploding ball sounds good
+        this.maxObstacles = par.maxUserDefinedObstacles
 
 
         this.userObstacles = [];
@@ -394,7 +394,7 @@ jsPsych.plugins["mot-game"] = (function() {
           //if(userObstacle.atMaxLength()){this.addNewObstacle()}     //make a new user obstacle if the current one has the maximum number of points
 
           //if(curLevel.model.mostRecentObstacle() === undefined){curLevel.model.addNewObstacle()}
-          curLevel.model.mostRecentObstacle().addPixels(event)
+          if(curLevel.model.mostRecentObstacle() !== undefined) {curLevel.model.mostRecentObstacle().addPixels(event)}
           curLevel.model.removeExcessObstacles() //remove any excess obstaclds if there are any real-time, while pixels are being added
         }
 
@@ -1233,7 +1233,7 @@ jsPsych.plugins["mot-game"] = (function() {
 
     function userObstacle() {
       this.pixels = new Array(),
-      this.maxPixels = par.maxUserDefinedObstacleSegments+1,
+      this.maxPixels = par.maxUserDefinedObstacleSegments != 0 ? par.maxUserDefinedObstacleSegments+1 : 0, //if 0 segments allowed, allow 0 pixels also. Otherwise allow segments+1 pixels
       this.radius = par.userObstacleThickness+7,
       this.minDistanceBetweenPixels = par.minDistanceBetweenObstaclePixels,
       this.maxDistanceBetweenPixels = par.maxDistanceBetweenObstaclePixels,
@@ -1450,6 +1450,7 @@ jsPsych.plugins["mot-game"] = (function() {
         var ctx = this.mainCtx
         //display the points/pixels in the user-defined wall as circles and draw line segments between them (except for before the first and after the last pixel)
         for(var j = 0, obs = obstacles, numObs = obs.length; j<numObs; j++){
+          console.log(obstacles)
           var ob = obs[j]
           for(var o = 0, pix = ob.pixels, numPix = pix.length, rad = ob.getRadius(); o<numPix; o++){
             //get x and y values of the pixel
