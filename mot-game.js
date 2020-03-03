@@ -882,12 +882,16 @@ jsPsych.plugins["mot-game"] = (function() {
         this.colliding = true
         if(!this.collisionsEnabled){
         } else if(collisionType == "wall" && this.explosive){
-          curLevel.model.removeBall(this)
+
+          if(par.removeBallWhenExplode){
+            curLevel.model.removeBall(this)
+            curLevel.controller.guessesRemaining-- //decrement number of guesses they have
+          }
+
           //if it's in lives mode, have it decrement a life.
           if(par.lives){
             curLevel.model.decrementLives(/*callback:*/function(){curLevel.view.showLives(curLevel.model.lives)})
           }
-          curLevel.controller.guessesRemaining-- //decrement number of guesses they have
           //curLevel.defusalMode(); //COMMENT THIS TO DISABLE DEFUSAL MODE
         } else if(collisionType == "userObstacle"){
 
@@ -1450,7 +1454,6 @@ jsPsych.plugins["mot-game"] = (function() {
         var ctx = this.mainCtx
         //display the points/pixels in the user-defined wall as circles and draw line segments between them (except for before the first and after the last pixel)
         for(var j = 0, obs = obstacles, numObs = obs.length; j<numObs; j++){
-          console.log(obstacles)
           var ob = obs[j]
           for(var o = 0, pix = ob.pixels, numPix = pix.length, rad = ob.getRadius(); o<numPix; o++){
             //get x and y values of the pixel
@@ -1969,6 +1972,7 @@ jsPsych.plugins["mot-game"] = (function() {
       this.incorrectGuesses = 0
       this.registerDefusalGuess = function(event){
         if(curLevel.controller.guessesRemaining > 0){
+          console.log(event)
           var pos = getPixelPositionRelativeToObject([event.pageX, event.pageY], document.getElementById('gameContainer'))
           var result = model.checkDefusalGuess(pos)
           switch(result){
