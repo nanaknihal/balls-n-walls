@@ -363,6 +363,7 @@ jsPsych.plugins["mot-game"] = (function() {
 
 
         this.userObstacles = [];
+        this.getUserObstacles = function(){return this.userObstacles}
         this.mostRecentObstacle = function(){return this.userObstacles[this.userObstacles.length-1]} //last element in the array
         this.addNewObstacle = function(){
           //play the wall creation sound:
@@ -467,6 +468,8 @@ jsPsych.plugins["mot-game"] = (function() {
       function nDimCosine(a,b) {
         return dot(a,b)/(norm(a)*norm(b))
       }
+
+      //gives a collision status in format {collisionHappening: BOOL} for given ball and obstacle
       this.ballAndObstacleCollisionStatus = function(ball,ob){
         var ballAndObSegmentCollision = {collisionHappening: false} //default value, if there's no collision just return this
         for(var r = 0, pix = ob.getPixels(), numPix = pix.length; r<numPix-1; r++){
@@ -481,6 +484,8 @@ jsPsych.plugins["mot-game"] = (function() {
                                        //like all of the other segments' "collision" data, contains a false value for collisionHappening. it's just
                                        //an arbitrary return value that has a similar format as the other return value this function gives but false
       }
+      //helper function for ballAndObstacleCollisionStatus that gives status between ball and individual segment of a user-drawn obsbtacle.
+      //returns {collisionHappening: BOOL, wallVector: [x,y], ballVector: [x,y], wallNormal: [x,y]}
       this.ballAndObstacleSegmentCollisionStatus = function(ball, segment){
         var wallPoint = segment[0]
         var nextWallPoint = segment[1]
@@ -997,6 +1002,18 @@ jsPsych.plugins["mot-game"] = (function() {
             var vel = this.velocity
             var coef = par.randomMotionCoefficient
             this.setVelocity(rotateVectorByAngle(vel, coef*(Math.random()-0.5)))
+
+            //check if this new velocity will cause a collision with an obstacle:
+            var obs = curLevel.model.getUserObstacles()
+            var numObs = obs.length
+            for(var o = 0; o < numObs; o++){
+              var ob = obs[o]
+                      var collisionData = curLevel.model.ballAndObstacleCollisionStatus(this,ob)
+                      if(collisionData.collisionHappening){ //if it will collide, reset the velocity
+                        this.setVelocity(vel)
+                        break
+                      }
+            }
           }
           /*if(par.stochasticRobotPaths){
             pfsrp = par.parametersForStochasticRobotPaths
