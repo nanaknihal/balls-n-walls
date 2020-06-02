@@ -1283,12 +1283,23 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
       this.highlightingSelectedBalls = false
       this.pointsToShow = new Array(),
       this.showPoint = function(pt) {this.pointsToShow.push(pt)}
-
+      this.clickDragPaused = false
       this.initialized = false
       this.init = function(){
         this.mainCan = document.getElementById('mainCanvas')
         this.mainCtx = this.mainCan.getContext("2d")
         this.initialized = true
+      }
+
+      this.changeMouseToClick = function(){
+        if(!curLevel.view.clickDragPaused){
+          document.getElementById("gameContainer").style.cursor = 'url("robomb-pngs/click.png"), auto'
+        }
+      }
+      this.changeMouseToDrag = function(){
+        if(!curLevel.view.clickDragPaused){
+          document.getElementById("gameContainer").style.cursor = 'url("robomb-pngs/drag.png"), auto'
+        }
       }
 
       this.showInitialFrame = function(mod, initialFrameDuration){
@@ -1357,20 +1368,12 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
 
           //curLevel.view.showAlertBox('To build a force wall, click and drag. Only one wall can be on the screen at a time.', [okButton])
 
-          //show a click instruction that follows the mouse
-          changeMouseToClick = function(){
-            document.getElementById("gameContainer").style.cursor = 'url("robomb-pngs/click.png"), auto'
-          }
-          //show a drag img as the cursor
-          changeMouseToDrag = function(){
-            document.getElementById("gameContainer").style.cursor = 'url("robomb-pngs/drag.png"), auto'
-          }
-
-          document.addEventListener('mousedown', changeMouseToDrag)
-          document.addEventListener('mouseup', changeMouseToClick)
+          //show click and drag instructions:
+          document.addEventListener('mousedown', curLevel.view.changeMouseToDrag)
+          document.addEventListener('mouseup', curLevel.view.changeMouseToClick)
 
           //start with mouse at click
-          changeMouseToClick()
+          curLevel.view.changeMouseToClick()
 
           //listen for successful wall build
           document.addEventListener('wallFinished', function(event){
@@ -1398,6 +1401,11 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
             imgUp: 'robomb-pngs/btn-okay-up.png',
             imgDn: 'robomb-pngs/btn-okay-down.png',
             onClick: function(){
+              //Tutorial is over. Removing click/drag mouse, saving data, and starting the new trial
+              document.removeEventListener('mousedown', curLevel.view.changeMouseToDrag)
+              document.removeEventListener('mouseup', curLevel.view.changeMouseToClick)
+              alert('removed them')
+              document.getElementById("gameContainer").style.cursor = 'default'
               data.numLives = curLevel.model.lives
               curLevel.controller.gameOver = true
               clearInterval(intrvl);
@@ -1418,12 +1426,12 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
           //set up ok buttons
           var ok =
                           {
-                            imgUp: 'robomb-pngs/btn-okay-up.png',
-                            imgDn: 'robomb-pngs/btn-okay-down.png',
+                            imgUp: 'robomb-pngs/btn-go-up.png',
+                            imgDn: 'robomb-pngs/btn-go-down.png',
                             onClick: function(){
                               curLevel.view.showAlertBox(message, [ok1])
                             },
-                            activateOnEnterOrSpace: true
+                            activateOnEnterOrSpace: false
                           }
           var ok1 =
                           {
@@ -1435,7 +1443,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
                             activateOnEnterOrSpace: true
                           }
 
-        curLevel.view.showAlertBox("r", [ok])
+        curLevel.view.showAlertBox("You're ready for the 1st level -- this one has a bomb.", [ok])
         }}
         //bomb detected image over every exploding ball:
         var bombDetectedScreen = function(){
@@ -1706,8 +1714,13 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
       }
 
       this.showAlertBox = function(messageTxt, buttons){
+
         //don't allow wall drawing while the alerts's on
         document.removeEventListener("mousedown", curLevel.controller.findWallDrawingPath);
+        //reset cursor in case it has been changed -- perhaps this should be a function of the view but for some reason, when implement as such, the function could not be found here
+        document.getElementById("gameContainer").style.cursor = 'default'
+        curLevel.view.clickDragPaused = true
+
         var messageDiv = document.getElementById('messageBox') //there's already an element; it's properties just have to be adjusted and then it needs to be displayed
         var messImgEl = document.getElementById('messageImg')
         var buttonDiv = document.getElementById('buttonDiv')
@@ -1746,7 +1759,9 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
           //butt.style.top='0%'
           butt.onclick = function(){
             butt.src = button.imgDn;
-              setTimeout(button.onClick, 90);
+              setTimeout(button.onClick, 100);
+              //unpause click drag functionality
+              setTimeout(function(){curLevel.view.clickDragPaused = false}, 200); //short delay of makes it feel less awkward -- otherwise cursor shows click before alert box is gone
               /*/now that the alert's over, reset the font size of the text in case it changed due to overflow:
               textDiv.style.display = 'none';textDiv.style.fontSize = fontsize; setTimeout(function(){textDiv.style.display = 'block';},130)*/
               //start listening for walls again:
@@ -2101,8 +2116,8 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
         curLevel.timer.hide()
         document.removeEventListener("mousedown", curLevel.controller.findWallDrawingPath)
         document.removeEventListener("mousemove", curLevel.model.addPixelsToUserObstacles)
-        document.removeEventListener("mousedown", changeMouseToDrag)
-        document.removeEventListener("mouseup", changeMouseToClick)
+        document.removeEventListener("mousedown", curLevel.view.changeMouseToDrag)
+        document.removeEventListener("mouseup", curLevel.view.changeMouseToClick)
         //button to be displayed in alert:
         var buttons = [/*uncomment for less rigorous experiments where the user can choose to exit after a level {
                           imgUp: 'robomb-pngs/btn-exit-up.png',
