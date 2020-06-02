@@ -54,8 +54,10 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
     var pressedR = false
     var neverMadeAWallYet = true //for tutorial, to congratulate the user upon making the first wall
     var timestampWallCreationEnabled = null
-    var funkk = function(e){
-      document.removeEventListener('keyup', funkk);
+
+    //happens when user presses space to continue or r to restart
+    var progressTutorial = function(e){
+      //document.removeEventListener('keyup', progressTutorial);
       if(e.key == " " && !pressedSpace){
         pressedSpace = true
         notifyOfExplodingBalls()
@@ -1294,8 +1296,13 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
         curLevel.model.freeze()
         curLevel.timer.pause()
         curLevel.timer.hide()
+
+        //go on indefinitely by resetting the timer every so often (3000 is just a safe value of seconds before it runs out, when it's reset)
+        intrvl = setInterval(function(){curLevel.timer.reset(par.duration/1000, "#2CFFCF");}, curLevel.timer.getTimeTilCountdownEnd()-3000)
         //curLevel.timer.hide()
-        var ok =
+
+        //so many ok buttons...and they must be declared in the opposite order they are called sometimes
+        var ok1 =
                         {
                           imgUp: 'robomb-pngs/btn-okay-up.png',
                           imgDn: 'robomb-pngs/btn-okay-down.png',
@@ -1304,9 +1311,22 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
                           },
                           activateOnEnterOrSpace: true
                         }
+
+        var ok =
+                                {
+                                  imgUp: 'robomb-pngs/btn-play-up.png',
+                                  imgDn: 'robomb-pngs/btn-play-down.png',
+                                  onClick: function(){
+                                    curLevel.view.closeAlertBox(); curLevel.view.showAlertBox("We made another field and put one bombless robot in for you to practice. Now, allow me to bestow upon you a much needed skill: drawing a wall. It's as easy as clicking and dragging. Here, try it, and demonstrate your worth.", [ok1])
+                                  },
+                                  activateOnEnterOrSpace: false
+                                }
+
+
         setTimeout(function(){
-          curLevel.view.showAlertBox("Welcome to the tutorial. Let's practice a skill that will be useful: making walls", [ok])
+          curLevel.view.showAlertBox("Hi, I'm Mr. Tutorial. I have come to teach you the skills you will need to save us all. We have managed to contain all the robots into a small field. But the walls around them are not too strong. And some robots have bombs.", [ok])
         }, 199)
+
         var practiceWallMaking = function(){
           var secondOkButton =
                           {
@@ -1315,18 +1335,10 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
                             onClick: function(){
 
                               curLevel.view.closeAlertBox(); curLevel.model.unFreeze();
-                              document.addEventListener('wallFinished', function(event){
-                                if(neverMadeAWallYet){
-                                  curLevel.view.showImgAtFor('robomb-pngs/yep-medium.png', event.x, event.y, 333);
-                                  var correctAudio = document.getElementById('a-correct')
-                                  correctAudio.load()
-                                  correctAudio.play()
-                                }
-                                neverMadeAWallYet = false;})
 
                                 //make it so the next step happens when they press ' ', and allow them to restart by pressing 'r' if the tutorial was unclear
                                 setTimeout(function(){
-                                  document.addEventListener('keyup', funkk);
+                                  document.addEventListener('keyup', progressTutorial);
                                   curLevel.view.showTextOnBottom("Press space to continue or r to restart the tutorial")
                                 }, 4000)
                             },
@@ -1342,11 +1354,38 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
                             },
                             activateOnEnterOrSpace: true
                           }
-          curLevel.view.showAlertBox('To build a force wall, click and drag. Only one wall can be on the screen at a time.', [okButton])
 
-          //go on indefinitely by resetting the timer every so often (3000 is just a safe value of seconds before it runs out, when it's reset)
-          intrvl = setInterval(function(){curLevel.timer.reset(par.duration/1000, "#2CFFCF");}, curLevel.timer.getTimeTilCountdownEnd()-3000)
-          //function to be called when a key is pressed
+          //curLevel.view.showAlertBox('To build a force wall, click and drag. Only one wall can be on the screen at a time.', [okButton])
+
+          //show a click instruction that follows the mouse
+          changeMouseToClick = function(){
+            document.getElementById("gameContainer").style.cursor = 'url("robomb-pngs/click.png"), auto'
+          }
+          //show a drag img as the cursor
+          changeMouseToDrag = function(){
+            document.getElementById("gameContainer").style.cursor = 'url("robomb-pngs/drag.png"), auto'
+          }
+
+          document.addEventListener('mousedown', changeMouseToDrag)
+          document.addEventListener('mouseup', changeMouseToClick)
+
+          //start with mouse at click
+          changeMouseToClick()
+
+          //listen for successful wall build
+          document.addEventListener('wallFinished', function(event){
+            if(neverMadeAWallYet){
+              curLevel.view.showImgAtFor('robomb-pngs/yep-medium.png', event.x, event.y, 333);
+              var correctAudio = document.getElementById('a-correct')
+              correctAudio.load()
+              correctAudio.play()
+              //then, show an alert saying good job, and letting them know what happens if a ball is drawn thru
+              setTimeout(function(){curLevel.view.showAlertBox("Great job. Now notice when you put a force wall through a robot, the robot is immune to its effect -- Here, try drawing through the robot.", [secondOkButton])}, 500)
+            }
+            neverMadeAWallYet = false;})
+
+
+
 
 
         }
@@ -1366,7 +1405,27 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
             },
             activateOnEnterOrSpace: true
           }
+
+
+          //set up msg to be shown for special alert box which has an image
+          var message = document.createElement('div')
+          message.innerHTML = "Some robots will contain bombs! They'll look like this:<br />"
+          image = new Image()
+          image.src = 'robomb-pngs/robot-open-bomb-large.png'
+          message.append(image)
+          message.innerHTML+="<br />You'll see the bombs when the saboteurs plant them but once they're planted, robots will close their doors."
+
+          //set up ok buttons
           var ok =
+                          {
+                            imgUp: 'robomb-pngs/btn-okay-up.png',
+                            imgDn: 'robomb-pngs/btn-okay-down.png',
+                            onClick: function(){
+                              curLevel.view.showAlertBox(message, [ok1])
+                            },
+                            activateOnEnterOrSpace: true
+                          }
+          var ok1 =
                           {
                             imgUp: 'robomb-pngs/btn-okay-up.png',
                             imgDn: 'robomb-pngs/btn-okay-down.png',
@@ -1375,13 +1434,8 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
                             },
                             activateOnEnterOrSpace: true
                           }
-          var message = document.createElement('div')
-          message.innerHTML = "Some robots will contain bombs! They'll look like this:<br />"
-          image = new Image()
-          image.src = 'robomb-pngs/robot-open-bomb-large.png'
-          message.append(image)
-          message.innerHTML+="<br />You'll see the bombs when the saboteurs plant them but once they're planted, robots will close their doors."
-          curLevel.view.showAlertBox(message, [ok])
+
+        curLevel.view.showAlertBox("r", [ok])
         }}
         //bomb detected image over every exploding ball:
         var bombDetectedScreen = function(){
@@ -1854,7 +1908,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
               //}
 
             //grab the timestamp via the event loop to know when this piece of code gets executed. Timestamps may be more reliable than the timer class here,
-            //and they doesn't get reset unless the document gets reloaded, unlike timers. Hence, timestamps are used for collection of user obstacle
+            //and they don't get reset unless the document gets reloaded, unlike timers. Hence, timestamps are used for collection of user obstacle
             //creation times. The folloing code will execute whether replay mode is happening or not, and will allow for precise logging
             //of wall creation time, relative to the moment when wall creation is enabled.
             var wallCreationEnabledEvent = new Event("wallCreationEnabled")
@@ -1893,7 +1947,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
           showAlertBox("box", button)
         }
         if(par.notifyUserOfInvisOccluders){
-          showAlertBox("fuck", button)
+          showAlertBox("asdf", button)
         }
         if(par.notifyUserOfImplodeExplodeMode){
           showAlertBox("git", button)
@@ -2047,6 +2101,8 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
         curLevel.timer.hide()
         document.removeEventListener("mousedown", curLevel.controller.findWallDrawingPath)
         document.removeEventListener("mousemove", curLevel.model.addPixelsToUserObstacles)
+        document.removeEventListener("mousedown", changeMouseToDrag)
+        document.removeEventListener("mouseup", changeMouseToClick)
         //button to be displayed in alert:
         var buttons = [/*uncomment for less rigorous experiments where the user can choose to exit after a level {
                           imgUp: 'robomb-pngs/btn-exit-up.png',
