@@ -1404,7 +1404,6 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
               //Tutorial is over. Removing click/drag mouse, saving data, and starting the new trial
               document.removeEventListener('mousedown', curLevel.view.changeMouseToDrag)
               document.removeEventListener('mouseup', curLevel.view.changeMouseToClick)
-              alert('removed them')
               document.getElementById("gameContainer").style.cursor = 'default'
               data.numLives = curLevel.model.lives
               curLevel.controller.gameOver = true
@@ -1417,11 +1416,11 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
 
           //set up msg to be shown for special alert box which has an image
           var message = document.createElement('div')
-          message.innerHTML = "Some robots will contain bombs! They'll look like this:<br />"
+          message.innerHTML = "We know which ones have bombs. These will be shown to you at the beginning, looking like this<br />"
           image = new Image()
           image.src = 'robomb-pngs/robot-open-bomb-large.png'
           message.append(image)
-          message.innerHTML+="<br />You'll see the bombs when the saboteurs plant them but once they're planted, robots will close their doors."
+          message.innerHTML+="<br /> But our very advanced computer systems can't track them real-time. So after we show you this image, you're on your own"
 
           //set up ok buttons
           var ok =
@@ -1438,7 +1437,7 @@ jsPsych.plugins["mot-game-tutorial"] = (function() {
                             imgUp: 'robomb-pngs/btn-okay-up.png',
                             imgDn: 'robomb-pngs/btn-okay-down.png',
                             onClick: function(){
-                              setTimeout(function(){curLevel.view.showAlertBox("You must remember which robots contain the bombs. Don't let the bomb-carrying robots hit the walls...or you are doomed", [ok2])},212)//arbitrary number
+                              setTimeout(function(){curLevel.view.showAlertBox("You must remember which robots contain the bombs. Don't let the bomb-carrying robots hit the walls...or we are all doomed", [ok2])},212)//arbitrary number
                             },
                             activateOnEnterOrSpace: true
                           }

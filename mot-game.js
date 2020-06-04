@@ -78,6 +78,7 @@ jsPsych.plugins["mot-game"] = (function() {
       numRegBalls: par.numRegularBalls, //redundant
       numExplodingBalls: par.numExplodingBalls, //redundant with the following but makes life easier later for data analysis
       ballInitialConditions: [], //an array of objects representing balls and their respective initial conditions
+      ballFinalConditions: [],
       ballSpeed: par.ballSpeed,
       maxObstacles: par.maxUserDefinedObstacles,
       maxObstacleSegments:par.maxUserDefinedObstacleSegments,
@@ -851,6 +852,8 @@ jsPsych.plugins["mot-game"] = (function() {
     function ball(x, y, radius, speed, id, isExplosive) {
       this.speed = speed
       this.id = id
+      this.cur_design = "robomb-pngs/robot-normal.png" //current design
+      this.potential_design = "robomb-pngs/btn-go-up.png"//design to change to in case of transformation (based on topology change paper https://www.pnas.org/content/pnas/107/50/21920.full.pdf)
       this.occluded = false //only used for implosion/explosion/teleportation occlusion
       this.collisionsEnabled = true //collisions allowed
       this.colliding = false
@@ -867,13 +870,22 @@ jsPsych.plugins["mot-game"] = (function() {
         if(this.isWithinObstacleSegment(segment) && !this.obstacleSegmentsIAmInsideOf.includes(segment)){this.obstacleSegmentsIAmInsideOf.push(segment)}
       }
       this.imgElement = new Image();
-      this.imgElement.src = "robomb-pngs/robot-normal.png";
+      this.imgElement.src = this.design;
 
       this.setImage = function(imgpath, callback) {
+
         this.imgElement.src=imgpath
         this.imgElement.onload = function(){
           if(callback !== undefined){callback()}
         }
+      }
+      this.switchImage = function(){
+        this.setImage(this.potential_design)
+        var tmp = this.cur_design
+        this.cur_design = this.potential_design
+        this.potential_design = tmp
+        console.log(this.cur_design, this.potential_design)
+        console.log('switchimage was run')
       }
       this.getColor = function() {return this.color}
       this.setColor = function(col) {this.color = col}
@@ -1803,6 +1815,7 @@ jsPsych.plugins["mot-game"] = (function() {
           data.ballInitialConditions.push(
                 {
                    id: ball.id,
+                   design: ball.design,
                    explosive: ball.explosive,
                    position: [ball.getX(), ball.getY()],
                    velocity:ball.getVelocity(),
@@ -1862,6 +1875,12 @@ jsPsych.plugins["mot-game"] = (function() {
 
               } else { //if game isn't in replay mode*/
                 curLevel.controller.getWallsFromUser() //this adds an event listener to get drawn walls from user.
+
+                //begin random changing of balls if indicated by the parameters
+                if(par.changingBalls && !curLevel.timer.timeHasRunOut){
+                  curLevel.controller.randomlyChangeBallDesign()
+                }
+
               /*}*/
           }, initialFrameDuration)
         }
@@ -1906,6 +1925,38 @@ jsPsych.plugins["mot-game"] = (function() {
 
       }
 
+      //change ball image midway thru the game (as done in https://www.pnas.org/content/pnas/107/50/21920.full.pdf)
+      /*this.ballsThatNeedChange = model.ball;
+      //note this function will be called in an anonymous function, so it cannot reference "this"
+      this.changeNextBall = function(){
+        if(par.changingBalls && !curLevel.timer.timeHasRunOut){
+          curLevel.model.balls[curLevel.controller.nextBallToChange].switchImage()
+          if(curLevel.controller.nextBallToChange < curLevel.model.balls.size){
+            curLevel.controller.nextBallToChange++
+          } else {
+            curLevel.controller.nextBallToChange = 0
+          }
+        }
+      }*/
+      this.changeABall = function(){
+        if(par.changingBalls && !curLevel.timer.timeHasRunOut){
+          var balls = curLevel.model.getBalls()
+          //switch image of random ball:
+          balls[Math.floor(Math.random()*balls.length)].switchImage()
+          console.log('switchimage was called')
+        }
+      }
+      this.randomlyChangeBallDesign = function(){
+        /*for(var i = 0, numBalls = curLevel.model.balls.length; i < numBalls; i++){
+          setTimeout(curLevel.controller.changeNextBall, 1000+2000*Math.random()) //every 1-3 seconds as done in the paper
+        }*/
+        setTimeout(function(){
+          curLevel.controller.changeABall()
+          console.log('calling changeaball')
+          if(!curLevel.timer.timeHasRunOut){curLevel.controller.randomlyChangeBallDesign()}//recursive call
+        }, par.changeBallEvery)
+
+      }
       //this is an old function that should be replaced with displayDefusalMessage. Its job was to start defusal mode and display the message but now those happen at different times.
       //args is an object. Currently, it has one option: deflectionSuccessful (true or false), which if true will let defusal mode know to give a different message
       //since it displayed
@@ -2119,6 +2170,18 @@ jsPsych.plugins["mot-game"] = (function() {
         }
         justReachedMaxLives = false //reset it to false in case it was true
         data.numLives = curLevel.model.lives
+
+        //save final ball conditions -- some of this might be redundant but figured its better that ballFinalConditions and ballInitialConditions have the same structure
+        data.ballFinalConditions.push(
+              {
+                 id: ball.id,
+                 design: ball.design,
+                 explosive: ball.explosive, //redundant
+                 position: [ball.getX(), ball.getY()], //not needed so far
+                 velocity:ball.getVelocity(), //likely redundant
+                 radius: ball.getRadius() //likely redundant
+             }
+         )
         //curLevel.beginGame()
       }
 
