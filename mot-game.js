@@ -1946,6 +1946,10 @@ jsPsych.plugins["mot-game"] = (function() {
           console.log('switchimage was called')
         }
       }
+      /* not this is not quite the same as the original topology paper, which changed each image every 1-3 seconds but not simultaneously.
+        this gaurentees no simultaneous changes but not that each ball will change at any given interval. here, we are just change every
+        ball at a random interval, averaging at the interval given in the parameters
+       */
       this.randomlyChangeBallDesign = function(){
         /*for(var i = 0, numBalls = curLevel.model.balls.length; i < numBalls; i++){
           setTimeout(curLevel.controller.changeNextBall, 1000+2000*Math.random()) //every 1-3 seconds as done in the paper
@@ -1954,7 +1958,7 @@ jsPsych.plugins["mot-game"] = (function() {
           curLevel.controller.changeABall()
           console.log('calling changeaball')
           if(!curLevel.timer.timeHasRunOut){curLevel.controller.randomlyChangeBallDesign()}//recursive call
-        }, par.changeBallEvery)
+        }, par.changeBallEvery * (0.5 + Math.random()))
 
       }
       //this is an old function that should be replaced with displayDefusalMessage. Its job was to start defusal mode and display the message but now those happen at different times.
